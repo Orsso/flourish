@@ -8,12 +8,12 @@ import {
     Profile,
     getBuiltInRecipe,
     isBuiltInProfile,
-} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
+} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
     customValuesFromRecipe,
     resolveRecipe,
     validateRecipe,
-} from '../d2d-companion@orsso.github.io/lib/motion/resolver.js';
+} from '../flourish@orsso.github.io/lib/motion/resolver.js';
 
 test('subtle is the default profile', () => {
     assertEqual(DEFAULT_PROFILE, Profile.SUBTLE);

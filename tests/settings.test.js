@@ -1,4 +1,4 @@
-import {Profile, getBuiltInRecipe} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
+import {Profile, getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
@@ -6,8 +6,8 @@ import {
     selectProfile,
     switchToPresetFromCustom,
     writeCustomRecipe,
-} from '../d2d-companion@orsso.github.io/lib/motion/settings.js';
-import {SettingsEditor} from '../d2d-companion@orsso.github.io/lib/prefs/settingsEditor.js';
+} from '../flourish@orsso.github.io/lib/motion/settings.js';
+import {SettingsEditor} from '../flourish@orsso.github.io/lib/prefs/settingsEditor.js';
 
 class FakeSettings {
     constructor(profile = Profile.BALANCED) {

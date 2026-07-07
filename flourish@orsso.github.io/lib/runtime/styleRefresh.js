@@ -1,6 +1,6 @@
 // The class exists in no stylesheet; toggling any class name is enough to
 // invalidate the widget's style context.
-const REFRESH_CLASS = 'd2d-companion-style-refresh';
+const REFRESH_CLASS = 'flourish-style-refresh';
 
 export function refreshWidgetStyle(widget) {
     if (!widget)

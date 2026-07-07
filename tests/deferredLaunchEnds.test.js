@@ -1,4 +1,4 @@
-import {DeferredLaunchEnds} from '../d2d-companion@orsso.github.io/lib/runtime/deferredLaunchEnds.js';
+import {DeferredLaunchEnds} from '../flourish@orsso.github.io/lib/runtime/deferredLaunchEnds.js';
 
 class FakeScheduler {
     nextId = 1;

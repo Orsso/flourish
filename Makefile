@@ -1,4 +1,4 @@
-UUID := d2d-companion@orsso.github.io
+UUID := flourish@orsso.github.io
 SCHEMA_DIR := $(UUID)/schemas
 DIST_DIR := dist
 INSTALL_DIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
@@ -24,8 +24,8 @@ schema:
 pot:
 	mkdir -p $(UUID)/po
 	xgettext --from-code=UTF-8 --language=JavaScript --keyword=_ --keyword=N_ \
-		--package-name='D2D Companion' \
-		--output=$(UUID)/po/d2d-companion.pot \
+		--package-name='Flourish' \
+		--output=$(UUID)/po/flourish.pot \
 		$(UUID)/prefs.js $(UUID)/lib/prefs/*.js
 
 pack: check

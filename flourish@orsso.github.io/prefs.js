@@ -20,7 +20,7 @@ const PRESET_DETAILS = Object.freeze([
     [Profile.EXPRESSIVE, N_('Expressive')],
 ]);
 
-export default class D2DCompanionPreferences extends ExtensionPreferences {
+export default class FlourishPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
         const editor = new SettingsEditor(settings);

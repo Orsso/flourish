@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-source_dir=$(find "$repo_root" -maxdepth 1 -type d -name 'd2d-companion@*' -print -quit)
+source_dir=$(find "$repo_root" -maxdepth 1 -type d -name 'flourish@*' -print -quit)
 work_dir=$(mktemp -d)
 trap 'rm -rf "$work_dir"' EXIT
 

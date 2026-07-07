@@ -1,4 +1,4 @@
-import {LiveRegistry} from '../d2d-companion@orsso.github.io/lib/runtime/liveRegistry.js';
+import {LiveRegistry} from '../flourish@orsso.github.io/lib/runtime/liveRegistry.js';
 
 class FakeActor {
     constructor() {

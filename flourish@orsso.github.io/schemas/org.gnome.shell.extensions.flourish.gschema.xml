@@ -1,39 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <enum id="org.gnome.shell.extensions.d2d-companion.profile">
+  <enum id="org.gnome.shell.extensions.flourish.profile">
     <value nick="subtle" value="0"/>
     <value nick="balanced" value="1"/>
     <value nick="expressive" value="2"/>
     <value nick="custom" value="3"/>
   </enum>
 
-  <enum id="org.gnome.shell.extensions.d2d-companion.easing">
+  <enum id="org.gnome.shell.extensions.flourish.easing">
     <value nick="linear" value="0"/>
     <value nick="ease-out-quad" value="1"/>
     <value nick="ease-out-cubic" value="2"/>
     <value nick="ease-out-back" value="3"/>
   </enum>
 
-  <enum id="org.gnome.shell.extensions.d2d-companion.press-mode">
+  <enum id="org.gnome.shell.extensions.flourish.press-mode">
     <value nick="launches-only" value="0"/>
     <value nick="all-primary-clicks" value="1"/>
   </enum>
 
-  <enum id="org.gnome.shell.extensions.d2d-companion.press-effect">
+  <enum id="org.gnome.shell.extensions.flourish.press-effect">
     <value nick="squash" value="0"/>
     <value nick="dim" value="1"/>
   </enum>
 
-  <enum id="org.gnome.shell.extensions.d2d-companion.launch-effect">
+  <enum id="org.gnome.shell.extensions.flourish.launch-effect">
     <value nick="pulse" value="0"/>
     <value nick="bounce" value="1"/>
     <value nick="stretch" value="2"/>
     <value nick="stock" value="3"/>
   </enum>
 
-  <schema id="org.gnome.shell.extensions.d2d-companion"
-          path="/org/gnome/shell/extensions/d2d-companion/">
-    <key name="motion-profile" enum="org.gnome.shell.extensions.d2d-companion.profile">
+  <schema id="org.gnome.shell.extensions.flourish"
+          path="/org/gnome/shell/extensions/flourish/">
+    <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
       <default>"subtle"</default>
       <summary>Current profile</summary>
     </key>
@@ -57,7 +57,7 @@
       <range min="50" max="500"/>
       <summary>Hover duration in milliseconds</summary>
     </key>
-    <key name="custom-hover-easing" enum="org.gnome.shell.extensions.d2d-companion.easing">
+    <key name="custom-hover-easing" enum="org.gnome.shell.extensions.flourish.easing">
       <default>"ease-out-cubic"</default>
       <summary>Hover transition easing</summary>
     </key>
@@ -76,11 +76,11 @@
       <default>true</default>
       <summary>Use press feedback in Custom</summary>
     </key>
-    <key name="custom-press-mode" enum="org.gnome.shell.extensions.d2d-companion.press-mode">
+    <key name="custom-press-mode" enum="org.gnome.shell.extensions.flourish.press-mode">
       <default>"all-primary-clicks"</default>
       <summary>Press feedback trigger</summary>
     </key>
-    <key name="custom-press-effect" enum="org.gnome.shell.extensions.d2d-companion.press-effect">
+    <key name="custom-press-effect" enum="org.gnome.shell.extensions.flourish.press-effect">
       <default>"squash"</default>
       <summary>Press feedback effect</summary>
     </key>
@@ -99,7 +99,7 @@
       <default>true</default>
       <summary>Use launch animation in Custom</summary>
     </key>
-    <key name="custom-launch-effect" enum="org.gnome.shell.extensions.d2d-companion.launch-effect">
+    <key name="custom-launch-effect" enum="org.gnome.shell.extensions.flourish.launch-effect">
       <default>"bounce"</default>
       <summary>Launch effect</summary>
     </key>

@@ -25,6 +25,6 @@ jobs:
       - run: make pack
       - uses: actions/upload-artifact@v4
         with:
-          name: d2d-companion
+          name: flourish
           path: dist/*.shell-extension.zip
           if-no-files-found: error

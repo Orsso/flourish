@@ -1,5 +1,5 @@
-import {getBuiltInRecipe} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
-import {IconMotionController} from '../d2d-companion@orsso.github.io/lib/runtime/iconMotionController.js';
+import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
 
 class FakeIcon {
     constructor() {

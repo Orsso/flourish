@@ -1,6 +1,6 @@
-import {getBuiltInRecipe} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
-import {IconMotionController} from '../d2d-companion@orsso.github.io/lib/runtime/iconMotionController.js';
-import {MotionSurface} from '../d2d-companion@orsso.github.io/lib/runtime/motionSurface.js';
+import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
+import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
 
 class SweepBin {
     constructor() {

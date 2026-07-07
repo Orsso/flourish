@@ -2,4 +2,4 @@
 dist/
 node_modules/
 # Compiled GSettings schema
-d2d-companion@orsso.github.io/schemas/gschemas.compiled
+flourish@orsso.github.io/schemas/gschemas.compiled

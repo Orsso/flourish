@@ -1,7 +1,7 @@
-import {PressMode} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
+import {PressMode} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 
 const pressModule = await import(
-    '../d2d-companion@orsso.github.io/lib/motion/pressInteraction.js'
+    '../flourish@orsso.github.io/lib/motion/pressInteraction.js'
 ).catch(() => ({}));
 
 const allPrimary = {

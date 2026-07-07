@@ -1,10 +1,10 @@
-import {LaunchEffect, PressMode, getBuiltInRecipe, Profile} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
+import {LaunchEffect, PressMode, getBuiltInRecipe, Profile} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
     buildDemoSequence,
     buildEffectSequence,
     DemoPhase,
     hoverIsActive,
-} from '../d2d-companion@orsso.github.io/lib/prefs/demoSequence.js';
+} from '../flourish@orsso.github.io/lib/prefs/demoSequence.js';
 
 test('all-primary preset shows a plain click before the launch click', () => {
     const sequence = buildDemoSequence(getBuiltInRecipe(Profile.EXPRESSIVE));

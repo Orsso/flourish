@@ -1,4 +1,4 @@
-import {MotionSurface} from '../d2d-companion@orsso.github.io/lib/runtime/motionSurface.js';
+import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
 
 class FakeActor {
     constructor() {

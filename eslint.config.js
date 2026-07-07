@@ -1,7 +1,7 @@
 export default [{
     ignores: ['node_modules/**', 'dist/**'],
 }, {
-    files: ['d2d-companion@orsso.github.io/**/*.js', 'tests/**/*.js', 'eslint.config.js'],
+    files: ['flourish@orsso.github.io/**/*.js', 'tests/**/*.js', 'eslint.config.js'],
     languageOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',

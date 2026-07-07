@@ -1,4 +1,6 @@
-# D2D Companion
+# Flourish
+
+<sub>Formerly D2D Companion.</sub>
 
 A small extension that animates the GNOME dash with hover zoom, press
 feedback, and launch animations. Dash to Dock and Ubuntu Dock are supported
@@ -25,7 +27,7 @@ and puts it back. Nothing else in the Shell or in the dock is patched.
 
 ## Compatibility
 
-D2D Companion declares support for GNOME Shell 46 to 50.
+Flourish declares support for GNOME Shell 46 to 50.
 
 This beta was tested with:
 
@@ -46,10 +48,10 @@ Download the `.shell-extension.zip` file from the
 [GitHub release](https://github.com/Orsso/d2d-companion/releases), then run:
 
 ```bash
-gnome-extensions install --force d2d-companion@orsso.github.io.shell-extension.zip
+gnome-extensions install --force flourish@orsso.github.io.shell-extension.zip
 ```
 
-Log out and back in, then enable D2D Companion from the Extensions application.
+Log out and back in, then enable Flourish from the Extensions application.
 
 ## Development
 

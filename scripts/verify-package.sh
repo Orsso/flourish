@@ -30,7 +30,7 @@ required=(
     lib/runtime/backgroundStyle.js
     metadata.json
     prefs.js
-    schemas/org.gnome.shell.extensions.d2d-companion.gschema.xml
+    schemas/org.gnome.shell.extensions.flourish.gschema.xml
     hover-background-hidden.css
     focused-app-background-hidden.css
     dash-hover-background-hidden.css

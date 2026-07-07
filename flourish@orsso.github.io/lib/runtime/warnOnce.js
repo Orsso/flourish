@@ -4,6 +4,6 @@ export function createWarnOnce() {
         if (seen.has(key))
             return;
         seen.add(key);
-        console.warn(`[d2d-companion] ${message}`);
+        console.warn(`[flourish] ${message}`);
     };
 }

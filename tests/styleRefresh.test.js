@@ -1,4 +1,4 @@
-import {refreshWidgetStyle} from '../d2d-companion@orsso.github.io/lib/runtime/styleRefresh.js';
+import {refreshWidgetStyle} from '../flourish@orsso.github.io/lib/runtime/styleRefresh.js';
 
 class FakeWidget {
     constructor() {
@@ -32,8 +32,8 @@ test('style refresh invalidates and redraws a widget locally', () => {
     refreshWidgetStyle(widget);
 
     assertDeepEqual(widget.calls, [
-        ['add', 'd2d-companion-style-refresh'],
-        ['remove', 'd2d-companion-style-refresh'],
+        ['add', 'flourish-style-refresh'],
+        ['remove', 'flourish-style-refresh'],
         ['ensure'],
         ['relayout'],
         ['redraw'],

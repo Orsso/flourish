@@ -2,7 +2,7 @@ import {
     LaunchEffect,
     PressEffect,
     getBuiltInRecipe,
-} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
+} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
     buildLaunchSegments,
     composeIconTransform,
@@ -22,7 +22,7 @@ import {
     sampleLaunchSegments,
     shouldRepeatLaunch,
     shouldRetreatOnHandoff,
-} from '../d2d-companion@orsso.github.io/lib/motion/transforms.js';
+} from '../flourish@orsso.github.io/lib/motion/transforms.js';
 
 test('bottom orientation grows upward', () => {
     assertDeepEqual(getOrientation('bottom'), {

@@ -1,6 +1,6 @@
-import {Easing} from '../d2d-companion@orsso.github.io/lib/motion/catalog.js';
-import {interpolateTransform} from '../d2d-companion@orsso.github.io/lib/motion/transforms.js';
-import {resolveAnimationMode} from '../d2d-companion@orsso.github.io/lib/runtime/easing.js';
+import {Easing} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+import {interpolateTransform} from '../flourish@orsso.github.io/lib/motion/transforms.js';
+import {resolveAnimationMode} from '../flourish@orsso.github.io/lib/runtime/easing.js';
 
 const modes = {
     LINEAR: 1,

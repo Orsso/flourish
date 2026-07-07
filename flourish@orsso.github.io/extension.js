@@ -10,7 +10,7 @@ import {IconMotionController} from './lib/runtime/iconMotionController.js';
 import {LaunchEngine} from './lib/runtime/launchEngine.js';
 import {BackgroundStyle} from './lib/runtime/backgroundStyle.js';
 
-export default class D2DCompanionExtension extends Extension {
+export default class FlourishExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._recipe = readActiveRecipe(this._settings);

@@ -1,6 +1,6 @@
 # Contributing
 
-D2D Companion is a small GNOME Shell extension. Keep changes small and
+Flourish is a small GNOME Shell extension. Keep changes small and
 readable.
 
 ## Setup
@@ -44,7 +44,7 @@ Custom profile in a real session.
 ## Translations
 
 The preferences strings are marked for gettext. `make pot` refreshes
-`d2d-companion@orsso.github.io/po/d2d-companion.pot`. To add a language,
+`flourish@orsso.github.io/po/flourish.pot`. To add a language,
 copy it to `po/<lang>.po` next to it, fill it in, and open a pull request.
 The build compiles `po/*.po` on its own.
 
@@ -55,8 +55,8 @@ Please include what you did, what happened, and the output of:
 ```bash
 gnome-shell --version
 gnome-extensions info dash-to-dock@micxgx.gmail.com
-gnome-extensions info d2d-companion@orsso.github.io
-journalctl --user -b --no-pager | rg 'd2d-companion|JS ERROR|CRITICAL'
+gnome-extensions info flourish@orsso.github.io
+journalctl --user -b --no-pager | rg 'flourish|JS ERROR|CRITICAL'
 ```
 
 On Ubuntu Dock, use `ubuntu-dock@ubuntu.com` instead of the Dash to Dock
