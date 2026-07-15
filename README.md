@@ -29,7 +29,7 @@ and puts it back. Nothing else in the Shell or in the dock is patched.
 
 Flourish declares support for GNOME Shell 46 to 50.
 
-This beta was tested with:
+This release was tested with:
 
 - GNOME Shell 46, 47, 48, 49, and 50
 - Dash to Dock 90 to 105
@@ -39,13 +39,16 @@ Other setups may work, but I have not tested them for this release.
 
 ## Install
 
+If you used a D2D Companion beta, remove it before installing Flourish.
+Flourish uses a new UUID, so the old settings will not carry over.
+
 Nothing else is required. With
 [Dash to Dock](https://extensions.gnome.org/extension/307/dash-to-dock/)
 or Ubuntu Dock enabled, the motion goes to the dock; without them, to the
 overview dash.
 
 Download the `.shell-extension.zip` file from the
-[GitHub release](https://github.com/Orsso/d2d-companion/releases), then run:
+[GitHub release](https://github.com/Orsso/flourish/releases), then run:
 
 ```bash
 gnome-extensions install --force flourish@orsso.github.io.shell-extension.zip
