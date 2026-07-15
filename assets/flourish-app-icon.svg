@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="128" height="128" viewBox="0 0 128 128"
+     role="img" aria-labelledby="title desc">
+  <title id="title">Flourish app icon</title>
+  <desc id="desc">Three rounded app tiles. A raised purple center tile carries a hand-drawn ivory F between two blue tiles.</desc>
+
+  <g id="left-tile">
+    <rect id="left-depth" x="3" y="55" width="42" height="42" rx="10.5" fill="#1c71d8"/>
+    <rect id="left-face" x="3" y="50" width="42" height="42" rx="10.5" fill="#3584e4"/>
+  </g>
+
+  <g id="right-tile">
+    <rect id="right-depth" x="83" y="55" width="42" height="42" rx="10.5" fill="#1c71d8"/>
+    <rect id="right-face" x="83" y="50" width="42" height="42" rx="10.5" fill="#3584e4"/>
+  </g>
+
+  <g id="hovered-center-tile">
+    <rect id="center-depth" x="38" y="38" width="52" height="52" rx="13" fill="#613583"/>
+    <rect id="center-face" x="38" y="32" width="52" height="52" rx="13" fill="#9141ac"/>
+
+    <g id="flourish-letter-f" fill="#f6f5f4">
+      <path id="f-stem"
+            d="M51.7 75.0
+               C51.0 77.8 52.8 79.8 55.7 79.8
+               C58.8 79.8 60.4 77.4 61.0 73.8
+               L65.2 46.3
+               L57.1 46.3
+               L52.9 72.9
+               C52.7 73.8 52.3 74.6 51.7 75.0 Z"/>
+      <path id="f-top-sweep"
+            d="M53.0 42.6
+               C49.8 44.2 47.9 47.1 48.5 50.1
+               C49.0 52.8 50.9 54.5 53.0 54.5
+               C54.7 54.5 55.4 52.9 56.4 51.4
+               C58.2 48.8 60.9 48.2 64.8 48.7
+               C70.7 49.4 76.3 48.6 79.5 45.8
+               C81.8 43.7 82.5 40.3 81.2 38.0
+               C80.8 37.2 79.8 37.1 78.9 37.8
+               C75.3 40.4 70.6 40.8 65.4 40.4
+               C60.4 40.1 56.4 40.9 53.0 42.6 Z"/>
+      <path id="f-crossbar"
+            d="M61.6 58.2
+               C66.1 58.9 70.2 58.7 73.1 57.1
+               C74.6 56.3 75.7 57.2 75.2 59.0
+               C74.3 62.5 71.5 65.0 67.5 65.5
+               C65.2 65.8 62.8 65.6 60.5 65.1 Z"/>
+    </g>
+  </g>
+</svg>
