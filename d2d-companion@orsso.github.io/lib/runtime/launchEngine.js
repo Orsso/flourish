@@ -121,6 +121,8 @@ export class LaunchEngine {
 
         const session = {
             app: appIcon.app,
+            appSeenRunning: false,
+            appStateId: 0,
             clone,
             controller,
             controllerLaunchEnded: false,
@@ -145,6 +147,16 @@ export class LaunchEngine {
         session.destroyId = target.connect('destroy', () => {
             this.#discardDestroyed(session);
         });
+        if (session.app) {
+            session.appStateId = Shell.AppSystem.get_default().connect(
+                'app-state-changed', (system, app) => {
+                    if (app !== session.app ||
+                        app.state !== Shell.AppState.RUNNING)
+                        return;
+                    session.appSeenRunning = true;
+                    this.#clearAppStateWatch(session);
+                });
+        }
         this.#sessions.set(target, session);
         target.opacity = 0;
         this.#runIntroStep(session, 0);
@@ -262,7 +274,8 @@ export class LaunchEngine {
     #finishCycle(session) {
         const launch = session.controller.recipe.launch;
         const elapsed = GLib.get_monotonic_time() / 1000 - session.startedAt;
-        const appRunning = !session.app || session.app.state === Shell.AppState.RUNNING;
+        const appRunning = session.appSeenRunning || !session.app ||
+            session.app.state === Shell.AppState.RUNNING;
         if (shouldRepeatLaunch({
             wasLaunching: session.wasLaunching,
             appRunning,
@@ -299,7 +312,7 @@ export class LaunchEngine {
                 const launch = session.controller.recipe.launch;
                 const elapsed = GLib.get_monotonic_time() / 1000 -
                     session.startedAt;
-                const appRunning = !session.app ||
+                const appRunning = session.appSeenRunning || !session.app ||
                     session.app.state === Shell.AppState.RUNNING;
                 if (!shouldRepeatLaunch({
                     wasLaunching: session.wasLaunching,
@@ -371,6 +384,7 @@ export class LaunchEngine {
             return;
         session.finished = true;
         this.#clearRepeatTimer(session);
+        this.#clearAppStateWatch(session);
         session.target.disconnect(session.destroyId);
         session.clone.destroy();
         this.#sessions.delete(session.target);
@@ -382,6 +396,7 @@ export class LaunchEngine {
             return;
         session.finished = true;
         this.#clearRepeatTimer(session);
+        this.#clearAppStateWatch(session);
         session.clone.remove_all_transitions();
         session.target.opacity = session.originalOpacity;
         session.target.disconnect(session.destroyId);
@@ -395,6 +410,7 @@ export class LaunchEngine {
             return;
         session.finished = true;
         this.#clearRepeatTimer(session);
+        this.#clearAppStateWatch(session);
         session.clone.remove_all_transitions();
         session.clone.destroy();
         this.#sessions.delete(session.target);
@@ -406,6 +422,13 @@ export class LaunchEngine {
             return;
         GLib.Source.remove(session.repeatSourceId);
         session.repeatSourceId = 0;
+    }
+
+    #clearAppStateWatch(session) {
+        if (!session.appStateId)
+            return;
+        Shell.AppSystem.get_default().disconnect(session.appStateId);
+        session.appStateId = 0;
     }
 
     #endControllerLaunch(session, {defer = false} = {}) {
