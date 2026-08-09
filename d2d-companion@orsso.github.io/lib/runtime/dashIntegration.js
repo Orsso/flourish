@@ -3,6 +3,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DockPosition} from '../motion/catalog.js';
 import {MotionSurface} from './motionSurface.js';
+import {createWarnOnce} from './warnOnce.js';
 
 export class DashIntegration {
     #box = null;
@@ -11,15 +12,11 @@ export class DashIntegration {
     #savedClip = false;
     #scheduler;
     #surface = null;
-    #warnings = new Set();
+    #warnOnce = createWarnOnce();
 
     constructor({controllerFactory, scheduler}) {
         this.#controllerFactory = controllerFactory;
         this.#scheduler = scheduler;
-    }
-
-    get controllers() {
-        return this.#surface?.controllers ?? [];
     }
 
     enable(recipe) {
@@ -27,9 +24,10 @@ export class DashIntegration {
             return;
         // Dock extensions serve their dock as the overview dash; those
         // icons belong to the dock integration, not to a second controller.
-        if (Main.overview.dash && !(Main.overview.dash instanceof Dash))
+        const dash = Main.overview.dash;
+        if (dash && !(dash instanceof Dash))
             return;
-        const box = Main.overview.dash?._box;
+        const box = dash?._box;
         if (!box) {
             this.#warnOnce('missing-box',
                 'the overview dash exposes no icon box; dash motion is inactive');
@@ -76,12 +74,5 @@ export class DashIntegration {
 
     getController(appIcon) {
         return this.#surface?.getController(appIcon) ?? null;
-    }
-
-    #warnOnce(key, message) {
-        if (this.#warnings.has(key))
-            return;
-        this.#warnings.add(key);
-        console.warn(`[d2d-companion] ${message}`);
     }
 }

@@ -1,5 +1,9 @@
 import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
+import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+
+// xgettext reads N_; the lookup happens where the string is used.
+const N_ = s => s;
 
 export function createSwitchRow(group, title, subtitle = null) {
     const row = new Adw.SwitchRow({title, subtitle});
@@ -12,6 +16,22 @@ export function connectSwitch(row, callback, state) {
         if (!state.syncing)
             callback(row.active);
     });
+}
+
+const BACKGROUND_ROWS = Object.freeze({
+    hover: [N_('Show hover background'),
+        N_('Keep the tile shown under the pointed icon (off hides it)')],
+    focusedApp: [N_('Show focused app background'),
+        N_('Keep the tile shown behind the focused app (off hides it)')],
+});
+
+// The same switch lives on both pages.
+export function createBackgroundRow(group, kind, editor, state) {
+    const [title, subtitle] = BACKGROUND_ROWS[kind];
+    const row = createSwitchRow(group, _(title), _(subtitle));
+    connectSwitch(row, enabled =>
+        editor.setBackgroundVisible(kind, enabled), state);
+    return row;
 }
 
 export function createSpinRow(
@@ -105,7 +125,7 @@ export function createHelpButton(text) {
     const button = new Gtk.MenuButton({
         icon_name: 'help-about-symbolic',
         valign: Gtk.Align.CENTER,
-        tooltip_text: 'Why this limit?',
+        tooltip_text: _('Why this limit?'),
         popover,
     });
     button.add_css_class('flat');

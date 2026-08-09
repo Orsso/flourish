@@ -38,14 +38,12 @@ const DEFINITIONS = Object.freeze([
 
 const DEFINITION_BY_KEY = new Map(DEFINITIONS.map(item => [item.key, item]));
 
-export const CUSTOM_SETTING_KEYS = Object.freeze(DEFINITIONS.map(item => item.key));
-
 export function readActiveRecipe(settings) {
     const profile = settings.get_string('motion-profile');
     return resolveRecipe(profile, readCustomValues(settings));
 }
 
-export function readCustomValues(settings) {
+function readCustomValues(settings) {
     const values = {hover: {}, press: {}, launch: {}};
     for (const item of DEFINITIONS)
         values[item.group][item.property] = read(settings, item);

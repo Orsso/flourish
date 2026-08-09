@@ -30,7 +30,7 @@ export class BackgroundStyle {
     #apply() {
         if (this.#loaded)
             return;
-        this.#theme()?.load_stylesheet(this.#file);
+        this.#theme().load_stylesheet(this.#file);
         this.#loaded = true;
         this.#refreshStyles();
     }
@@ -38,7 +38,7 @@ export class BackgroundStyle {
     #remove() {
         if (!this.#loaded)
             return;
-        this.#theme()?.unload_stylesheet(this.#file);
+        this.#theme().unload_stylesheet(this.#file);
         this.#loaded = false;
         this.#refreshStyles();
     }

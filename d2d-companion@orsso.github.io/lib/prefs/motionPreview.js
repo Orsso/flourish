@@ -49,18 +49,17 @@ const EASINGS = Object.freeze({
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
     // Given an effect ('hover', 'press', 'launch') the preview goes bare
     // and demos just that effect.
-    _init({recipe, selected = false, effect = null, ...params}) {
+    _init({recipe, effect = null, ...params}) {
         const inline = Boolean(effect);
         const iconCount = effect === 'hover' ? hoverIconCount(recipe) : 1;
         super._init({
             height_request: inline ? 64 : 96,
             width_request: inline ? inlineWidth(iconCount) : -1,
             hexpand: !inline,
-            focusable: !inline,
             valign: inline ? Gtk.Align.CENTER : Gtk.Align.FILL,
             ...params,
         });
-        this._selected = selected;
+        this._selected = false;
         this._effect = effect;
         this._iconCount = iconCount;
         this._visibleCount = iconCount;
@@ -109,24 +108,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         });
     }
 
-    setRecipe(recipe) {
-        this._cancelLoop();
-        this._pressGeneration++;
-        this._motionAnimation?.reset();
-        this._launchAnimation?.reset();
-        this._motionAnimation = null;
-        this._launchAnimation = null;
-        this._pressed = false;
-        this._launching = false;
-        this._recipe = this._adoptRecipe(recipe);
-        this._syncIconCount();
-        this._hoverProgress = this._hovered ? 1 : 0;
-        this._motionTransform = this._resolveMotion();
-        this._launchTransform = {...IDENTITY};
-        this.queue_draw();
-    }
-
-    // setRecipe without the reset: a running loop just picks the values up.
+    // A running loop picks fresh values up without resetting its pose.
     updateRecipe(recipe) {
         this._recipe = this._adoptRecipe(recipe);
         this._syncIconCount();
@@ -194,7 +176,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._sweepAnimation = null;
         this._sweepActive = false;
         if (this._timeoutId) {
-            GLib.Source.remove(this._timeoutId);
+            GLib.source_remove(this._timeoutId);
             this._timeoutId = 0;
         }
     }
@@ -263,7 +245,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     stopLoop() {
         if (this._held)
             return;
-        if (!this._loopActive && !this._timeoutId) {
+        if (!this._loopActive) {
             this._hovered = false;
             this._pressed = false;
             this._animateMotion(this._recipe.hover.duration);
@@ -453,10 +435,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _playLaunch(onComplete = null) {
-        if (!this._launching || !this._recipe.launch.enabled) {
-            onComplete?.();
-            return;
-        }
         const segments = buildLaunchSegments(
             this._recipe.launch.effect, this._recipe.launch, 'bottom');
         const duration = launchDuration(segments);

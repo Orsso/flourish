@@ -1,6 +1,7 @@
 import Adw from 'gi://Adw';
 import Gdk from 'gi://Gdk';
 import Gtk from 'gi://Gtk';
+import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {
     Easing,
@@ -13,6 +14,7 @@ import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../motion/transforms.js';
 import {MotionPreview} from './motionPreview.js';
 import {
     connectSwitch,
+    createBackgroundRow,
     createComboRow,
     createHelpButton,
     createScaleRow,
@@ -26,129 +28,126 @@ export function buildAdvancedPage(page, controls, editor, state) {
 
     const budgetGroup = new Adw.PreferencesGroup();
     const budgetRow = new Adw.ActionRow({
-        title: 'Hover room',
-        subtitle: 'Measured from the dock',
+        title: _('Hover room'),
+        subtitle: _('Measured from the dock'),
     });
     budgetRow.add_suffix(createHelpButton(
-        'The dock clips icons at its edge. Magnification and lift share ' +
+        _('The dock clips icons at its edge. Magnification and lift share ' +
         'the space that is left; a smaller dock icon size usually ' +
         'leaves more room. This only concerns the dock: the overview dash ' +
-        'is never clipped, so the full values always apply there.'));
+        'is never clipped, so the full values always apply there.')));
     controls.budgetRow = budgetRow;
     budgetGroup.add(budgetRow);
     page.add(budgetGroup);
 
-    const hover = createEffectGroup(page, controls, editor, 'Hover', 'hover');
+    const hover = createEffectGroup(page, controls, editor, _('Hover'), 'hover');
     controls.hoverScale = createScaleRow(
-        hover.group, 'Magnification', 1, 1.30, 0.01,
+        hover.group, _('Magnification'), 1, 1.30, 0.01,
         value => editor.edit('custom-hover-scale', value), state);
     controls.hoverLift = createSpinRow(
-        hover.group, 'Outward lift', 0, 12, 1,
-        value => editor.edit('custom-hover-lift', Math.round(value)), state, 'px');
+        hover.group, _('Outward lift'), 0, 12, 1,
+        value => editor.edit('custom-hover-lift', Math.round(value)), state,
+        _('px'));
     controls.hoverDuration = createSpinRow(
-        hover.group, 'Duration', 50, 500, 10,
-        value => editor.edit('custom-hover-duration', Math.round(value)), state, 'ms');
+        hover.group, _('Duration'), 50, 500, 10,
+        value => editor.edit('custom-hover-duration', Math.round(value)), state,
+        _('ms'));
     controls.hoverEasing = createComboRow(
-        hover.group, 'Easing',
+        hover.group, _('Easing'),
         [
-            ['Linear', Easing.LINEAR],
-            ['Ease out (quad)', Easing.EASE_OUT_QUAD],
-            ['Ease out (cubic)', Easing.EASE_OUT_CUBIC],
-            ['Ease out (back)', Easing.EASE_OUT_BACK],
+            [_('Linear'), Easing.LINEAR],
+            [_('Ease out (quad)'), Easing.EASE_OUT_QUAD],
+            [_('Ease out (cubic)'), Easing.EASE_OUT_CUBIC],
+            [_('Ease out (back)'), Easing.EASE_OUT_BACK],
         ], value => editor.edit('custom-hover-easing', value), state);
     controls.neighborScale = createScaleRow(
-        hover.group, 'Neighbor scale', 1, 1.15, 0.01,
+        hover.group, _('Neighbor scale'), 1, 1.15, 0.01,
         value => editor.edit('custom-neighbor-scale', value), state);
     controls.neighborRadius = createSpinRow(
-        hover.group, 'Neighbor radius', NeighborRadius.MIN, NeighborRadius.MAX, 1,
+        hover.group, _('Neighbor radius'), NeighborRadius.MIN, NeighborRadius.MAX, 1,
         value => editor.edit('custom-neighbor-radius', Math.round(value)), state,
-        'Icons on each side that follow the hover');
+        _('Icons on each side that follow the hover'));
     holdWhileSliding(controls.hoverScale, hover);
     holdWhileSliding(controls.neighborScale, hover);
 
-    const press = createEffectGroup(page, controls, editor, 'Press', 'press');
+    const press = createEffectGroup(page, controls, editor, _('Press'), 'press');
     controls.pressMode = createComboRow(
-        press.group, 'Trigger',
+        press.group, _('Trigger'),
         [
-            ['Launches only', PressMode.LAUNCHES_ONLY],
-            ['All primary clicks', PressMode.ALL_PRIMARY_CLICKS],
+            [_('Launches only'), PressMode.LAUNCHES_ONLY],
+            [_('All primary clicks'), PressMode.ALL_PRIMARY_CLICKS],
         ], value => editor.edit('custom-press-mode', value), state);
     controls.pressEffect = createComboRow(
-        press.group, 'Effect',
+        press.group, _('Effect'),
         [
-            ['Squash', PressEffect.SQUASH],
-            ['Dim', PressEffect.DIM],
+            [_('Squash'), PressEffect.SQUASH],
+            [_('Dim'), PressEffect.DIM],
         ], value => editor.edit('custom-press-effect', value), state);
     controls.pressIntensity = createScaleRow(
-        press.group, 'Intensity', 0, 1, 0.05,
+        press.group, _('Intensity'), 0, 1, 0.05,
         value => editor.edit('custom-press-intensity', value), state);
     controls.pressDuration = createSpinRow(
-        press.group, 'Duration', 50, 300, 10,
-        value => editor.edit('custom-press-duration', Math.round(value)), state, 'ms');
+        press.group, _('Duration'), 50, 300, 10,
+        value => editor.edit('custom-press-duration', Math.round(value)), state,
+        _('ms'));
     holdWhileSliding(controls.pressIntensity, press);
 
-    const launch = createEffectGroup(page, controls, editor, 'Launch', 'launch');
+    const launch = createEffectGroup(page, controls, editor, _('Launch'), 'launch');
     controls.launchEffect = createComboRow(
-        launch.group, 'Effect',
+        launch.group, _('Effect'),
         [
-            ['Pulse', LaunchEffect.PULSE],
-            ['Bounce', LaunchEffect.BOUNCE],
-            ['Stretch', LaunchEffect.STRETCH],
-            ['Stock zoom', LaunchEffect.STOCK],
+            [_('Pulse'), LaunchEffect.PULSE],
+            [_('Bounce'), LaunchEffect.BOUNCE],
+            [_('Stretch'), LaunchEffect.STRETCH],
+            [_('Stock zoom'), LaunchEffect.STOCK],
         ], value => editor.edit('custom-launch-effect', value), state);
     controls.launchIntensity = createScaleRow(
-        launch.group, 'Intensity', 0, 1, 0.05,
+        launch.group, _('Intensity'), 0, 1, 0.05,
         value => editor.edit('custom-launch-intensity', value), state);
     controls.launchSpeed = createScaleRow(
-        launch.group, 'Speed', 0.50, 2, 0.05,
+        launch.group, _('Speed'), 0.50, 2, 0.05,
         value => editor.edit('custom-launch-speed', value), state);
     controls.launchRepeat = createSwitchRow(
-        launch.group, 'Repeat while starting', 'Stop when the application is running');
+        launch.group, _('Repeat while starting'),
+        _('Stop when the application is running'));
     connectSwitch(controls.launchRepeat, enabled =>
         editor.edit('custom-launch-repeat', enabled), state);
     controls.launchSoftenRepeats = createSwitchRow(
-        launch.group, 'Soften repeated cycles',
-        'Reduce the intensity of each repeat');
+        launch.group, _('Soften repeated cycles'),
+        _('Reduce the intensity of each repeat'));
     connectSwitch(controls.launchSoftenRepeats, enabled =>
         editor.edit('custom-launch-soften-repeats', enabled), state);
     controls.launchRepeatPause = createSpinRow(
-        launch.group, 'Repeat pause', 0, 1000, 50,
+        launch.group, _('Repeat pause'), 0, 1000, 50,
         value => editor.edit('custom-launch-repeat-pause', Math.round(value)),
-        state, 'ms');
+        state, _('ms'));
     controls.launchMaxDuration = createSpinRow(
-        launch.group, 'Maximum duration', 500, 15000, 500,
-        value => editor.edit('custom-launch-max-duration', Math.round(value)), state, 'ms');
+        launch.group, _('Maximum duration'), 500, 15000, 500,
+        value => editor.edit('custom-launch-max-duration', Math.round(value)),
+        state, _('ms'));
     controls.bounceDecay = createScaleRow(
-        launch.group, 'Bounce decay', 0, 1, 0.05,
+        launch.group, _('Bounce decay'), 0, 1, 0.05,
         value => editor.edit('custom-bounce-decay', value), state);
     controls.pulseCount = createSpinRow(
-        launch.group, 'Pulse count', 1, 4, 1,
+        launch.group, _('Pulse count'), 1, 4, 1,
         value => editor.edit('custom-pulse-count', Math.round(value)), state);
     controls.stretchElasticity = createScaleRow(
-        launch.group, 'Stretch elasticity', 0, 1, 0.05,
+        launch.group, _('Stretch elasticity'), 0, 1, 0.05,
         value => editor.edit('custom-stretch-elasticity', value), state);
 
-    const appearanceGroup = new Adw.PreferencesGroup({title: 'Appearance'});
-    const hoverRow = createSwitchRow(
-        appearanceGroup, 'Show hover background',
-        'Keep the tile shown under the pointed icon (off hides it)');
-    connectSwitch(hoverRow, enabled =>
-        editor.setBackgroundVisible('hover', enabled), state);
-    controls.advancedHoverBackground = hoverRow;
-    const focusRow = createSwitchRow(
-        appearanceGroup, 'Show focused app background',
-        'Keep the tile shown behind the focused app (off hides it)');
-    connectSwitch(focusRow, enabled =>
-        editor.setBackgroundVisible('focusedApp', enabled), state);
-    controls.advancedFocusedAppBackground = focusRow;
+    const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
+    controls.advancedHoverBackground = createBackgroundRow(
+        appearanceGroup, 'hover', editor, state);
+    controls.advancedFocusedAppBackground = createBackgroundRow(
+        appearanceGroup, 'focusedApp', editor, state);
     page.add(appearanceGroup);
 
     const resetGroup = new Adw.PreferencesGroup();
     const resetRow = new Adw.ActionRow({
-        title: 'Reset Custom',
-        subtitle: 'Copy the Subtle profile into Custom',
+        title: _('Reset Custom'),
+        subtitle: _('Copy the Subtle profile into Custom'),
     });
-    const resetButton = new Gtk.Button({label: 'Reset', valign: Gtk.Align.CENTER});
+    const resetButton = new Gtk.Button({label: _('Reset'), valign: Gtk.Align.CENTER});
     resetButton.add_css_class('destructive-action');
     resetButton.connect('clicked', () => editor.resetCustom());
     resetRow.add_suffix(resetButton);
@@ -176,8 +175,8 @@ export function syncAdvancedPage(settings, controls, recipe) {
         recipe.press.mode === PressMode.ALL_PRIMARY_CLICKS;
     controls.pressDuration.sensitive = !instantPrimaryDim;
     controls.pressDuration.subtitle = instantPrimaryDim
-        ? 'Dim is instant for primary clicks'
-        : 'ms';
+        ? _('Dim is instant for primary clicks')
+        : _('ms');
     setComboValue(controls.launchEffect, recipe.launch.effect);
     controls.launchIntensity.adjustment.value = recipe.launch.intensity;
     controls.launchSpeed.adjustment.value = recipe.launch.speed;
@@ -249,9 +248,9 @@ function applyHoverBudget(controls, recipe, budgetPx, iconSize) {
     const liftRow = controls.hoverLift;
 
     if (!(budgetPx > 0) || !(iconSize > 0)) {
-        budgetRow.subtitle = 'No dock to measure (full motion applies)';
-        scaleRow.subtitle = 'Outward magnification on hover';
-        liftRow.subtitle = 'Outward rise on hover, in pixels';
+        budgetRow.subtitle = _('No dock to measure (full motion applies)');
+        scaleRow.subtitle = _('Outward magnification on hover');
+        liftRow.subtitle = _('Outward rise on hover, in pixels');
         return;
     }
 
@@ -266,11 +265,14 @@ function applyHoverBudget(controls, recipe, budgetPx, iconSize) {
         Math.max(0, recipe.hover.lift);
     const reduced = reach > budgetPx / (1 + overshoot) + 0.01;
 
-    budgetRow.subtitle = `About ${room} px of room per icon, updates with your dock`;
-    scaleRow.subtitle = reduced
-        ? `Reduced to fit the dock: ~${scaleUse.toFixed(1)} of ${room} px`
-        : `Uses ~${scaleUse.toFixed(1)} of ${room} px`;
-    liftRow.subtitle = reduced
-        ? `Reduced to fit the dock: ~${liftUse.toFixed(1)} of ${room} px`
-        : `Uses ~${liftUse.toFixed(1)} of ${room} px`;
+    budgetRow.subtitle = _('About %s px of room per icon, updates with your dock')
+        .replace('%s', room);
+    scaleRow.subtitle = (reduced
+        ? _('Reduced to fit the dock: ~%s of %s px')
+        : _('Uses ~%s of %s px'))
+        .replace('%s', scaleUse.toFixed(1)).replace('%s', room);
+    liftRow.subtitle = (reduced
+        ? _('Reduced to fit the dock: ~%s of %s px')
+        : _('Uses ~%s of %s px'))
+        .replace('%s', liftUse.toFixed(1)).replace('%s', room);
 }

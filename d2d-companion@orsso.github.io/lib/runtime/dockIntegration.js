@@ -4,6 +4,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DockPosition} from '../motion/catalog.js';
 import {MotionSurface} from './motionSurface.js';
+import {createWarnOnce} from './warnOnce.js';
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.
 const DASH_TO_DOCK_BUILDS = [
@@ -22,7 +23,7 @@ export class DockIntegration {
     #scheduler;
     #stateChangedId = 0;
     #surface = null;
-    #warnings = new Set();
+    #warnOnce = createWarnOnce();
 
     constructor({controllerFactory, publishMeasurement = () => {}, scheduler}) {
         this.#controllerFactory = controllerFactory;
@@ -55,6 +56,8 @@ export class DockIntegration {
     }
 
     disable() {
+        if (!this.#surface)
+            return;
         this.#generation++;
         if (this.#stateChangedId) {
             Main.extensionManager.disconnect(this.#stateChangedId);
@@ -63,7 +66,7 @@ export class DockIntegration {
         this.#cancelScheduledAttach();
         this.#detachManager();
         this.#cancelBudgetMeasure();
-        this.#surface?.dispose();
+        this.#surface.dispose();
         this.#surface = null;
     }
 
@@ -188,12 +191,6 @@ export class DockIntegration {
         return true;
     }
 
-    #warnOnce(key, message) {
-        if (this.#warnings.has(key))
-            return;
-        this.#warnings.add(key);
-        console.warn(`[d2d-companion] ${message}`);
-    }
 }
 
 // Both builds can be installed at once; prefer the active one.

@@ -31,7 +31,7 @@ export class MotionSurface {
 
     refreshStyles() {
         for (const controller of this.controllers)
-            controller.refreshStyle?.();
+            controller.refreshStyle();
     }
 
     addBox(box, position) {
@@ -59,7 +59,7 @@ export class MotionSurface {
     }
 
     #registerContainer(container, position, group) {
-        const icon = container?.child ?? container;
+        const icon = container.child ?? container;
         const bin = icon?.icon?._iconBin;
         if (!bin || this.#registry.getIcon(icon))
             return;
@@ -169,5 +169,5 @@ class NeighborGroup {
 }
 
 function boxChildren(container) {
-    return container.get_parent()?.get_children() ?? [container];
+    return container.get_parent().get_children();
 }

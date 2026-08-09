@@ -41,6 +41,13 @@ the schema, the dropdown in `prefs.js`, and a test in
 The preview cards only play the presets, so try a new effect through the
 Custom profile in a real session.
 
+## Translations
+
+The preferences strings are marked for gettext. `make pot` refreshes
+`d2d-companion@orsso.github.io/po/d2d-companion.pot`. To add a language,
+copy it to `po/<lang>.po` next to it, fill it in, and open a pull request.
+The build compiles `po/*.po` on its own.
+
 ## Reporting a Bug
 
 Please include what you did, what happened, and the output of:

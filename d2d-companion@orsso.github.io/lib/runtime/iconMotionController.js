@@ -176,15 +176,14 @@ export class IconMotionController {
         this.#onDestroyed(this);
     }
 
-    dispose({restore = true} = {}) {
+    dispose() {
         if (this.#destroyed)
             return;
         for (const id of this.#signalIds)
             this.#icon.disconnect(id);
         this.#signalIds = [];
         this.#syncDim(0);
-        if (restore)
-            this.#restore();
+        this.#restore();
         this.#destroyed = true;
         this.#onDestroyed(this);
         this.#bin = null;
@@ -251,6 +250,8 @@ export class IconMotionController {
         };
 
         this.#syncDim(transform.dim);
+        // Dash to Dock wiggles urgent icons; a centered pivot lets both
+        // animations compose. The stock dash never sets the property.
         this.#bin.set_pivot_point(...(this.#urgent ? [0.5, 0.5] : transform.pivot));
         // Same target: keep any in-flight transition instead of restarting
         // it. Instant applies must settle the bin now.

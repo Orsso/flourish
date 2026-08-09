@@ -13,8 +13,10 @@ required=(
     lib/motion/resolver.js
     lib/motion/settings.js
     lib/motion/transforms.js
+    lib/prefs/advancedPage.js
     lib/prefs/demoSequence.js
     lib/prefs/motionPreview.js
+    lib/prefs/rows.js
     lib/prefs/settingsEditor.js
     lib/runtime/dashIntegration.js
     lib/runtime/deferredLaunchEnds.js
@@ -24,6 +26,7 @@ required=(
     lib/runtime/launchEngine.js
     lib/runtime/liveRegistry.js
     lib/runtime/motionSurface.js
+    lib/runtime/warnOnce.js
     lib/runtime/backgroundStyle.js
     metadata.json
     prefs.js

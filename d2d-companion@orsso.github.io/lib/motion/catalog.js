@@ -29,6 +29,10 @@ export const Easing = Object.freeze({
     EASE_OUT_BACK: 'ease-out-back',
 });
 
+// Internal segment easing, kept out of Easing so the user-facing choices
+// stay the four selectable modes.
+export const EASE_IN_QUAD = 'ease-in-quad';
+
 export const DockPosition = Object.freeze({
     BOTTOM: 'bottom',
     TOP: 'top',

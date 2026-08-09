@@ -1,18 +1,23 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
-import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {Profile, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
-import {connectSwitch, createSwitchRow} from './lib/prefs/rows.js';
+import {
+    connectSwitch,
+    createBackgroundRow,
+    createSwitchRow,
+} from './lib/prefs/rows.js';
 import {SettingsEditor} from './lib/prefs/settingsEditor.js';
 
+const N_ = s => s;
 const PRESET_DETAILS = Object.freeze([
-    [Profile.SUBTLE, 'Subtle'],
-    [Profile.BALANCED, 'Lively'],
-    [Profile.EXPRESSIVE, 'Expressive'],
+    [Profile.SUBTLE, N_('Subtle')],
+    [Profile.BALANCED, N_('Lively')],
+    [Profile.EXPRESSIVE, N_('Expressive')],
 ]);
 
 export default class D2DCompanionPreferences extends ExtensionPreferences {
@@ -22,29 +27,27 @@ export default class D2DCompanionPreferences extends ExtensionPreferences {
         const state = {syncing: false};
         const controls = {};
 
-        window.search_enabled = true;
-
         const essentials = new Adw.PreferencesPage({
             name: 'essentials',
-            title: 'Basics',
+            title: _('Basics'),
             icon_name: 'applications-graphics-symbolic',
         });
         const advanced = new Adw.PreferencesPage({
             name: 'advanced',
-            title: 'More',
+            title: _('More'),
             icon_name: 'preferences-system-symbolic',
         });
         window.add(essentials);
         window.add(advanced);
 
         const profileGroup = new Adw.PreferencesGroup({
-            title: 'Profiles',
-            description: 'Hover to preview. Click to apply.',
+            title: _('Profiles'),
+            description: _('Hover to preview. Click to apply.'),
         });
-        const customBadge = new Gtk.Label({label: 'Custom'});
+        const customBadge = new Gtk.Label({label: _('Custom')});
         customBadge.add_css_class('accent');
         customBadge.add_css_class('caption-heading');
-        customBadge.set_visible(false);
+        customBadge.visible = false;
         profileGroup.set_header_suffix(customBadge);
         controls.customBadge = customBadge;
 
@@ -61,7 +64,7 @@ export default class D2DCompanionPreferences extends ExtensionPreferences {
         controls.profiles = new Map();
         for (const [profile, title] of PRESET_DETAILS) {
             const recipe = getBuiltInRecipe(profile);
-            const {button, preview} = createProfileCard(title, recipe);
+            const {button, preview} = createProfileCard(_(title), recipe);
             button.connect('clicked', () => onProfileClicked({
                 window,
                 editor,
@@ -78,19 +81,19 @@ export default class D2DCompanionPreferences extends ExtensionPreferences {
             controls.profiles.set(profile, {button, preview});
         }
 
-        const featureGroup = new Adw.PreferencesGroup({title: 'Motion'});
+        const featureGroup = new Adw.PreferencesGroup({title: _('Motion')});
         controls.hoverEnabled = createSwitchRow(
-            featureGroup, 'Hover magnification', 'Scale and lift the pointed icon');
+            featureGroup, _('Hover magnification'),
+            _('Scale and lift the pointed icon'));
         controls.pressEnabled = createSwitchRow(
-            featureGroup, 'Press feedback', 'Squash or dim the pressed icon');
+            featureGroup, _('Press feedback'), _('Squash or dim the pressed icon'));
         controls.launchEnabled = createSwitchRow(
-            featureGroup, 'Launch animation', 'Animate cold starts and new windows');
-        controls.hoverBackground = createSwitchRow(
-            featureGroup, 'Show hover background',
-            'Keep the tile shown under the pointed icon (off hides it)');
-        controls.focusedAppBackground = createSwitchRow(
-            featureGroup, 'Show focused app background',
-            'Keep the tile shown behind the focused app (off hides it)');
+            featureGroup, _('Launch animation'),
+            _('Animate cold starts and new windows'));
+        controls.hoverBackground = createBackgroundRow(
+            featureGroup, 'hover', editor, state);
+        controls.focusedAppBackground = createBackgroundRow(
+            featureGroup, 'focusedApp', editor, state);
         essentials.add(featureGroup);
 
         connectSwitch(controls.hoverEnabled, enabled =>
@@ -99,19 +102,17 @@ export default class D2DCompanionPreferences extends ExtensionPreferences {
             editor.setFeatureEnabled('press', enabled), state);
         connectSwitch(controls.launchEnabled, enabled =>
             editor.setFeatureEnabled('launch', enabled), state);
-        connectSwitch(controls.hoverBackground, enabled =>
-            editor.setBackgroundVisible('hover', enabled), state);
-        connectSwitch(controls.focusedAppBackground, enabled =>
-            editor.setBackgroundVisible('focusedApp', enabled), state);
 
         const navigationGroup = new Adw.PreferencesGroup();
         const advancedRow = new Adw.ActionRow({
-            title: 'More Settings',
-            subtitle: 'Timing, effects, and repeats',
+            title: _('More Settings'),
+            subtitle: _('Timing, effects, and repeats'),
             activatable: true,
         });
         advancedRow.add_suffix(new Gtk.Image({icon_name: 'go-next-symbolic'}));
-        advancedRow.connect('activated', () => window.set_visible_page_name('advanced'));
+        advancedRow.connect('activated', () => {
+            window.visible_page_name = 'advanced';
+        });
         navigationGroup.add(advancedRow);
         essentials.add(navigationGroup);
 
@@ -123,19 +124,16 @@ export default class D2DCompanionPreferences extends ExtensionPreferences {
             for (const row of [controls.focusedAppBackground,
                 controls.advancedFocusedAppBackground]) {
                 row.sensitive = false;
-                row.subtitle = 'Requires Dash to Dock or Ubuntu Dock';
+                row.subtitle = _('Requires Dash to Dock or Ubuntu Dock');
             }
         }
 
         const sync = () => syncControls(settings, editor, controls, state);
         const changedId = settings.connect('changed', sync);
         sync();
+        // The previews stop themselves on unmap.
         window.connect('close-request', () => {
             settings.disconnect(changedId);
-            for (const {preview} of controls.profiles.values())
-                preview.stop();
-            for (const preview of Object.values(controls.effectPreviews))
-                preview.stop();
             return false;
         });
     }
@@ -150,7 +148,7 @@ function syncControls(settings, editor, controls, state) {
         card.preview.setSelected(id === profile);
         card.button.active = id === profile;
     }
-    controls.customBadge.set_visible(profile === Profile.CUSTOM);
+    controls.customBadge.visible = profile === Profile.CUSTOM;
 
     controls.hoverEnabled.active = recipe.hover.enabled;
     controls.pressEnabled.active = recipe.press.enabled;
@@ -195,15 +193,13 @@ function onProfileClicked({window, editor, profile, state, settings, controls}) 
         editor.selectProfile(profile);
         return;
     }
-    const title = PRESET_DETAILS.find(([id]) => id === profile)?.[1] ?? profile;
-    const dialog = new Adw.MessageDialog({
-        transient_for: window,
-        modal: true,
-        heading: `Switch to ${title}?`,
-        body: `Your Custom recipe will be abandoned and replaced by the ${title} preset values.`,
+    const title = _(PRESET_DETAILS.find(([id]) => id === profile)[1]);
+    const dialog = new Adw.AlertDialog({
+        heading: _('Switch to %s?').replace('%s', title),
+        body: _('Your Custom recipe will be abandoned and replaced by the %s preset values.').replace('%s', title),
     });
-    dialog.add_response('cancel', 'Cancel');
-    dialog.add_response('switch', 'Switch');
+    dialog.add_response('cancel', _('Cancel'));
+    dialog.add_response('switch', _('Switch'));
     dialog.set_response_appearance('switch', Adw.ResponseAppearance.DESTRUCTIVE);
     dialog.set_default_response('cancel');
     dialog.set_close_response('cancel');
@@ -213,7 +209,7 @@ function onProfileClicked({window, editor, profile, state, settings, controls}) 
         else
             syncControls(settings, editor, controls, state);
     });
-    dialog.present();
+    dialog.present(window);
 }
 
 function dashToDockEnabled() {

@@ -1,3 +1,4 @@
+import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -36,8 +37,8 @@ export default class D2DCompanionExtension extends Extension {
         });
 
         const refreshDockStyles = () => {
-            this._dockIntegration?.refreshStyles();
-            this._dashIntegration?.refreshStyles();
+            this._dockIntegration.refreshStyles();
+            this._dashIntegration.refreshStyles();
         };
         this._hoverStyle = new BackgroundStyle(
             this, 'hover-background-hidden.css', {refreshStyles: refreshDockStyles});
@@ -60,26 +61,37 @@ export default class D2DCompanionExtension extends Extension {
 
         this._launchEngine = new LaunchEngine({
             getController: icon =>
-                this._dockIntegration?.getController(icon) ??
-                this._dashIntegration?.getController(icon) ??
-                null,
+                this._dockIntegration.getController(icon) ??
+                this._dashIntegration.getController(icon),
         });
         this._launchEngine.enable();
 
+        this._syncIdleId = 0;
         this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
             // These keys are written from dock measurements.
             if (key === 'measured-hover-budget' || key === 'measured-icon-size')
                 return;
-            this._syncSettings();
+            // A preset switch writes the whole recipe in one burst; sync once.
+            if (this._syncIdleId)
+                return;
+            this._syncIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                this._syncIdleId = 0;
+                this._syncSettings();
+                return GLib.SOURCE_REMOVE;
+            });
         });
         this._systemAnimationId = St.Settings.get().connect(
             'notify::enable-animations', () => {
-                this._dockIntegration?.setRecipe(this._recipe);
-                this._dashIntegration?.setRecipe(this._recipe);
+                this._dockIntegration.setRecipe(this._recipe);
+                this._dashIntegration.setRecipe(this._recipe);
             });
     }
 
     disable() {
+        if (this._syncIdleId) {
+            GLib.source_remove(this._syncIdleId);
+            this._syncIdleId = 0;
+        }
         if (this._settingsChangedId) {
             this._settings.disconnect(this._settingsChangedId);
             this._settingsChangedId = 0;
@@ -109,13 +121,13 @@ export default class D2DCompanionExtension extends Extension {
 
     _syncSettings() {
         this._recipe = readActiveRecipe(this._settings);
-        this._dockIntegration?.setRecipe(this._recipe);
-        this._dashIntegration?.setRecipe(this._recipe);
-        this._hoverStyle?.setEnabled(
+        this._dockIntegration.setRecipe(this._recipe);
+        this._dashIntegration.setRecipe(this._recipe);
+        this._hoverStyle.setEnabled(
             !this._settings.get_boolean('show-hover-background'));
-        this._dashHoverStyle?.setEnabled(
+        this._dashHoverStyle.setEnabled(
             !this._settings.get_boolean('show-hover-background'));
-        this._focusedAppStyle?.setEnabled(
+        this._focusedAppStyle.setEnabled(
             !this._settings.get_boolean('show-focused-app-background'));
     }
 

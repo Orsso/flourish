@@ -1,4 +1,10 @@
-import {DockPosition, Easing, LaunchEffect, PressEffect} from './catalog.js';
+import {
+    DockPosition,
+    EASE_IN_QUAD,
+    Easing,
+    LaunchEffect,
+    PressEffect,
+} from './catalog.js';
 
 const ORIENTATIONS = Object.freeze({
     [DockPosition.BOTTOM]: Object.freeze({
@@ -107,7 +113,6 @@ export function composeIconTransform({
 
 // EASE_OUT_BACK overshoots by about 10%.
 export const OVERSHOOT_RESERVE = 0.1;
-const EASE_IN_QUAD = 'ease-in-quad';
 const MIN_SECONDARY_BOUNCE_PX = 3;
 
 // Fit hover scale and lift into the available dock room.

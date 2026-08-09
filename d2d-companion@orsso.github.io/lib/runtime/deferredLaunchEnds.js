@@ -1,3 +1,5 @@
+// Ending a launch from the target's destroy handler would ease a
+// half-destroyed bin; at idle the controller is inert or safe to reset.
 export class DeferredLaunchEnds {
     #cancel;
     #pending = new Map();

@@ -3,7 +3,7 @@ SCHEMA_DIR := $(UUID)/schemas
 DIST_DIR := dist
 INSTALL_DIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 
-.PHONY: check lint test schema pack install clean
+.PHONY: check lint test schema pack pot install clean
 
 check: lint test schema
 
@@ -19,6 +19,14 @@ test:
 
 schema:
 	glib-compile-schemas --strict --dry-run $(SCHEMA_DIR)
+
+# gnome-extensions pack compiles po/*.po from this directory on its own.
+pot:
+	mkdir -p $(UUID)/po
+	xgettext --from-code=UTF-8 --language=JavaScript --keyword=_ --keyword=N_ \
+		--package-name='D2D Companion' \
+		--output=$(UUID)/po/d2d-companion.pot \
+		$(UUID)/prefs.js $(UUID)/lib/prefs/*.js
 
 pack: check
 	mkdir -p $(DIST_DIR)

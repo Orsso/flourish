@@ -39,7 +39,7 @@ export class LaunchEngine {
         this.#deferredEnds = new DeferredLaunchEnds({
             schedule: callback =>
                 GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, callback),
-            cancel: sourceId => GLib.Source.remove(sourceId),
+            cancel: sourceId => GLib.source_remove(sourceId),
         });
     }
 
@@ -53,9 +53,9 @@ export class LaunchEngine {
             AppIcon.prototype, 'animateLaunch', original => function (...args) {
                 const controller = engine.#getController(this);
                 if (!controller)
-                    return original?.call(this, ...args);
+                    return original.call(this, ...args);
                 return engine.#play(this, controller,
-                    () => original?.call(this, ...args));
+                    () => original.call(this, ...args));
             });
     }
 
@@ -125,7 +125,6 @@ export class LaunchEngine {
             appStateId: 0,
             clone,
             controller,
-            controllerLaunchEnded: false,
             cycle: 0,
             destroyId: 0,
             effectStart: 0,
@@ -240,13 +239,16 @@ export class LaunchEngine {
     }
 
     #runCycle(session) {
-        if (!this.#enabled || session.finished) {
-            this.#cancelLive(session);
+        if (session.finished)
             return;
-        }
         const {launch} = session.controller.recipe;
         const segments = buildLaunchSegments(
             launch.effect, launch, session.controller.position, session.cycle);
+        // The recipe can turn stock mid-session; there is no cycle to play then.
+        if (segments.length === 0) {
+            this.#handoff(session);
+            return;
+        }
         this.#runSegment(session, segments, 0);
     }
 
@@ -306,7 +308,7 @@ export class LaunchEngine {
         session.repeatSourceId = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT, pause, () => {
                 session.repeatSourceId = 0;
-                if (!this.#enabled || session.finished)
+                if (session.finished)
                     return GLib.SOURCE_REMOVE;
 
                 const launch = session.controller.recipe.launch;
@@ -420,7 +422,7 @@ export class LaunchEngine {
     #clearRepeatTimer(session) {
         if (!session.repeatSourceId)
             return;
-        GLib.Source.remove(session.repeatSourceId);
+        GLib.source_remove(session.repeatSourceId);
         session.repeatSourceId = 0;
     }
 
@@ -432,9 +434,6 @@ export class LaunchEngine {
     }
 
     #endControllerLaunch(session, {defer = false} = {}) {
-        if (session.controllerLaunchEnded)
-            return;
-        session.controllerLaunchEnded = true;
         if (defer) {
             this.#deferredEnds.defer(session.controller);
             return;
