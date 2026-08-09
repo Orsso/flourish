@@ -5,6 +5,9 @@
 - Renamed D2D Companion to Flourish.
 - Flourish uses a new extension UUID. Beta users need to remove D2D Companion
   before installing it, and their settings will not carry over.
+- Fixed a stuck repeat loop when the launch effect turns Stock mid-launch.
+- Made the preferences translatable. Translations are welcome via pull
+  request.
 - Tested on GNOME Shell 46 to 50, Dash to Dock 90 to 105, and Ubuntu Dock on
   Ubuntu 24.04 and 26.04.
 
