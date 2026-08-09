@@ -6,6 +6,11 @@
 
 <p align="center"><sub>Formerly D2D Companion.</sub></p>
 
+<p align="center">
+  <a href="#compatibility"><img alt="GNOME Shell 46–50" src="https://img.shields.io/badge/GNOME%20Shell-46--50-4A86CF?style=flat-square&amp;logo=gnome&amp;logoColor=white"></a>
+  <a href="LICENSE"><img alt="License: GPL-2.0-or-later" src="https://img.shields.io/badge/License-GPL--2.0--or--later-E95420?style=flat-square"></a>
+</p>
+
 A small extension that adds a bit of motion to the GNOME dash. Icons respond
 to hover and press, and animate when an app launches. It also works with
 [Dash to Dock](https://extensions.gnome.org/extension/307/dash-to-dock/) and
