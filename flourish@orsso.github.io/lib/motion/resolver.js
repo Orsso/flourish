@@ -43,7 +43,7 @@ export function validateRecipe(recipe = {}) {
             enabled: boolean(source.hover.enabled, fallback.hover.enabled),
             scale: clamp(source.hover.scale, 1, 1.30, fallback.hover.scale),
             lift: integer(source.hover.lift, 0, 12, fallback.hover.lift),
-            duration: integer(source.hover.duration, 50, 500, fallback.hover.duration),
+            duration: integer(source.hover.duration, 100, 800, fallback.hover.duration),
             easing: member(source.hover.easing, EASINGS, fallback.hover.easing),
             neighborScale: clamp(
                 source.hover.neighborScale, 1, 1.15, fallback.hover.neighborScale),
@@ -56,13 +56,13 @@ export function validateRecipe(recipe = {}) {
             mode: member(source.press.mode, PRESS_MODES, fallback.press.mode),
             effect: member(source.press.effect, PRESS_EFFECTS, fallback.press.effect),
             intensity: clamp(source.press.intensity, 0, 1, fallback.press.intensity),
-            duration: integer(source.press.duration, 50, 300, fallback.press.duration),
+            duration: integer(source.press.duration, 80, 500, fallback.press.duration),
         },
         launch: {
             enabled: boolean(source.launch.enabled, fallback.launch.enabled),
             effect: member(source.launch.effect, EFFECTS, fallback.launch.effect),
             intensity: clamp(source.launch.intensity, 0, 1, fallback.launch.intensity),
-            speed: clamp(source.launch.speed, 0.50, 2, fallback.launch.speed),
+            speed: clamp(source.launch.speed, 0.30, 1, fallback.launch.speed),
             repeat: boolean(source.launch.repeat, fallback.launch.repeat),
             softenRepeats: boolean(
                 source.launch.softenRepeats, fallback.launch.softenRepeats),

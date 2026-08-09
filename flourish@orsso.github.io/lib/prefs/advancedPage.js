@@ -49,7 +49,7 @@ export function buildAdvancedPage(page, controls, editor, state) {
         value => editor.edit('custom-hover-lift', Math.round(value)), state,
         _('px'));
     controls.hoverDuration = createSpinRow(
-        hover.group, _('Duration'), 50, 500, 10,
+        hover.group, _('Duration'), 100, 800, 10,
         value => editor.edit('custom-hover-duration', Math.round(value)), state,
         _('ms'));
     controls.hoverEasing = createComboRow(
@@ -87,7 +87,7 @@ export function buildAdvancedPage(page, controls, editor, state) {
         press.group, _('Intensity'), 0, 1, 0.05,
         value => editor.edit('custom-press-intensity', value), state);
     controls.pressDuration = createSpinRow(
-        press.group, _('Duration'), 50, 300, 10,
+        press.group, _('Duration'), 80, 500, 10,
         value => editor.edit('custom-press-duration', Math.round(value)), state,
         _('ms'));
     holdWhileSliding(controls.pressIntensity, press);
@@ -105,7 +105,7 @@ export function buildAdvancedPage(page, controls, editor, state) {
         launch.group, _('Intensity'), 0, 1, 0.05,
         value => editor.edit('custom-launch-intensity', value), state);
     controls.launchSpeed = createScaleRow(
-        launch.group, _('Speed'), 0.50, 2, 0.05,
+        launch.group, _('Speed'), 0.30, 1.00, 0.05,
         value => editor.edit('custom-launch-speed', value), state);
     controls.launchRepeat = createSwitchRow(
         launch.group, _('Repeat while starting'),

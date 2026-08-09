@@ -519,6 +519,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 continue;
             const transforms = this._iconTransforms(i, middle);
             const color = ICON_COLORS[
+                EFFECT_COLOR_INDEX[this._effect] ??
                 (i + colorOffset + ICON_COLORS.length) % ICON_COLORS.length];
             drawIcon(cr, first + i * INLINE_STEP, iconTop, INLINE_ICON_SIZE,
                 color, {
@@ -578,6 +579,8 @@ const ICON_COLORS = Object.freeze([
     [0.30, 0.74, 0.56],
     [0.66, 0.45, 0.86],
 ]);
+
+const EFFECT_COLOR_INDEX = Object.freeze({press: 1, launch: 3});
 
 function hoverIconCount(recipe) {
     return 2 * recipe.hover.neighborRadius + 1;

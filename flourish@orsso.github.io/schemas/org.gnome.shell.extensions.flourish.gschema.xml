@@ -53,8 +53,8 @@
       <summary>Hover lift in pixels</summary>
     </key>
     <key name="custom-hover-duration" type="i">
-      <default>160</default>
-      <range min="50" max="500"/>
+      <default>190</default>
+      <range min="100" max="800"/>
       <summary>Hover duration in milliseconds</summary>
     </key>
     <key name="custom-hover-easing" enum="org.gnome.shell.extensions.flourish.easing">
@@ -90,8 +90,8 @@
       <summary>Press intensity</summary>
     </key>
     <key name="custom-press-duration" type="i">
-      <default>110</default>
-      <range min="50" max="300"/>
+      <default>130</default>
+      <range min="80" max="500"/>
       <summary>Press duration in milliseconds</summary>
     </key>
 
@@ -109,8 +109,8 @@
       <summary>Launch effect intensity</summary>
     </key>
     <key name="custom-launch-speed" type="d">
-      <default>1.0</default>
-      <range min="0.50" max="2.0"/>
+      <default>0.55</default>
+      <range min="0.30" max="1.0"/>
       <summary>Launch speed</summary>
     </key>
     <key name="custom-launch-repeat" type="b">

@@ -28,7 +28,7 @@ test('built-in recipes match the presets', () => {
     assertEqual(subtle.press.mode, PressMode.ALL_PRIMARY_CLICKS);
     assertEqual(subtle.press.effect, PressEffect.DIM);
     assertEqual(subtle.launch.effect, LaunchEffect.BOUNCE);
-    assertEqual(subtle.launch.speed, 0.75);
+    assertEqual(subtle.launch.speed, 0.55);
     assertEqual(subtle.launch.repeatPause, 400);
     assertEqual(subtle.launch.softenRepeats, true);
     assertEqual(balanced.hover.enabled, true);
@@ -75,10 +75,10 @@ test('recipe validation clamps values', () => {
 
     const recipe = validateRecipe(invalid);
     assertEqual(recipe.hover.scale, 1.30);
-    assertEqual(recipe.hover.duration, 50);
+    assertEqual(recipe.hover.duration, 100);
     assertEqual(recipe.press.mode, PressMode.ALL_PRIMARY_CLICKS);
     assertEqual(recipe.launch.effect, LaunchEffect.BOUNCE);
-    assertEqual(recipe.launch.speed, 0.50);
+    assertEqual(recipe.launch.speed, 0.30);
     assertEqual(recipe.launch.repeatPause, 1000);
     assertEqual(recipe.launch.softenRepeats, true);
 });
