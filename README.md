@@ -14,7 +14,7 @@ Ubuntu Dock.
 GNOME Shell and the dock keep doing their usual jobs. Flourish takes care of
 the moving bits.
 
-https://github.com/user-attachments/assets/764133e1-9f49-414c-8291-f9e08ff26cf6
+https://github.com/user-attachments/assets/2a218e67-96bf-4272-882a-71b7be4305e0
 
 ## How it works
 
