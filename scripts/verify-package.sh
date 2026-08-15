@@ -23,6 +23,7 @@ required=(
     lib/runtime/dockIntegration.js
     lib/runtime/easing.js
     lib/runtime/iconMotionController.js
+    lib/runtime/iconTexture.js
     lib/runtime/launchEngine.js
     lib/runtime/liveRegistry.js
     lib/runtime/motionSurface.js

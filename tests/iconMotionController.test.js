@@ -1,5 +1,6 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
+import {FakeBaseIcon} from './fakes.js';
 
 class FakeIcon {
     constructor() {
@@ -8,6 +9,7 @@ class FakeIcon {
         this.hover = false;
         this.urgent = false;
         this.pressed = false;
+        this.icon = new FakeBaseIcon();
     }
 
     connect(signal, callback) {
@@ -337,4 +339,17 @@ test('endLaunch does not replay the hover notification', () => {
     controller.beginLaunch(true);
     controller.endLaunch();
     assertDeepEqual(hoverEvents, [true]);
+});
+
+test('dispose restores the stock icon texture', () => {
+    const icon = new FakeIcon();
+    const sizes = () => icon.icon.created.map(created => created.size);
+    const controller = new IconMotionController({
+        icon, bin: new FakeBin(), position: 'bottom', recipe: getBuiltInRecipe(),
+    });
+    assertDeepEqual(sizes(), [48, 96]);
+
+    controller.dispose();
+
+    assertDeepEqual(sizes(), [48, 96, 48]);
 });

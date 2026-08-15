@@ -1,6 +1,7 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
+import {FakeBaseIcon} from './fakes.js';
 
 class SweepBin {
     constructor() {
@@ -18,6 +19,8 @@ class SweepBin {
     }
 
     set_pivot_point() {}
+
+    set_size() {}
 
     set_scale(x, y) {
         this.scale_x = x;
@@ -74,7 +77,7 @@ class SweepIcon extends SweepActor {
         this.hover = false;
         this.urgent = false;
         this.pressed = false;
-        this.icon = {_iconBin: new SweepBin()};
+        this.icon = new FakeBaseIcon(new SweepBin());
     }
 }
 

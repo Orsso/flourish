@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Icons stay sharp while magnified: each dash icon now renders at twice
+  its size and is scaled down at rest.
+
 ## 1.0.0
 
 - Renamed D2D Companion to Flourish.

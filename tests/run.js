@@ -24,6 +24,7 @@ const modules = [
     './demoSequence.test.js',
     './hoverSweep.test.js',
     './iconMotionController.test.js',
+    './iconTexture.test.js',
     './lifecycle.test.js',
     './motionSurface.test.js',
     './pressInteraction.test.js',

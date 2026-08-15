@@ -10,6 +10,7 @@ import {
     resolveIconTransform,
 } from '../motion/transforms.js';
 import {resolveAnimationMode} from './easing.js';
+import {sharpenIconTexture} from './iconTexture.js';
 import {refreshWidgetStyle} from './styleRefresh.js';
 
 const OWNED_TRANSITIONS = Object.freeze([
@@ -36,6 +37,7 @@ export class IconMotionController {
     #position;
     #press = new PressInteraction();
     #recipe;
+    #restoreTexture;
     #signalIds = [];
     #urgent = false;
 
@@ -56,6 +58,7 @@ export class IconMotionController {
         this.#onDestroyed = onDestroyed;
         this.#onMeasured = onMeasured;
         this.#urgent = Boolean(icon.urgent);
+        this.#restoreTexture = sharpenIconTexture(icon.icon);
 
         const [pivotX, pivotY] = bin.get_pivot_point();
         this.#original = {
@@ -184,6 +187,7 @@ export class IconMotionController {
         this.#signalIds = [];
         this.#syncDim(0);
         this.#restore();
+        this.#restoreTexture();
         this.#destroyed = true;
         this.#onDestroyed(this);
         this.#bin = null;

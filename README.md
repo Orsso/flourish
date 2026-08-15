@@ -23,12 +23,10 @@ https://github.com/user-attachments/assets/2a218e67-96bf-4272-882a-71b7be4305e0
 
 ## How it works
 
-Hover and press feedback only listen to signals the icons already
-emit. The launch animation is the one exception: it overrides
-`AppIcon.animateLaunch` (the stock zoom) through GNOME Shell's official
-`InjectionManager`, and restores it when the extension is disabled.
-The built-in dash clips its icons; the extension lifts that while it runs
-and puts it back. Nothing else in the Shell or in the dock is patched.
+Flourish listens to the signals the dash icons already emit and animates
+them from there. It overrides the stock launch zoom and loads the dash
+icons at twice their resolution so they stay sharp when magnified.
+Everything is restored when the extension is disabled.
 
 ## Compatibility
 
