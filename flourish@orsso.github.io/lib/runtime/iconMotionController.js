@@ -1,7 +1,8 @@
 import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {DockPosition} from '../motion/catalog.js';
+import {DockPosition, resolveAnimationMode} from '../motion/catalog.js';
 import {PressInteraction} from '../motion/pressInteraction.js';
 import {
     dimOpacity,
@@ -9,20 +10,20 @@ import {
     neighborScaleAt,
     resolveIconTransform,
 } from '../motion/transforms.js';
-import {resolveAnimationMode} from './easing.js';
 import {sharpenIconTexture} from './iconTexture.js';
-import {refreshWidgetStyle} from './styleRefresh.js';
 
-const OWNED_TRANSITIONS = Object.freeze([
+// Toggling any class name invalidates the widget's style context.
+const REFRESH_CLASS = 'flourish-style-refresh';
+
+const OWNED_TRANSITIONS = [
     'scale-x',
     'scale-y',
     'translation-x',
     'translation-y',
-]);
+];
 
 export class IconMotionController {
     #bin;
-    #destroyed = false;
     #dimmed = false;
     #hovered = false;
     #icon;
@@ -38,7 +39,6 @@ export class IconMotionController {
     #press = new PressInteraction();
     #recipe;
     #restoreTexture;
-    #signalIds = [];
     #urgent = false;
 
     constructor({
@@ -57,7 +57,7 @@ export class IconMotionController {
         this.#onHoverChanged = onHoverChanged;
         this.#onDestroyed = onDestroyed;
         this.#onMeasured = onMeasured;
-        this.#urgent = Boolean(icon.urgent);
+        this.#urgent = icon.urgent;
         this.#restoreTexture = sharpenIconTexture(icon.icon);
 
         const [pivotX, pivotY] = bin.get_pivot_point();
@@ -71,7 +71,7 @@ export class IconMotionController {
             opacity: bin.opacity,
             redirect: bin.offscreen_redirect,
         };
-        // The bin starts at rest, so the first apply toward rest skips.
+        // At rest already: the first apply toward rest is skipped.
         this.#lastApplied = {
             scale_x: this.#original.scaleX,
             scale_y: this.#original.scaleY,
@@ -79,26 +79,28 @@ export class IconMotionController {
             translation_y: this.#original.translationY,
         };
 
-        this.#signalIds.push(icon.connect('notify::hover', () => this.#syncHover()));
-        this.#signalIds.push(icon.connect('notify::urgent', () => {
-            this.#urgent = Boolean(this.#icon.urgent);
-            this.#apply();
-        }));
-        this.#signalIds.push(icon.connect('button-press-event', (_actor, event) => {
-            if (event.get_button() === Clutter.BUTTON_PRIMARY &&
-                this.#press.beginPrimary(this.#recipe.press))
-                this.#apply(this.#recipe.press.duration);
-            return Clutter.EVENT_PROPAGATE;
-        }));
-        this.#signalIds.push(icon.connect('notify::pressed', () => {
-            if (this.#press.syncButtonPressed(
-                Boolean(this.#icon.pressed), this.#recipe.press))
-                this.#apply(this.#recipe.press.duration);
-        }));
-        this.#signalIds.push(icon.connect_after('clicked', () => {
-            if (this.#press.finishClick())
-                this.#apply(this.#recipe.press.duration);
-        }));
+        icon.connectObject(
+            'notify::hover', () => this.#syncHover(),
+            'notify::urgent', () => {
+                this.#urgent = this.#icon.urgent;
+                this.#apply();
+            },
+            'button-press-event', (_actor, event) => {
+                if (event.get_button() === Clutter.BUTTON_PRIMARY &&
+                    this.#press.beginPrimary(this.#recipe.press))
+                    this.#apply(this.#recipe.press.duration);
+                return Clutter.EVENT_PROPAGATE;
+            },
+            'notify::pressed', () => {
+                if (this.#press.syncButtonPressed(
+                    this.#icon.pressed, this.#recipe.press))
+                    this.#apply(this.#recipe.press.duration);
+            },
+            'clicked', () => {
+                if (this.#press.finishClick())
+                    this.#apply(this.#recipe.press.duration);
+            }, GObject.ConnectFlags.AFTER, // after the stock click handler
+            this);
         this.#syncHover();
     }
 
@@ -117,7 +119,6 @@ export class IconMotionController {
         this.#apply();
     }
 
-    // State only; true when the flush must apply this icon.
     setNeighborDistance(distance) {
         if (this.#neighborDistance === distance)
             return false;
@@ -130,15 +131,13 @@ export class IconMotionController {
     }
 
     refreshStyle() {
-        if (this.#destroyed)
-            return;
         refreshWidgetStyle(this.#icon);
         refreshWidgetStyle(this.#bin);
     }
 
     beginLaunch(launchEnabled) {
         const steps = this.#press.consumeLaunchSteps(this.#recipe.press);
-        if (this.#destroyed || this.#launching ||
+        if (this.#launching ||
             (!launchEnabled && steps.length === 0)) {
             return {
                 active: false,
@@ -162,63 +161,51 @@ export class IconMotionController {
     }
 
     endLaunch() {
-        if (this.#destroyed || !this.#launching)
+        if (!this.#launching)
             return;
         this.#launching = false;
         this.#apply(this.#recipe.hover.duration);
     }
 
     onTargetDestroyed() {
-        if (this.#destroyed)
-            return;
-        this.#destroyed = true;
-        this.#signalIds = [];
         this.#dimmed = false;
+        this.#launching = false;
         this.#bin = null;
         this.#icon = null;
         this.#onDestroyed(this);
     }
 
     dispose() {
-        if (this.#destroyed)
-            return;
-        for (const id of this.#signalIds)
-            this.#icon.disconnect(id);
-        this.#signalIds = [];
+        this.#icon.disconnectObject(this);
         this.#syncDim(0);
         this.#restore();
         this.#restoreTexture();
-        this.#destroyed = true;
         this.#onDestroyed(this);
         this.#bin = null;
         this.#icon = null;
     }
 
-    // The launch visual owns the bin until endLaunch reapplies.
+    // The launch clone owns the bin until endLaunch.
     applyHoverState() {
         if (this.#launching)
             return;
         this.#apply();
     }
 
-    // State only: the group schedules the apply.
     #syncHover() {
-        const hovered = Boolean(this.#icon.hover);
+        const hovered = this.#icon.hover;
         if (this.#hovered === hovered)
             return;
         this.#hovered = hovered;
-        // The next apply measures the hovered icon once and publishes.
         this.#pendingBudgetReport = hovered;
         if (!hovered)
             this.#press.reset();
         this.#onHoverChanged(this, hovered);
     }
 
-    #apply(durationOverride = null) {
-        if (this.#destroyed)
-            return;
+    #apply(duration = this.#recipe.hover.duration) {
         const animationsEnabled = St.Settings.get().enable_animations;
-        // A pending report measures anyway to feed the prefs readout.
+        // A pending report measures anyway; the prefs readout needs it.
         const budget = this.#pendingBudgetReport ||
             (animationsEnabled && hoverNeedsBudget({
                 recipe: this.#recipe,
@@ -244,8 +231,8 @@ export class IconMotionController {
             budgetPx: budget ? budget.budgetPx : Infinity,
             iconNormalSize: budget ? budget.iconNormalSize : 0,
         });
-        const baseDuration = durationOverride ?? this.#recipe.hover.duration;
-        const duration = animationsEnabled ? baseDuration : 0;
+        if (!animationsEnabled)
+            duration = 0;
         const properties = {
             scale_x: this.#original.scaleX * transform.scaleX,
             scale_y: this.#original.scaleY * transform.scaleY,
@@ -254,11 +241,9 @@ export class IconMotionController {
         };
 
         this.#syncDim(transform.dim);
-        // Dash to Dock wiggles urgent icons; a centered pivot lets both
-        // animations compose. The stock dash never sets the property.
+        // Dash to Dock wiggles urgent icons around a centered pivot.
         this.#bin.set_pivot_point(...(this.#urgent ? [0.5, 0.5] : transform.pivot));
-        // Same target: keep any in-flight transition instead of restarting
-        // it. Instant applies must settle the bin now.
+        // Same target: keep the in-flight transition; instant applies still land.
         const last = this.#lastApplied;
         if (duration > 0 && last &&
             last.scale_x === properties.scale_x &&
@@ -282,12 +267,10 @@ export class IconMotionController {
         });
     }
 
-    // Probe used before the first hover.
     measure() {
-        return this.#destroyed ? null : this.#measureBudget();
+        return this.#measureBudget();
     }
 
-    // Measure the room between the icon and the dock clip.
     #measureBudget() {
         const bin = this.#bin;
         if (!bin)
@@ -331,14 +314,12 @@ export class IconMotionController {
         }
     }
 
-    // A brightness effect would render offscreen and blur the scaled icon.
-    // Dim from the original opacity, never the current one: a snapshot of an
-    // already dimmed bin would compound and darken the icon for good.
+    // Opacity, not a brightness effect: offscreen rendering blurs the scaled icon.
     #syncDim(dim) {
         if (dim > 0) {
             if (!this.#dimmed) {
                 this.#dimmed = true;
-                // Clutter can go offscreen for plain opacity too.
+                // Opacity alone can go offscreen too.
                 this.#bin.offscreen_redirect = 0;
             }
             this.#bin.opacity = dimOpacity(this.#original.opacity, dim);
@@ -361,4 +342,13 @@ export class IconMotionController {
         for (const transition of OWNED_TRANSITIONS)
             this.#bin.remove_transition(transition);
     }
+}
+
+// ensure_style alone does not repaint after a stylesheet change.
+function refreshWidgetStyle(widget) {
+    widget.add_style_class_name(REFRESH_CLASS);
+    widget.remove_style_class_name(REFRESH_CLASS);
+    widget.ensure_style();
+    widget.queue_relayout();
+    widget.queue_redraw();
 }

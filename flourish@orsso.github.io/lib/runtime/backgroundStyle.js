@@ -2,45 +2,25 @@ import Gio from 'gi://Gio';
 import St from 'gi://St';
 
 export class BackgroundStyle {
-    #enabled = false;
     #file;
     #loaded = false;
-    #refreshStyles;
 
-    constructor(extension, cssFileName, {refreshStyles = () => {}} = {}) {
+    constructor(extension, cssFileName) {
         this.#file = Gio.File.new_for_path(`${extension.path}/${cssFileName}`);
-        this.#refreshStyles = refreshStyles;
     }
 
     setEnabled(enabled) {
-        if (this.#enabled === enabled)
+        if (this.#loaded === enabled)
             return;
-        this.#enabled = enabled;
         if (enabled)
-            this.#apply();
+            this.#theme().load_stylesheet(this.#file);
         else
-            this.#remove();
+            this.#theme().unload_stylesheet(this.#file);
+        this.#loaded = enabled;
     }
 
     disable() {
-        this.#enabled = false;
-        this.#remove();
-    }
-
-    #apply() {
-        if (this.#loaded)
-            return;
-        this.#theme().load_stylesheet(this.#file);
-        this.#loaded = true;
-        this.#refreshStyles();
-    }
-
-    #remove() {
-        if (!this.#loaded)
-            return;
-        this.#theme().unload_stylesheet(this.#file);
-        this.#loaded = false;
-        this.#refreshStyles();
+        this.setEnabled(false);
     }
 
     #theme() {

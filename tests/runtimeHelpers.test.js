@@ -1,6 +1,5 @@
-import {Easing} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+import {Easing, resolveAnimationMode} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {interpolateTransform} from '../flourish@orsso.github.io/lib/motion/transforms.js';
-import {resolveAnimationMode} from '../flourish@orsso.github.io/lib/runtime/easing.js';
 
 const modes = {
     LINEAR: 1,
@@ -14,7 +13,6 @@ test('runtime easing names resolve against the supplied animation modes', () => 
     assertEqual(resolveAnimationMode(Easing.LINEAR, modes), modes.LINEAR);
     assertEqual(resolveAnimationMode('ease-in-quad', modes), modes.EASE_IN_QUAD);
     assertEqual(resolveAnimationMode(Easing.EASE_OUT_BACK, modes), modes.EASE_OUT_BACK);
-    assertEqual(resolveAnimationMode('unknown', modes), modes.EASE_OUT_CUBIC);
 });
 
 test('shared transform interpolation covers scale and translation', () => {

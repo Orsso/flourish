@@ -4,6 +4,7 @@
 
 - Icons stay sharp while magnified: each dash icon now renders at twice
   its size and is scaled down at rest.
+- Flourish no longer loads a Dash to Dock that is installed but disabled.
 
 ## 1.0.0
 

@@ -1,36 +1,35 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
-import {FakeBaseIcon} from './fakes.js';
+import {FakeBaseIcon, FakeEmitter} from './fakes.js';
 
-class FakeIcon {
+class FakeIcon extends FakeEmitter {
     constructor() {
-        this.nextId = 1;
-        this.handlers = new Map();
+        super();
         this.hover = false;
         this.urgent = false;
         this.pressed = false;
         this.icon = new FakeBaseIcon();
+        this.styleCalls = [];
     }
 
-    connect(signal, callback) {
-        const id = this.nextId++;
-        this.handlers.set(id, {signal, callback});
-        return id;
+    add_style_class_name(name) {
+        this.styleCalls.push(['add', name]);
     }
 
-    connect_after(signal, callback) {
-        return this.connect(signal, callback);
+    remove_style_class_name(name) {
+        this.styleCalls.push(['remove', name]);
     }
 
-    disconnect(id) {
-        this.handlers.delete(id);
+    ensure_style() {
+        this.styleCalls.push(['ensure']);
     }
 
-    emit(signal, ...args) {
-        for (const handler of [...this.handlers.values()]) {
-            if (handler.signal === signal)
-                handler.callback(this, ...args);
-        }
+    queue_relayout() {
+        this.styleCalls.push(['relayout']);
+    }
+
+    queue_redraw() {
+        this.styleCalls.push(['redraw']);
     }
 }
 
@@ -57,6 +56,16 @@ class FakeBin {
         this.scale_x = x;
         this.scale_y = y;
     }
+
+    add_style_class_name() {}
+
+    remove_style_class_name() {}
+
+    ensure_style() {}
+
+    queue_relayout() {}
+
+    queue_redraw() {}
 
     get_parent() {
         this.parentProbes++;
@@ -345,11 +354,36 @@ test('dispose restores the stock icon texture', () => {
     const icon = new FakeIcon();
     const sizes = () => icon.icon.created.map(created => created.size);
     const controller = new IconMotionController({
-        icon, bin: new FakeBin(), position: 'bottom', recipe: getBuiltInRecipe(),
+        icon, bin: new FakeBin(), position: 'bottom', recipe: getBuiltInRecipe('expressive'),
     });
     assertDeepEqual(sizes(), [48, 96]);
 
     controller.dispose();
 
     assertDeepEqual(sizes(), [48, 96, 48]);
+});
+
+test('endLaunch after the target is destroyed is inert', () => {
+    const {controller, bin} = makeController();
+    controller.beginLaunch(true);
+    const eases = bin.eases;
+
+    controller.onTargetDestroyed();
+    controller.endLaunch();
+
+    assertEqual(bin.eases, eases);
+});
+
+test('refreshStyle invalidates and redraws the icon', () => {
+    const {controller, icon} = makeController();
+
+    controller.refreshStyle();
+
+    assertDeepEqual(icon.styleCalls, [
+        ['add', 'flourish-style-refresh'],
+        ['remove', 'flourish-style-refresh'],
+        ['ensure'],
+        ['relayout'],
+        ['redraw'],
+    ]);
 });

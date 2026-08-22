@@ -4,6 +4,12 @@ import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {Profile, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {
+    editCustomSetting,
+    readActiveRecipe,
+    selectProfile,
+    switchToPresetFromCustom,
+} from './lib/motion/settings.js';
 import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
 import {
@@ -11,19 +17,17 @@ import {
     createBackgroundRow,
     createSwitchRow,
 } from './lib/prefs/rows.js';
-import {SettingsEditor} from './lib/prefs/settingsEditor.js';
 
 const N_ = s => s;
-const PRESET_DETAILS = Object.freeze([
+const PRESET_DETAILS = [
     [Profile.SUBTLE, N_('Subtle')],
     [Profile.BALANCED, N_('Lively')],
     [Profile.EXPRESSIVE, N_('Expressive')],
-]);
+];
 
 export default class FlourishPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
-        const editor = new SettingsEditor(settings);
         const state = {syncing: false};
         const controls = {};
 
@@ -67,7 +71,6 @@ export default class FlourishPreferences extends ExtensionPreferences {
             const {button, preview} = createProfileCard(_(title), recipe);
             button.connect('clicked', () => onProfileClicked({
                 window,
-                editor,
                 profile,
                 state,
                 settings,
@@ -91,17 +94,17 @@ export default class FlourishPreferences extends ExtensionPreferences {
             featureGroup, _('Launch animation'),
             _('Animate cold starts and new windows'));
         controls.hoverBackground = createBackgroundRow(
-            featureGroup, 'hover', editor, state);
+            featureGroup, 'hover', settings, state);
         controls.focusedAppBackground = createBackgroundRow(
-            featureGroup, 'focusedApp', editor, state);
+            featureGroup, 'focusedApp', settings, state);
         essentials.add(featureGroup);
 
         connectSwitch(controls.hoverEnabled, enabled =>
-            editor.setFeatureEnabled('hover', enabled), state);
+            editCustomSetting(settings, 'custom-hover-enabled', enabled), state);
         connectSwitch(controls.pressEnabled, enabled =>
-            editor.setFeatureEnabled('press', enabled), state);
+            editCustomSetting(settings, 'custom-press-enabled', enabled), state);
         connectSwitch(controls.launchEnabled, enabled =>
-            editor.setFeatureEnabled('launch', enabled), state);
+            editCustomSetting(settings, 'custom-launch-enabled', enabled), state);
 
         const navigationGroup = new Adw.PreferencesGroup();
         const advancedRow = new Adw.ActionRow({
@@ -116,7 +119,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         navigationGroup.add(advancedRow);
         essentials.add(navigationGroup);
 
-        buildAdvancedPage(advanced, controls, editor, state);
+        buildAdvancedPage(advanced, controls, settings, state);
 
         // The focused app tile is a Dash to Dock concept.
         controls.dockPresent = dashToDockEnabled();
@@ -128,10 +131,9 @@ export default class FlourishPreferences extends ExtensionPreferences {
             }
         }
 
-        const sync = () => syncControls(settings, editor, controls, state);
+        const sync = () => syncControls(settings, controls, state);
         const changedId = settings.connect('changed', sync);
         sync();
-        // The previews stop themselves on unmap.
         window.connect('close-request', () => {
             settings.disconnect(changedId);
             return false;
@@ -139,10 +141,10 @@ export default class FlourishPreferences extends ExtensionPreferences {
     }
 }
 
-function syncControls(settings, editor, controls, state) {
+function syncControls(settings, controls, state) {
     state.syncing = true;
-    const profile = editor.profile;
-    const recipe = editor.recipe;
+    const profile = settings.get_string('motion-profile');
+    const recipe = readActiveRecipe(settings);
 
     for (const [id, card] of controls.profiles) {
         card.preview.setSelected(id === profile);
@@ -182,15 +184,16 @@ function createProfileCard(title, recipe) {
     return {button, preview};
 }
 
-function onProfileClicked({window, editor, profile, state, settings, controls}) {
+function onProfileClicked({window, profile, state, settings, controls}) {
     if (state.syncing)
         return;
-    if (editor.profile !== Profile.CUSTOM) {
-        if (profile === editor.profile) {
-            syncControls(settings, editor, controls, state);
+    const current = settings.get_string('motion-profile');
+    if (current !== Profile.CUSTOM) {
+        if (profile === current) {
+            syncControls(settings, controls, state);
             return;
         }
-        editor.selectProfile(profile);
+        selectProfile(settings, profile);
         return;
     }
     const title = _(PRESET_DETAILS.find(([id]) => id === profile)[1]);
@@ -205,9 +208,9 @@ function onProfileClicked({window, editor, profile, state, settings, controls}) 
     dialog.set_close_response('cancel');
     dialog.connect('response', (_dialog, response) => {
         if (response === 'switch')
-            editor.switchFromCustomToPreset(profile);
+            switchToPresetFromCustom(settings, profile);
         else
-            syncControls(settings, editor, controls, state);
+            syncControls(settings, controls, state);
     });
     dialog.present(window);
 }

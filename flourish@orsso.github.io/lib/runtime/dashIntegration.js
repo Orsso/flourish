@@ -3,16 +3,13 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DockPosition} from '../motion/catalog.js';
 import {MotionSurface} from './motionSurface.js';
-import {createWarnOnce} from './warnOnce.js';
 
 export class DashIntegration {
     #box = null;
-    #boxDestroyId = 0;
     #controllerFactory;
     #savedClip = false;
     #scheduler;
     #surface = null;
-    #warnOnce = createWarnOnce();
 
     constructor({controllerFactory, scheduler}) {
         this.#controllerFactory = controllerFactory;
@@ -20,17 +17,14 @@ export class DashIntegration {
     }
 
     enable(recipe) {
-        if (this.#surface)
-            return;
-        // Dock extensions serve their dock as the overview dash; those
-        // icons belong to the dock integration, not to a second controller.
+        // A dock extension replaces the dash; its icons belong to the dock integration.
         const dash = Main.overview.dash;
-        if (dash && !(dash instanceof Dash))
+        if (!(dash instanceof Dash))
             return;
-        const box = dash?._box;
+        // No public accessor for the icon row.
+        const box = dash._box;
         if (!box) {
-            this.#warnOnce('missing-box',
-                'the overview dash exposes no icon box; dash motion is inactive');
+            console.warn('[flourish] the overview dash has no icon box; dash motion is off');
             return;
         }
 
@@ -40,11 +34,10 @@ export class DashIntegration {
             scheduler: this.#scheduler,
         });
         this.#box = box;
-        this.#boxDestroyId = box.connect('destroy', () => {
+        box.connectObject('destroy', () => {
             this.#box = null;
-            this.#boxDestroyId = 0;
-        });
-        // The dash clips icons to their row; hover motion needs to overflow it.
+        }, this);
+        // The dash clips its row; hover motion overflows it.
         this.#savedClip = box.clip_to_allocation;
         box.clip_to_allocation = false;
         this.#surface.addBox(box, DockPosition.BOTTOM);
@@ -57,11 +50,10 @@ export class DashIntegration {
         this.#surface.dispose();
         this.#surface = null;
         if (this.#box) {
-            this.#box.disconnect(this.#boxDestroyId);
+            this.#box.disconnectObject(this);
             this.#box.clip_to_allocation = this.#savedClip;
         }
         this.#box = null;
-        this.#boxDestroyId = 0;
     }
 
     setRecipe(recipe) {
@@ -73,6 +65,6 @@ export class DashIntegration {
     }
 
     getController(appIcon) {
-        return this.#surface?.getController(appIcon) ?? null;
+        return this.#surface?.getController(appIcon);
     }
 }

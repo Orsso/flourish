@@ -6,39 +6,39 @@ import {
     PressEffect,
 } from './catalog.js';
 
-const ORIENTATIONS = Object.freeze({
-    [DockPosition.BOTTOM]: Object.freeze({
+const ORIENTATIONS = {
+    [DockPosition.BOTTOM]: {
         horizontal: true,
         normalAxis: 'y',
         tangentAxis: 'x',
-        pivot: Object.freeze([0.5, 1]),
-        outward: Object.freeze([0, -1]),
-    }),
-    [DockPosition.TOP]: Object.freeze({
+        pivot: [0.5, 1],
+        outward: [0, -1],
+    },
+    [DockPosition.TOP]: {
         horizontal: true,
         normalAxis: 'y',
         tangentAxis: 'x',
-        pivot: Object.freeze([0.5, 0]),
-        outward: Object.freeze([0, 1]),
-    }),
-    [DockPosition.LEFT]: Object.freeze({
+        pivot: [0.5, 0],
+        outward: [0, 1],
+    },
+    [DockPosition.LEFT]: {
         horizontal: false,
         normalAxis: 'x',
         tangentAxis: 'y',
-        pivot: Object.freeze([0, 0.5]),
-        outward: Object.freeze([1, 0]),
-    }),
-    [DockPosition.RIGHT]: Object.freeze({
+        pivot: [0, 0.5],
+        outward: [1, 0],
+    },
+    [DockPosition.RIGHT]: {
         horizontal: false,
         normalAxis: 'x',
         tangentAxis: 'y',
-        pivot: Object.freeze([1, 0.5]),
-        outward: Object.freeze([-1, 0]),
-    }),
-});
+        pivot: [1, 0.5],
+        outward: [-1, 0],
+    },
+};
 
 export function getOrientation(position) {
-    const orientation = ORIENTATIONS[position] ?? ORIENTATIONS[DockPosition.BOTTOM];
+    const orientation = ORIENTATIONS[position];
     return {
         horizontal: orientation.horizontal,
         normalAxis: orientation.normalAxis,
@@ -54,13 +54,11 @@ export function getLaunchPivot(effect, position) {
         : getOrientation(position).pivot;
 }
 
-// Press effects: (intensity, orientation) → geometry + dim, identity at 0.
 const PRESS_SQUASH_FACTOR = 0.22;
 const PRESS_DIM_FACTOR = 0.30;
 
-const PRESS_EFFECTS = Object.freeze({
+const PRESS_EFFECTS = {
     [PressEffect.SQUASH]: (intensity, orientation) => {
-        // Keep press squash on the dock-facing axis.
         const normalScale = 1 - PRESS_SQUASH_FACTOR * intensity;
         return pressTransform({
             scaleX: orientation.horizontal ? 1 : normalScale,
@@ -69,10 +67,10 @@ const PRESS_EFFECTS = Object.freeze({
     },
     [PressEffect.DIM]: intensity =>
         pressTransform({dim: PRESS_DIM_FACTOR * intensity}),
-});
+};
 
 export function resolvePressTransform(effect, intensity, orientation) {
-    const build = PRESS_EFFECTS[effect] ?? PRESS_EFFECTS[PressEffect.SQUASH];
+    const build = PRESS_EFFECTS[effect];
     return build(clamp(intensity, 0, 1), orientation);
 }
 
@@ -115,7 +113,6 @@ export function composeIconTransform({
 export const OVERSHOOT_RESERVE = 0.1;
 const MIN_SECONDARY_BOUNCE_PX = 3;
 
-// Fit hover scale and lift into the available dock room.
 export function fitHoverToBudget(
     hoverScale, lift, iconNormalSize, budgetPx, overshoot = 0) {
     if (!(iconNormalSize > 0) || !Number.isFinite(budgetPx))
@@ -133,8 +130,7 @@ export function fitHoverToBudget(
     };
 }
 
-// Linear falloff: full neighbor scale next to the hover, fading to
-// identity past the radius.
+// Linear falloff from full neighbor scale to identity past the radius.
 export function neighborScaleAt(hover, distance) {
     if (!(distance >= 1) || distance > hover.neighborRadius)
         return 1;
@@ -142,7 +138,6 @@ export function neighborScaleAt(hover, distance) {
     return 1 + (hover.neighborScale - 1) * weight;
 }
 
-// Only a hover reach (scale growth or lift) is fitted to the budget.
 export function hoverNeedsBudget({
     recipe,
     hovered = false,
@@ -284,8 +279,7 @@ export function shouldRetreatOnHandoff({
     overviewVisibleTarget,
     dashContainsTarget,
 }) {
-    // Dock extensions serve their dock as Main.overview.dash: only trust
-    // dash membership while the overview is on its way out.
+    // A dock can be Main.overview.dash; membership only counts while the overview closes.
     if (!targetMapped)
         return true;
     return overviewVisible && !overviewVisibleTarget && dashContainsTarget;

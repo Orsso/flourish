@@ -6,7 +6,7 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 import {AppIcon} from 'resource:///org/gnome/shell/ui/appDisplay.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {LaunchEffect} from '../motion/catalog.js';
+import {LaunchEffect, resolveAnimationMode} from '../motion/catalog.js';
 import {
     buildLaunchSegments,
     composeIconTransform,
@@ -20,7 +20,6 @@ import {
     shouldRetreatOnHandoff,
 } from '../motion/transforms.js';
 import {DeferredLaunchEnds} from './deferredLaunchEnds.js';
-import {resolveAnimationMode} from './easing.js';
 
 const HANDOFF_DURATION = 80;
 const RETREAT_DURATION = 180;
@@ -29,7 +28,6 @@ const OPAQUE = 255;
 
 export class LaunchEngine {
     #deferredEnds;
-    #enabled = false;
     #getController;
     #injections = null;
     #sessions = new Map();
@@ -44,9 +42,7 @@ export class LaunchEngine {
     }
 
     enable() {
-        if (this.#enabled)
-            return;
-        this.#enabled = true;
+        // The stock dash and Dash to Dock both play their launch zoom here.
         this.#injections = new InjectionManager();
         const engine = this;
         this.#injections.overrideMethod(
@@ -60,10 +56,7 @@ export class LaunchEngine {
     }
 
     disable() {
-        if (!this.#enabled)
-            return;
-        this.#enabled = false;
-        this.#injections?.clear();
+        this.#injections.clear();
         this.#injections = null;
         for (const session of [...this.#sessions.values()])
             this.#cancelLive(session);
@@ -72,15 +65,16 @@ export class LaunchEngine {
 
     #play(appIcon, controller, playStock) {
         const {launch} = controller.recipe;
-        // Stock keeps the launch moment fully vanilla: no session, no squash.
         if (launch.enabled && launch.effect === LaunchEffect.STOCK)
             return playStock();
 
-        const target = appIcon.icon?.icon;
-        if (!target || this.#sessions.has(target) ||
+        // The St.Icon, not its bin: the bin carries the hover transform.
+        const target = appIcon.icon.icon;
+        if (this.#sessions.has(target) ||
             !St.Settings.get().enable_animations)
             return;
 
+        // beginLaunch resets the hover, so the clone needs both geometries.
         const visibleGeometry = actorGeometry(target);
         const preparation = controller.beginLaunch(
             controller.recipe.launch.enabled);
@@ -122,12 +116,11 @@ export class LaunchEngine {
         const session = {
             app: appIcon.app,
             appSeenRunning: false,
-            appStateId: 0,
             clone,
             controller,
             cycle: 0,
-            destroyId: 0,
             effectStart: 0,
+            // Ends first of: ease chain, repeat timer, target destroy.
             finished: false,
             hoverDuration,
             introLift,
@@ -140,21 +133,21 @@ export class LaunchEngine {
             repeatSourceId: 0,
             startedAt: GLib.get_monotonic_time() / 1000,
             target,
-            wasLaunching: Boolean(appIcon.app) &&
-                appIcon.app.state !== Shell.AppState.RUNNING,
+            wasLaunching: appIcon.app
+                ? appIcon.app.state !== Shell.AppState.RUNNING
+                : false,
         };
-        session.destroyId = target.connect('destroy', () => {
-            this.#discardDestroyed(session);
-        });
+        target.connectObject('destroy',
+            () => this.#discardDestroyed(session), session);
         if (session.app) {
-            session.appStateId = Shell.AppSystem.get_default().connect(
-                'app-state-changed', (system, app) => {
+            Shell.AppSystem.get_default().connectObject('app-state-changed',
+                (_system, app) => {
                     if (app !== session.app ||
                         app.state !== Shell.AppState.RUNNING)
                         return;
                     session.appSeenRunning = true;
                     this.#clearAppStateWatch(session);
-                });
+                }, session);
         }
         this.#sessions.set(target, session);
         target.opacity = 0;
@@ -164,7 +157,6 @@ export class LaunchEngine {
     #runIntroStep(session, index) {
         if (session.finished)
             return;
-        // Let the click shape flow into the launch effect.
         while (index < session.pressSteps.length &&
             !session.pressSteps[index].pressed)
             index++;
@@ -212,7 +204,6 @@ export class LaunchEngine {
             this.#runCycle(session);
             return;
         }
-        // No effect: just return from hover.
         session.clone.ease({
             scale_x: 1,
             scale_y: 1,
@@ -229,7 +220,6 @@ export class LaunchEngine {
             return {magnify: 1, liftX: 0, liftY: 0};
         const elapsed = GLib.get_monotonic_time() / 1000 - session.effectStart;
         const progress = Math.min(1, Math.max(0, elapsed / session.hoverDuration));
-        // Fade hover out faster at the start.
         const remain = (1 - progress) ** 2;
         return {
             magnify: 1 + (session.magnifyBase - 1) * remain,
@@ -244,7 +234,7 @@ export class LaunchEngine {
         const {launch} = session.controller.recipe;
         const segments = buildLaunchSegments(
             launch.effect, launch, session.controller.position, session.cycle);
-        // The recipe can turn stock mid-session; there is no cycle to play then.
+        // The recipe can turn stock mid-session.
         if (segments.length === 0) {
             this.#handoff(session);
             return;
@@ -297,7 +287,6 @@ export class LaunchEngine {
             this.#scheduleNextCycle(session, pause);
             return;
         }
-        // Pulse and stretch settle; everything else lands at speed.
         const momentum = launch.effect !== LaunchEffect.PULSE &&
             launch.effect !== LaunchEffect.STRETCH;
         this.#handoff(session, {momentum});
@@ -338,14 +327,11 @@ export class LaunchEngine {
         this.#clearRepeatTimer(session);
         session.clone.remove_all_transitions();
         session.target.opacity = session.originalOpacity;
-        // No icon to hand back to, or the overview is taking it away:
-        // retreat toward the hidden dash instead of settling into it.
         const retreat = shouldRetreatOnHandoff({
             targetMapped: session.target.mapped,
             overviewVisible: Main.overview.visible,
             overviewVisibleTarget: Main.overview.visibleTarget,
-            dashContainsTarget:
-                !!Main.overview.dash?.contains(session.target),
+            dashContainsTarget: Main.overview.dash.contains(session.target),
         });
         if (retreat) {
             const {outward} = getOrientation(session.controller.position);
@@ -387,7 +373,7 @@ export class LaunchEngine {
         session.finished = true;
         this.#clearRepeatTimer(session);
         this.#clearAppStateWatch(session);
-        session.target.disconnect(session.destroyId);
+        session.target.disconnectObject(session);
         session.clone.destroy();
         this.#sessions.delete(session.target);
         this.#endControllerLaunch(session);
@@ -401,7 +387,7 @@ export class LaunchEngine {
         this.#clearAppStateWatch(session);
         session.clone.remove_all_transitions();
         session.target.opacity = session.originalOpacity;
-        session.target.disconnect(session.destroyId);
+        session.target.disconnectObject(session);
         session.clone.destroy();
         this.#sessions.delete(session.target);
         this.#endControllerLaunch(session);
@@ -427,10 +413,7 @@ export class LaunchEngine {
     }
 
     #clearAppStateWatch(session) {
-        if (!session.appStateId)
-            return;
-        Shell.AppSystem.get_default().disconnect(session.appStateId);
-        session.appStateId = 0;
+        Shell.AppSystem.get_default().disconnectObject(session);
     }
 
     #endControllerLaunch(session, {defer = false} = {}) {

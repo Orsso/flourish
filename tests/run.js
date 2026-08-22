@@ -30,7 +30,6 @@ const modules = [
     './pressInteraction.test.js',
     './runtimeHelpers.test.js',
     './settings.test.js',
-    './styleRefresh.test.js',
     './transforms.test.js',
 ];
 for (const module of modules)

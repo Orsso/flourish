@@ -1,10 +1,10 @@
 import GLib from 'gi://GLib';
 import St from 'gi://St';
+import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DockPosition} from '../motion/catalog.js';
 import {MotionSurface} from './motionSurface.js';
-import {createWarnOnce} from './warnOnce.js';
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.
 const DASH_TO_DOCK_BUILDS = [
@@ -19,25 +19,17 @@ export class DockIntegration {
     #manager = null;
     #managerSignals = [];
     #measureId = 0;
-    #publishMeasurement;
     #scheduler;
-    #stateChangedId = 0;
+    #settings;
     #surface = null;
-    #warnOnce = createWarnOnce();
 
-    constructor({controllerFactory, publishMeasurement = () => {}, scheduler}) {
+    constructor({controllerFactory, scheduler, settings}) {
         this.#controllerFactory = controllerFactory;
-        this.#publishMeasurement = publishMeasurement;
         this.#scheduler = scheduler;
-    }
-
-    get controllers() {
-        return this.#surface?.controllers ?? [];
+        this.#settings = settings;
     }
 
     enable(recipe) {
-        if (this.#surface)
-            return;
         this.#surface = new MotionSurface({
             controllerFactory: this.#controllerFactory,
             recipe,
@@ -45,24 +37,19 @@ export class DockIntegration {
             scheduler: this.#scheduler,
         });
         this.#generation++;
-        this.#stateChangedId = Main.extensionManager.connect(
-            'extension-state-changed', (_manager, extension) => {
+        Main.extensionManager.connectObject('extension-state-changed',
+            (_manager, extension) => {
                 if (!DASH_TO_DOCK_BUILDS.includes(extension.uuid))
                     return;
                 this.#detachManager();
                 this.#scheduleAttach();
-            });
+            }, this);
         this.#attach(this.#generation);
     }
 
     disable() {
-        if (!this.#surface)
-            return;
         this.#generation++;
-        if (this.#stateChangedId) {
-            Main.extensionManager.disconnect(this.#stateChangedId);
-            this.#stateChangedId = 0;
-        }
+        Main.extensionManager.disconnectObject(this);
         this.#cancelScheduledAttach();
         this.#detachManager();
         this.#cancelBudgetMeasure();
@@ -79,7 +66,7 @@ export class DockIntegration {
     }
 
     getController(appIcon) {
-        return this.#surface?.getController(appIcon) ?? null;
+        return this.#surface.getController(appIcon);
     }
 
     // Ubuntu Dock recreates its manager from the same signal; read it after.
@@ -103,8 +90,7 @@ export class DockIntegration {
     async #attach(generation) {
         const extension = lookupDashToDock();
         if (!extension) {
-            this.#warnOnce('missing-extension',
-                'Dash to Dock (or Ubuntu Dock) is not installed; dock motion is inactive');
+            console.warn('[flourish] Dash to Dock (or Ubuntu Dock) is not enabled; dock motion is off');
             return;
         }
 
@@ -112,19 +98,19 @@ export class DockIntegration {
         try {
             module = await import(`file://${extension.path}/extension.js`);
         } catch (error) {
-            this.#warnOnce('import-failed', `cannot import Dash to Dock: ${error.message}`);
+            console.warn(`[flourish] cannot import Dash to Dock: ${error.message}`);
             return;
         }
 
         if (generation !== this.#generation || !this.#surface)
             return;
         if (!module.dockManager) {
-            this.#warnOnce('missing-manager',
-                'Dash to Dock does not expose its manager; dock motion is inactive');
+            console.warn('[flourish] Dash to Dock exposes no dock manager; dock motion is off');
             return;
         }
 
         this.#manager = module.dockManager;
+        // DockManager uses Signals.addSignalMethods: no connectObject there.
         this.#managerSignals = [
             this.#manager.connect('docks-ready', () => this.#scanDocks()),
             this.#manager.connect('destroy', () => this.#detachManager()),
@@ -142,17 +128,17 @@ export class DockIntegration {
     }
 
     #scanDocks() {
-        const docks = this.#manager?._allDocks;
-        if (!Array.isArray(docks)) {
-            this.#warnOnce('missing-docks',
-                'Dash to Dock does not expose its dock collection; dock motion is inactive');
+        // Nothing public lists the docks.
+        const docks = this.#manager._allDocks;
+        if (!docks) {
+            console.warn('[flourish] Dash to Dock exposes no dock list; dock motion is off');
             return;
         }
 
         for (const dock of docks) {
-            const box = dock?.dash?._box;
+            const box = dock.dash._box;
             if (!box) {
-                this.#warnOnce('missing-box', 'a Dash to Dock instance has no dash box');
+                console.warn('[flourish] a Dash to Dock instance has no icon box');
                 continue;
             }
             this.#surface.addBox(box, positionFromSide(dock.position));
@@ -166,7 +152,7 @@ export class DockIntegration {
         this.#cancelBudgetMeasure();
         this.#measureId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
             this.#measureId = 0;
-            for (const controller of this.controllers) {
+            for (const controller of this.#surface.controllers) {
                 if (this.#publishBudget(controller.measure()))
                     break;
             }
@@ -181,24 +167,31 @@ export class DockIntegration {
         }
     }
 
+    // Read by the preferences window for the hover room readout.
     #publishBudget(measurement) {
         if (!measurement)
             return false;
         const {budgetPx, iconNormalSize} = measurement;
         if (!(budgetPx > 0) || !(iconNormalSize > 0))
             return false;
-        this.#publishMeasurement(budgetPx, iconNormalSize);
+        this.#writeDouble('measured-hover-budget', budgetPx);
+        this.#writeDouble('measured-icon-size', iconNormalSize);
         return true;
+    }
+
+    #writeDouble(key, value) {
+        const rounded = Math.round(value * 100) / 100;
+        if (this.#settings.get_double(key) !== rounded)
+            this.#settings.set_double(key, rounded);
     }
 
 }
 
-// Both builds can be installed at once; prefer the active one.
+// Both builds can be installed at once; only an active one has a dock.
 function lookupDashToDock() {
-    const builds = DASH_TO_DOCK_BUILDS
+    return DASH_TO_DOCK_BUILDS
         .map(uuid => Main.extensionManager.lookup(uuid))
-        .filter(extension => extension);
-    return builds.find(extension => extension.stateObj) ?? builds[0] ?? null;
+        .find(extension => extension?.state === ExtensionState.ACTIVE) ?? null;
 }
 
 function positionFromSide(side) {

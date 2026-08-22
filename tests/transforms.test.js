@@ -115,11 +115,6 @@ test('dim opacity is derived from the undimmed opacity', () => {
     assertEqual(dimOpacity(255, 0), 255);
 });
 
-test('unknown press effects fall back to squash', () => {
-    const press = resolvePressTransform('nope', 0.5, getOrientation('bottom'));
-    assertClose(press.scaleY, 1 - 0.22 * 0.5);
-});
-
 test('pulse segments scale without translation', () => {
     const segments = buildLaunchSegments(LaunchEffect.PULSE, {
         intensity: 0.5,

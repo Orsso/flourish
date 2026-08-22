@@ -26,29 +26,27 @@ import {
     SWEEP_SETTLE_MS,
 } from './demoSequence.js';
 
-const IDENTITY = Object.freeze({
+const IDENTITY = {
     scaleX: 1,
     scaleY: 1,
     translationX: 0,
     translationY: 0,
     dim: 0,
-});
-const BOTTOM_PIVOT = Object.freeze([0.5, 1]);
+};
+const BOTTOM_PIVOT = [0.5, 1];
 
 const INLINE_ICON_SIZE = 24;
 const INLINE_STEP = INLINE_ICON_SIZE + 10;
 const COUNT_GROW_MS = 250;
 
-const EASINGS = Object.freeze({
+const EASINGS = {
     linear: Adw.Easing.LINEAR,
     'ease-out-quad': Adw.Easing.EASE_OUT_QUAD,
     'ease-out-cubic': Adw.Easing.EASE_OUT_CUBIC,
     'ease-out-back': Adw.Easing.EASE_OUT_BACK,
-});
+};
 
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
-    // Given an effect ('hover', 'press', 'launch') the preview goes bare
-    // and demos just that effect.
     _init({recipe, effect = null, ...params}) {
         const inline = Boolean(effect);
         const iconCount = effect === 'hover' ? hoverIconCount(recipe) : 1;
@@ -88,7 +86,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this.connect('unmap', () => this.stop());
     }
 
-    // Effect previews show the settings, not the Basics toggles.
     _adoptRecipe(recipe) {
         if (!this._effect || recipe[this._effect].enabled)
             return recipe;
@@ -108,7 +105,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         });
     }
 
-    // A running loop picks fresh values up without resetting its pose.
     updateRecipe(recipe) {
         this._recipe = this._adoptRecipe(recipe);
         this._syncIconCount();
@@ -127,11 +123,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._animateIconCount();
     }
 
-    // One float drives the frame width and the outer icons' birth scale,
-    // so retargeting mid-flight just re-aims it.
     _animateIconCount() {
-        // reset() replays the target at its initial value, so capture the
-        // count first.
+        // reset() replays the initial value; read the count first.
         const from = this._visibleCount;
         this._countAnimation?.reset();
         const to = this._iconCount;
@@ -175,10 +168,14 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._sweepAnimation?.reset();
         this._sweepAnimation = null;
         this._sweepActive = false;
-        if (this._timeoutId) {
-            GLib.source_remove(this._timeoutId);
-            this._timeoutId = 0;
-        }
+        this._clearTimeout();
+    }
+
+    _clearTimeout() {
+        if (!this._timeoutId)
+            return;
+        GLib.source_remove(this._timeoutId);
+        this._timeoutId = 0;
     }
 
     playLoop() {
@@ -206,7 +203,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const start = -0.6;
         const end = (count - 1) + 0.6;
         this._sweepValue = start;
-        // Sweep once, then settle on the center icon.
         this._playSweepSegment(generation, start, end, SWEEP_MS,
             Adw.Easing.EASE_IN_OUT_CUBIC, () => {
                 this._playSweepSegment(generation, end, middle, SWEEP_SETTLE_MS,
@@ -261,7 +257,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._animateMotion(this._recipe.hover.duration);
     }
 
-    // Freeze in the pose the held slider edits; edits keep landing on it.
     holdPose() {
         this._cancelLoop();
         this._held = true;
@@ -289,7 +284,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             if (!this._loopActive || generation !== this._loopGeneration)
                 return;
             if (index >= phases.length) {
-                // Rebuilt every pass, so edits reshape the loop live.
                 phases = getPhases();
                 index = 0;
             }
@@ -341,6 +335,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _wait(ms, generation, done) {
+        this._clearTimeout();
         this._timeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
             this._timeoutId = 0;
             if (this._loopActive && generation === this._loopGeneration)
@@ -389,8 +384,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         });
         this._motionAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
         this._motionAnimation.set_easing(
-            easing ?? EASINGS[this._recipe.hover.easing] ?? Adw.Easing.EASE_OUT_CUBIC);
-        // Settle on the latest recipe; edits may land mid-flight.
+            easing ?? EASINGS[this._recipe.hover.easing]);
         this._motionAnimation.connect('done', () => {
             this._hoverProgress = hoverTo;
             this._motionTransform = this._resolveMotion();
@@ -400,7 +394,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._motionAnimation.play();
     }
 
-    _playLaunchPressFeedback(onComplete = null) {
+    _playLaunchPressFeedback(onComplete = () => {}) {
         const generation = ++this._pressGeneration;
         this._pressed = true;
         this._animateMotion(Math.round(this._recipe.press.duration / 2), () => {
@@ -410,10 +404,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         });
     }
 
-    _beginLaunch({ownsPressFeedback = false, onComplete = null} = {}) {
+    _beginLaunch({ownsPressFeedback = false, onComplete = () => {}} = {}) {
         if (this._launching ||
             (!this._recipe.launch.enabled && !ownsPressFeedback)) {
-            onComplete?.();
+            onComplete();
             return;
         }
         this._launching = true;
@@ -434,7 +428,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         }
     }
 
-    _playLaunch(onComplete = null) {
+    _playLaunch(onComplete = () => {}) {
         const segments = buildLaunchSegments(
             this._recipe.launch.effect, this._recipe.launch, 'bottom');
         const duration = launchDuration(segments);
@@ -452,15 +446,15 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._launchAnimation.play();
     }
 
-    _finishLaunch(onComplete = null) {
+    _finishLaunch(onComplete = () => {}) {
         if (!this._launching) {
-            onComplete?.();
+            onComplete();
             return;
         }
         this._launching = false;
         if (this._effect === 'launch') {
             this._motionTransform = {...IDENTITY};
-            onComplete?.();
+            onComplete();
             return;
         }
         this._animateMotion(this._recipe.hover.duration, onComplete);
@@ -572,15 +566,15 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
 const REFERENCE_ICON_SIZE = 46;
 
-const ICON_COLORS = Object.freeze([
+const ICON_COLORS = [
     [0.90, 0.42, 0.31],
     [0.95, 0.74, 0.30],
     [0.28, 0.55, 0.93],
     [0.30, 0.74, 0.56],
     [0.66, 0.45, 0.86],
-]);
+];
 
-const EFFECT_COLOR_INDEX = Object.freeze({press: 1, launch: 3});
+const EFFECT_COLOR_INDEX = {press: 1, launch: 3};
 
 function hoverIconCount(recipe) {
     return 2 * recipe.hover.neighborRadius + 1;
@@ -590,8 +584,7 @@ function inlineWidth(count) {
     return Math.round(count * INLINE_STEP + 22);
 }
 
-// The pair at distance d only lives while the count crosses 2d → 2d + 1,
-// so it finishes shrinking before the frame edge reaches its slot.
+// Pair d shrinks while the count crosses 2d..2d+1, ahead of the frame edge.
 function iconBirth(visibleCount, distance) {
     if (distance === 0)
         return 1;

@@ -10,24 +10,20 @@ required=(
     extension.js
     lib/motion/catalog.js
     lib/motion/pressInteraction.js
-    lib/motion/resolver.js
     lib/motion/settings.js
     lib/motion/transforms.js
     lib/prefs/advancedPage.js
     lib/prefs/demoSequence.js
     lib/prefs/motionPreview.js
     lib/prefs/rows.js
-    lib/prefs/settingsEditor.js
     lib/runtime/dashIntegration.js
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
-    lib/runtime/easing.js
     lib/runtime/iconMotionController.js
     lib/runtime/iconTexture.js
     lib/runtime/launchEngine.js
     lib/runtime/liveRegistry.js
     lib/runtime/motionSurface.js
-    lib/runtime/warnOnce.js
     lib/runtime/backgroundStyle.js
     metadata.json
     prefs.js

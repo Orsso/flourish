@@ -36,22 +36,17 @@ export class MotionSurface {
 
     addBox(box, position) {
         const group = new NeighborGroup(this.#scheduler);
-        let addedId = 0;
         const added = this.#registry.addBox(box, () => {
-            if (addedId)
-                box.disconnect(addedId);
+            box.disconnectObject(this);
             group.dispose();
-        }, () => {
-            group.onBoxDestroyed();
-        });
+        }, () => group.onBoxDestroyed());
         if (!added)
-            return false;
+            return;
         for (const container of box.get_children())
             this.#registerContainer(container, position, group);
-        addedId = box.connect('child-added', (_box, container) => {
+        box.connectObject('child-added', (_box, container) => {
             this.#registerContainer(container, position, group);
-        });
-        return true;
+        }, this);
     }
 
     dispose() {
@@ -59,6 +54,7 @@ export class MotionSurface {
     }
 
     #registerContainer(container, position, group) {
+        // Separators and drag placeholders are not app icons.
         const icon = container.child ?? container;
         const bin = icon?.icon?._iconBin;
         if (!bin || this.#registry.getIcon(icon))
@@ -104,13 +100,11 @@ class NeighborGroup {
         this.#entries.splice(index, 1);
         if (this.#hovered === controller)
             this.#hovered = null;
-        // Survivors shift by one index, so their distances change too.
         this.#scheduleFlush();
     }
 
     setHovered(controller, hovered) {
         this.#hovered = hovered ? controller : this.#hovered === controller ? null : this.#hovered;
-        // The flip must apply even when the distances are inert.
         this.#dirty.add(controller);
         this.#scheduleFlush();
     }
@@ -140,7 +134,7 @@ class NeighborGroup {
         this.#flushId = 0;
     }
 
-    // Swap first so changes made while applying get a fresh flush.
+    // Swap before applying: an apply can schedule the next flush.
     #flush() {
         this.#flushId = 0;
         this.#syncNeighbors();
@@ -159,8 +153,7 @@ class NeighborGroup {
             const distance = hoveredIndex === -1
                 ? Infinity
                 : Math.abs(index - hoveredIndex);
-            // Beyond any possible radius the transform is identity; collapse
-            // to Infinity so far icons never see a change to apply.
+            // Past the max radius the transform is identity: report no change.
             if (this.#entries[index].controller.setNeighborDistance(
                 distance > NeighborRadius.MAX ? Infinity : distance))
                 this.#dirty.add(this.#entries[index].controller);

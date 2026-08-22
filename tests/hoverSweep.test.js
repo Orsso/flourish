@@ -1,7 +1,7 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
-import {FakeBaseIcon} from './fakes.js';
+import {FakeBaseIcon, FakeEmitter} from './fakes.js';
 
 class SweepBin {
     constructor() {
@@ -43,35 +43,7 @@ class SweepBin {
     }
 }
 
-class SweepActor {
-    constructor() {
-        this.nextId = 1;
-        this.handlers = new Map();
-    }
-
-    connect(signal, callback) {
-        const id = this.nextId++;
-        this.handlers.set(id, {signal, callback});
-        return id;
-    }
-
-    connect_after(signal, callback) {
-        return this.connect(signal, callback);
-    }
-
-    disconnect(id) {
-        this.handlers.delete(id);
-    }
-
-    emit(signal, ...args) {
-        for (const handler of [...this.handlers.values()]) {
-            if (handler.signal === signal)
-                handler.callback(this, ...args);
-        }
-    }
-}
-
-class SweepIcon extends SweepActor {
+class SweepIcon extends FakeEmitter {
     constructor() {
         super();
         this.hover = false;
@@ -81,7 +53,7 @@ class SweepIcon extends SweepActor {
     }
 }
 
-class SweepContainer extends SweepActor {
+class SweepContainer extends FakeEmitter {
     constructor(box) {
         super();
         this.child = new SweepIcon();
@@ -93,7 +65,7 @@ class SweepContainer extends SweepActor {
     }
 }
 
-class SweepBox extends SweepActor {
+class SweepBox extends FakeEmitter {
     constructor(iconCount) {
         super();
         this.children = Array.from(

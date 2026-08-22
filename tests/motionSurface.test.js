@@ -1,33 +1,11 @@
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
+import {FakeEmitter} from './fakes.js';
 
-class FakeActor {
+class FakeActor extends FakeEmitter {
     constructor() {
-        this.nextId = 1;
-        this.handlers = new Map();
+        super();
         this.parent = null;
         this.children = [];
-    }
-
-    connect(signal, callback) {
-        const id = this.nextId++;
-        this.handlers.set(id, {signal, callback});
-        return id;
-    }
-
-    disconnect(id) {
-        this.handlers.delete(id);
-    }
-
-    emit(signal, ...args) {
-        for (const handler of [...this.handlers.values()]) {
-            if (handler.signal === signal)
-                handler.callback(this, ...args);
-        }
-    }
-
-    destroy() {
-        this.emit('destroy');
-        this.handlers.clear();
     }
 
     get_parent() {
@@ -153,7 +131,7 @@ function makeSurface({onMeasured, controllerFactory} = {}) {
 test('addBox registers a controller per icon container', () => {
     const {surface, controllers} = makeSurface();
     const {box} = makeBox(3);
-    assertEqual(surface.addBox(box, 'bottom'), true);
+    surface.addBox(box, 'bottom');
     assertEqual(controllers.length, 3);
     assertEqual(controllers[0].options.position, 'bottom');
     assertEqual(controllers[0].options.recipe, 'recipe-1');
@@ -180,9 +158,10 @@ test('child-added registers late containers', () => {
 test('addBox refuses the same box twice', () => {
     const {surface, controllers} = makeSurface();
     const {box} = makeBox(2);
-    assertEqual(surface.addBox(box, 'bottom'), true);
-    assertEqual(surface.addBox(box, 'bottom'), false);
+    surface.addBox(box, 'bottom');
+    surface.addBox(box, 'bottom');
     assertEqual(controllers.length, 2);
+    assertEqual(box.handlers.size, 2);
 });
 
 test('getController maps the icon actor to its controller', () => {
@@ -190,7 +169,7 @@ test('getController maps the icon actor to its controller', () => {
     const {box, icons} = makeBox(2);
     surface.addBox(box, 'bottom');
     assertEqual(surface.getController(icons[1]), controllers[1]);
-    assertEqual(surface.getController(new FakeActor()), null);
+    assertEqual(surface.getController(new FakeActor()), undefined);
 });
 
 test('setRecipe reaches every controller', () => {

@@ -4,17 +4,17 @@ import {
     readActiveRecipe,
     resetCustom,
     selectProfile,
+    setBooleanCommitted,
     switchToPresetFromCustom,
     writeCustomRecipe,
 } from '../flourish@orsso.github.io/lib/motion/settings.js';
-import {SettingsEditor} from '../flourish@orsso.github.io/lib/prefs/settingsEditor.js';
 
 class FakeSettings {
     constructor(profile = Profile.BALANCED) {
         this.values = {'motion-profile': profile};
         this.applyCount = 0;
         this.delayCount = 0;
-        writeCustomRecipe(this, getBuiltInRecipe(Profile.BALANCED), false);
+        writeCustomRecipe(this, getBuiltInRecipe(Profile.BALANCED));
     }
 
     delay() {
@@ -64,7 +64,7 @@ class DelayAwareSettings {
         this.committed = {'motion-profile': profile};
         this.pending = {};
         this.delayed = false;
-        writeCustomRecipe(this, getBuiltInRecipe(Profile.BALANCED), false);
+        writeCustomRecipe(this, getBuiltInRecipe(Profile.BALANCED));
     }
 
     delay() {
@@ -139,11 +139,10 @@ test('switching from custom to a preset writes recipe and profile', () => {
 
 test('background visibility writes through after a custom edit', () => {
     const settings = new DelayAwareSettings(Profile.BALANCED);
-    const editor = new SettingsEditor(settings);
 
-    editor.edit('custom-hover-scale', 1.18);
-    editor.setBackgroundVisible('hover', true);
-    editor.setBackgroundVisible('focusedApp', true);
+    editCustomSetting(settings, 'custom-hover-scale', 1.18);
+    setBooleanCommitted(settings, 'show-hover-background', true);
+    setBooleanCommitted(settings, 'show-focused-app-background', true);
 
     assertEqual(settings.committed['show-hover-background'], true);
     assertEqual(settings.committed['show-focused-app-background'], true);
@@ -210,15 +209,14 @@ test('repeat softening round-trips through custom settings', () => {
     assertEqual(readActiveRecipe(settings).launch.softenRepeats, false);
 });
 
-test('settings editor changes profiles and features', () => {
-    const settings = new FakeSettings(Profile.EXPRESSIVE);
-    const editor = new SettingsEditor(settings);
-    editor.selectProfile(Profile.SUBTLE);
-    assertEqual(editor.profile, Profile.SUBTLE);
-    editor.setFeatureEnabled('hover', false);
-    assertEqual(editor.profile, Profile.CUSTOM);
-    assertEqual(settings.values['custom-hover-enabled'], false);
-    assertEqual(editor.recipe.launch.effect, 'bounce');
+test('the custom profile reads the stored values', () => {
+    const settings = new FakeSettings(Profile.CUSTOM);
+    settings.values['custom-hover-scale'] = 1.27;
+    settings.values['custom-launch-effect'] = 'stock';
+    const recipe = readActiveRecipe(settings);
+    assertEqual(recipe.id, Profile.CUSTOM);
+    assertEqual(recipe.hover.scale, 1.27);
+    assertEqual(recipe.launch.effect, 'stock');
 });
 
 test('switching from custom to a preset overwrites custom values', () => {
@@ -231,15 +229,6 @@ test('switching from custom to a preset overwrites custom values', () => {
     assertEqual(settings.applyCount, 1);
 });
 
-test('settings editor uses the custom-to-preset path', () => {
-    const settings = new FakeSettings(Profile.CUSTOM);
-    settings.values['custom-hover-scale'] = 1.29;
-    const editor = new SettingsEditor(settings);
-    editor.switchFromCustomToPreset(Profile.EXPRESSIVE);
-    assertEqual(editor.profile, Profile.EXPRESSIVE);
-    assertEqual(settings.values['custom-hover-scale'], 1.22);
-});
-
 test('neighbor radius round-trips through custom settings', () => {
     const settings = new FakeSettings(Profile.BALANCED);
     editCustomSetting(settings, 'custom-neighbor-radius', 2);
@@ -248,11 +237,10 @@ test('neighbor radius round-trips through custom settings', () => {
     assertEqual(readActiveRecipe(settings).hover.neighborRadius, 2);
 });
 
-test('settings editor reset restores the default custom values', () => {
+test('reset restores the default custom values after an edit', () => {
     const settings = new FakeSettings(Profile.CUSTOM);
-    const editor = new SettingsEditor(settings);
-    editor.edit('custom-hover-scale', 1.29);
-    editor.resetCustom();
-    assertEqual(editor.profile, Profile.CUSTOM);
-    assertEqual(editor.recipe.hover.scale, 1.10);
+    editCustomSetting(settings, 'custom-hover-scale', 1.29);
+    resetCustom(settings);
+    assertEqual(settings.values['motion-profile'], Profile.CUSTOM);
+    assertEqual(readActiveRecipe(settings).hover.scale, 1.10);
 });

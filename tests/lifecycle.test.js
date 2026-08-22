@@ -1,22 +1,17 @@
 import {LiveRegistry} from '../flourish@orsso.github.io/lib/runtime/liveRegistry.js';
+import {FakeEmitter} from './fakes.js';
 
-class FakeActor {
+// Any call after destroy() counts as touching a disposed actor.
+class FakeActor extends FakeEmitter {
     constructor() {
+        super();
         this.destroyed = false;
         this.postDestroyTouches = 0;
-        this.nextId = 1;
-        this.handlers = new Map();
     }
 
-    connect(signal, callback) {
-        const id = this.nextId++;
-        this.handlers.set(id, {signal, callback});
-        return id;
-    }
-
-    disconnect(id) {
+    disconnectObject(owner) {
         this.touch();
-        this.handlers.delete(id);
+        super.disconnectObject(owner);
     }
 
     touch() {
@@ -28,12 +23,7 @@ class FakeActor {
 
     destroy() {
         this.destroyed = true;
-        const callbacks = [...this.handlers.values()]
-            .filter(handler => handler.signal === 'destroy')
-            .map(handler => handler.callback);
-        for (const callback of callbacks)
-            callback();
-        this.handlers.clear();
+        super.destroy();
     }
 }
 

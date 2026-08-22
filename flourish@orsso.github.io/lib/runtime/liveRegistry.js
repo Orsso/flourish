@@ -1,7 +1,6 @@
 export class LiveRegistry {
     #boxes = new Map();
     #icons = new Map();
-    #disabled = false;
 
     get boxCount() {
         return this.#boxes.size;
@@ -12,63 +11,56 @@ export class LiveRegistry {
     }
 
     get icons() {
-        return [...this.#icons.values()].map(record => record.controller);
+        return [...this.#icons.values()];
     }
 
     getIcon(actor) {
-        return this.#icons.get(actor)?.controller ?? null;
+        return this.#icons.get(actor);
     }
 
     addIcon(actor, controller) {
-        if (this.#disabled || this.#icons.has(actor))
-            return this.#icons.get(actor)?.controller ?? null;
+        if (this.#icons.has(actor))
+            return this.#icons.get(actor);
 
-        const destroyId = actor.connect('destroy', () => {
-            const record = this.#icons.get(actor);
-            if (!record)
-                return;
+        actor.connectObject('destroy', () => {
             this.#icons.delete(actor);
-            record.controller.onTargetDestroyed();
-        });
-        this.#icons.set(actor, {actor, controller, destroyId});
+            controller.onTargetDestroyed();
+        }, this);
+        this.#icons.set(actor, controller);
         return controller;
     }
 
     removeLiveIcon(actor) {
-        const record = this.#icons.get(actor);
-        if (!record)
+        const controller = this.#icons.get(actor);
+        if (!controller)
             return;
         this.#icons.delete(actor);
-        actor.disconnect(record.destroyId);
-        record.controller.dispose();
+        actor.disconnectObject(this);
+        controller.dispose();
     }
 
     addBox(box, cleanup, onDestroyed = () => {}) {
-        if (this.#disabled || this.#boxes.has(box))
+        if (this.#boxes.has(box))
             return false;
 
-        const destroyId = box.connect('destroy', () => {
+        box.connectObject('destroy', () => {
             this.#boxes.delete(box);
             onDestroyed();
-        });
-        this.#boxes.set(box, {box, cleanup, destroyId});
+        }, this);
+        this.#boxes.set(box, cleanup);
         return true;
     }
 
     removeLiveBox(box) {
-        const record = this.#boxes.get(box);
-        if (!record)
+        const cleanup = this.#boxes.get(box);
+        if (!cleanup)
             return;
         this.#boxes.delete(box);
-        box.disconnect(record.destroyId);
-        record.cleanup();
+        box.disconnectObject(this);
+        cleanup();
     }
 
     disable() {
-        if (this.#disabled)
-            return;
-        this.#disabled = true;
-
         for (const actor of [...this.#icons.keys()])
             this.removeLiveIcon(actor);
         for (const box of [...this.#boxes.keys()])

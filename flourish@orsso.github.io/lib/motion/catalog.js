@@ -1,51 +1,63 @@
-export const Profile = Object.freeze({
+export const Profile = {
     SUBTLE: 'subtle',
     BALANCED: 'balanced',
     EXPRESSIVE: 'expressive',
     CUSTOM: 'custom',
-});
+};
 
-export const LaunchEffect = Object.freeze({
+export const LaunchEffect = {
     PULSE: 'pulse',
     BOUNCE: 'bounce',
     STRETCH: 'stretch',
     STOCK: 'stock',
-});
+};
 
-export const PressMode = Object.freeze({
+export const PressMode = {
     LAUNCHES_ONLY: 'launches-only',
     ALL_PRIMARY_CLICKS: 'all-primary-clicks',
-});
+};
 
-export const PressEffect = Object.freeze({
+export const PressEffect = {
     SQUASH: 'squash',
     DIM: 'dim',
-});
+};
 
-export const Easing = Object.freeze({
+export const Easing = {
     LINEAR: 'linear',
     EASE_OUT_QUAD: 'ease-out-quad',
     EASE_OUT_CUBIC: 'ease-out-cubic',
     EASE_OUT_BACK: 'ease-out-back',
-});
+};
 
-// Internal segment easing, kept out of Easing so the user-facing choices
-// stay the four selectable modes.
+// Segment easing only; Easing holds the four user-facing modes.
 export const EASE_IN_QUAD = 'ease-in-quad';
 
-export const DockPosition = Object.freeze({
+const ANIMATION_MODE_NAMES = {
+    [Easing.LINEAR]: 'LINEAR',
+    [EASE_IN_QUAD]: 'EASE_IN_QUAD',
+    [Easing.EASE_OUT_QUAD]: 'EASE_OUT_QUAD',
+    [Easing.EASE_OUT_CUBIC]: 'EASE_OUT_CUBIC',
+    [Easing.EASE_OUT_BACK]: 'EASE_OUT_BACK',
+};
+
+// modes is Clutter.AnimationMode; the prefs process has no Clutter.
+export function resolveAnimationMode(easing, modes) {
+    return modes[ANIMATION_MODE_NAMES[easing]];
+}
+
+export const DockPosition = {
     BOTTOM: 'bottom',
     TOP: 'top',
     LEFT: 'left',
     RIGHT: 'right',
-});
+};
 
 // The gschema range mirrors these bounds; keep them in sync.
-export const NeighborRadius = Object.freeze({MIN: 1, MAX: 3});
+export const NeighborRadius = {MIN: 1, MAX: 3};
 
 export const DEFAULT_PROFILE = Profile.SUBTLE;
 
-const COMMON_LAUNCH = Object.freeze({
+const COMMON_LAUNCH = {
     enabled: true,
     repeat: true,
     softenRepeats: true,
@@ -53,10 +65,9 @@ const COMMON_LAUNCH = Object.freeze({
     bounceDecay: 0,
     pulseCount: 2,
     stretchElasticity: 0.70,
-});
+};
 
-const BUILTIN_RECIPES = deepFreeze({
-    // Hover stays off in Subtle; the values are ready if the user turns it on.
+const BUILTIN_RECIPES = {
     [Profile.SUBTLE]: {
         id: Profile.SUBTLE,
         hover: {
@@ -136,27 +147,8 @@ const BUILTIN_RECIPES = deepFreeze({
             maxDuration: 10000,
         },
     },
-});
-
-export const CUSTOM_DEFAULTS = deepFreeze(clone(BUILTIN_RECIPES[DEFAULT_PROFILE]));
-
-export function isBuiltInProfile(profile) {
-    return Object.hasOwn(BUILTIN_RECIPES, profile);
-}
+};
 
 export function getBuiltInRecipe(profile) {
-    const selected = isBuiltInProfile(profile) ? profile : DEFAULT_PROFILE;
-    return clone(BUILTIN_RECIPES[selected]);
-}
-
-function clone(value) {
-    return JSON.parse(JSON.stringify(value));
-}
-
-function deepFreeze(value) {
-    for (const child of Object.values(value)) {
-        if (child && typeof child === 'object')
-            deepFreeze(child);
-    }
-    return Object.freeze(value);
+    return JSON.parse(JSON.stringify(BUILTIN_RECIPES[profile]));
 }

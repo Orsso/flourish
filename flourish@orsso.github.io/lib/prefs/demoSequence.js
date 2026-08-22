@@ -1,16 +1,14 @@
 import {LaunchEffect, PressMode} from '../motion/catalog.js';
 
-// Preview pauses.
 export const HOVER_HOLD_MS = 650;
 export const PRE_LAUNCH_PAUSE_MS = 520;
 export const SETTLE_MS = 850;
 export const NEUTRAL_HOLD_MS = 520;
 
-// Intro sweep timing.
 export const SWEEP_MS = 1500;
 export const SWEEP_SETTLE_MS = 480;
 
-export const DemoPhase = Object.freeze({
+export const DemoPhase = {
     HOVER_IN: 'hover-in',
     HOLD: 'hold',
     CLICK: 'click',
@@ -21,16 +19,14 @@ export const DemoPhase = Object.freeze({
     SETTLE: 'settle',
     RESET: 'reset',
     NEUTRAL_HOLD: 'neutral-hold',
-});
+};
 
-// A hover that moves nothing has no business in the demo.
 export function hoverIsActive(recipe) {
     return recipe.hover.enabled &&
         (recipe.hover.scale > 1 || recipe.hover.lift > 0);
 }
 
-// Single-effect loops for the More page previews. A repeating launch
-// paces the whole loop on its own pause, so the rhythm stays even.
+// Single-effect loops; a repeating launch paces the loop on its own pause.
 export function buildEffectSequence(effect, recipe) {
     switch (effect) {
         case 'hover':

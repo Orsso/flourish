@@ -15,7 +15,6 @@ export default class FlourishExtension extends Extension {
         this._settings = this.getSettings();
         this._recipe = readActiveRecipe(this._settings);
 
-        // Hover work coalesces into one flush right before the next paint.
         const laters = global.compositor.get_laters();
         this._frameScheduler = {
             schedule: callback => laters.add(Meta.LaterType.BEFORE_REDRAW, () => {
@@ -27,34 +26,20 @@ export default class FlourishExtension extends Extension {
 
         this._dockIntegration = new DockIntegration({
             controllerFactory: options => new IconMotionController(options),
-            publishMeasurement: (budget, iconSize) =>
-                this._publishMeasurement(budget, iconSize),
             scheduler: this._frameScheduler,
+            settings: this._settings,
         });
         this._dashIntegration = new DashIntegration({
             controllerFactory: options => new IconMotionController(options),
             scheduler: this._frameScheduler,
         });
 
-        const refreshDockStyles = () => {
-            this._dockIntegration.refreshStyles();
-            this._dashIntegration.refreshStyles();
-        };
-        this._hoverStyle = new BackgroundStyle(
-            this, 'hover-background-hidden.css', {refreshStyles: refreshDockStyles});
-        this._hoverStyle.setEnabled(
-            !this._settings.get_boolean('show-hover-background'));
+        this._hoverStyle = new BackgroundStyle(this, 'hover-background-hidden.css');
         this._focusedAppStyle =
-            new BackgroundStyle(
-                this, 'focused-app-background-hidden.css',
-                {refreshStyles: refreshDockStyles});
-        this._focusedAppStyle.setEnabled(
-            !this._settings.get_boolean('show-focused-app-background'));
-        this._dashHoverStyle = new BackgroundStyle(
-            this, 'dash-hover-background-hidden.css',
-            {refreshStyles: refreshDockStyles});
-        this._dashHoverStyle.setEnabled(
-            !this._settings.get_boolean('show-hover-background'));
+            new BackgroundStyle(this, 'focused-app-background-hidden.css');
+        this._dashHoverStyle =
+            new BackgroundStyle(this, 'dash-hover-background-hidden.css');
+        this._syncStyles();
 
         this._dockIntegration.enable(this._recipe);
         this._dashIntegration.enable(this._recipe);
@@ -67,11 +52,10 @@ export default class FlourishExtension extends Extension {
         this._launchEngine.enable();
 
         this._syncIdleId = 0;
-        this._settingsChangedId = this._settings.connect('changed', (_settings, key) => {
-            // These keys are written from dock measurements.
+        this._settings.connectObject('changed', (_settings, key) => {
             if (key === 'measured-hover-budget' || key === 'measured-icon-size')
                 return;
-            // A preset switch writes the whole recipe in one burst; sync once.
+            // A preset switch writes many keys at once.
             if (this._syncIdleId)
                 return;
             this._syncIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
@@ -79,12 +63,12 @@ export default class FlourishExtension extends Extension {
                 this._syncSettings();
                 return GLib.SOURCE_REMOVE;
             });
-        });
-        this._systemAnimationId = St.Settings.get().connect(
-            'notify::enable-animations', () => {
-                this._dockIntegration.setRecipe(this._recipe);
-                this._dashIntegration.setRecipe(this._recipe);
-            });
+        }, this);
+        // Same recipe, new transform: it depends on the animations setting.
+        St.Settings.get().connectObject('notify::enable-animations', () => {
+            this._dockIntegration.setRecipe(this._recipe);
+            this._dashIntegration.setRecipe(this._recipe);
+        }, this);
     }
 
     disable() {
@@ -92,27 +76,22 @@ export default class FlourishExtension extends Extension {
             GLib.source_remove(this._syncIdleId);
             this._syncIdleId = 0;
         }
-        if (this._settingsChangedId) {
-            this._settings.disconnect(this._settingsChangedId);
-            this._settingsChangedId = 0;
-        }
-        if (this._systemAnimationId) {
-            St.Settings.get().disconnect(this._systemAnimationId);
-            this._systemAnimationId = 0;
-        }
+        this._settings.disconnectObject(this);
+        St.Settings.get().disconnectObject(this);
 
-        this._launchEngine?.disable();
+        this._launchEngine.disable();
         this._launchEngine = null;
-        // Unload styles while controllers can still refresh dock widgets.
-        this._hoverStyle?.disable();
+        this._hoverStyle.disable();
         this._hoverStyle = null;
-        this._focusedAppStyle?.disable();
+        this._focusedAppStyle.disable();
         this._focusedAppStyle = null;
-        this._dashHoverStyle?.disable();
+        this._dashHoverStyle.disable();
         this._dashHoverStyle = null;
-        this._dashIntegration?.disable();
+        // Dock widgets restyle through the controllers, so before those go.
+        this._refreshStyles();
+        this._dashIntegration.disable();
         this._dashIntegration = null;
-        this._dockIntegration?.disable();
+        this._dockIntegration.disable();
         this._dockIntegration = null;
         this._frameScheduler = null;
         this._recipe = null;
@@ -123,24 +102,20 @@ export default class FlourishExtension extends Extension {
         this._recipe = readActiveRecipe(this._settings);
         this._dockIntegration.setRecipe(this._recipe);
         this._dashIntegration.setRecipe(this._recipe);
-        this._hoverStyle.setEnabled(
-            !this._settings.get_boolean('show-hover-background'));
-        this._dashHoverStyle.setEnabled(
-            !this._settings.get_boolean('show-hover-background'));
+        this._syncStyles();
+        this._refreshStyles();
+    }
+
+    _syncStyles() {
+        const hideHover = !this._settings.get_boolean('show-hover-background');
+        this._hoverStyle.setEnabled(hideHover);
+        this._dashHoverStyle.setEnabled(hideHover);
         this._focusedAppStyle.setEnabled(
             !this._settings.get_boolean('show-focused-app-background'));
     }
 
-    _publishMeasurement(budget, iconSize) {
-        if (!this._settings)
-            return;
-        this._writeDouble('measured-hover-budget', budget > 0 ? budget : 0);
-        this._writeDouble('measured-icon-size', iconSize > 0 ? iconSize : 0);
-    }
-
-    _writeDouble(key, value) {
-        const rounded = Math.round(value * 100) / 100;
-        if (this._settings.get_double(key) !== rounded)
-            this._settings.set_double(key, rounded);
+    _refreshStyles() {
+        this._dockIntegration.refreshStyles();
+        this._dashIntegration.refreshStyles();
     }
 }

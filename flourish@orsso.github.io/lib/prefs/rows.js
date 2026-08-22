@@ -2,6 +2,8 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
+import {setBooleanCommitted} from '../motion/settings.js';
+
 // xgettext reads N_; the lookup happens where the string is used.
 const N_ = s => s;
 
@@ -18,19 +20,18 @@ export function connectSwitch(row, callback, state) {
     });
 }
 
-const BACKGROUND_ROWS = Object.freeze({
-    hover: [N_('Show hover background'),
+const BACKGROUND_ROWS = {
+    hover: ['show-hover-background', N_('Show hover background'),
         N_('Keep the tile shown under the pointed icon (off hides it)')],
-    focusedApp: [N_('Show focused app background'),
+    focusedApp: ['show-focused-app-background', N_('Show focused app background'),
         N_('Keep the tile shown behind the focused app (off hides it)')],
-});
+};
 
 // The same switch lives on both pages.
-export function createBackgroundRow(group, kind, editor, state) {
-    const [title, subtitle] = BACKGROUND_ROWS[kind];
+export function createBackgroundRow(group, kind, settings, state) {
+    const [key, title, subtitle] = BACKGROUND_ROWS[kind];
     const row = createSwitchRow(group, _(title), _(subtitle));
-    connectSwitch(row, enabled =>
-        editor.setBackgroundVisible(kind, enabled), state);
+    connectSwitch(row, enabled => setBooleanCommitted(settings, key, enabled), state);
     return row;
 }
 
@@ -63,7 +64,6 @@ export function createSpinRow(
     return row;
 }
 
-// For values picked by feel.
 export function createScaleRow(group, title, lower, upper, step, callback, state) {
     const adjustment = new Gtk.Adjustment({
         lower,
@@ -108,7 +108,6 @@ export function setComboValue(control, value) {
     row.selected = Math.max(0, index);
 }
 
-// Keep the budget explanation out of the main row.
 export function createHelpButton(text) {
     const label = new Gtk.Label({
         label: text,

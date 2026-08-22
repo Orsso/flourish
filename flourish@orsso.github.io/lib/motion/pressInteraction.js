@@ -10,8 +10,8 @@ export class PressInteraction {
 
     beginPrimary(config) {
         this.#primaryInteraction = true;
-        return this.applyStep(Boolean(config.enabled &&
-            config.mode === PressMode.ALL_PRIMARY_CLICKS));
+        return this.applyStep(config.enabled &&
+            config.mode === PressMode.ALL_PRIMARY_CLICKS);
     }
 
     syncButtonPressed(buttonPressed, config) {
