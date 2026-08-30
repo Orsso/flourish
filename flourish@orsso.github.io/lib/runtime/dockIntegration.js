@@ -14,7 +14,6 @@ const DASH_TO_DOCK_BUILDS = [
 
 export class DockIntegration {
     #attachIdleId = 0;
-    #controllerFactory;
     #generation = 0;
     #manager = null;
     #managerSignals = [];
@@ -23,15 +22,13 @@ export class DockIntegration {
     #settings;
     #surface = null;
 
-    constructor({controllerFactory, scheduler, settings}) {
-        this.#controllerFactory = controllerFactory;
+    constructor({scheduler, settings}) {
         this.#scheduler = scheduler;
         this.#settings = settings;
     }
 
     enable(recipe) {
         this.#surface = new MotionSurface({
-            controllerFactory: this.#controllerFactory,
             recipe,
             onMeasured: measurement => this.#publishBudget(measurement),
             scheduler: this.#scheduler,
@@ -90,7 +87,7 @@ export class DockIntegration {
     async #attach(generation) {
         const extension = lookupDashToDock();
         if (!extension) {
-            console.warn('[flourish] Dash to Dock (or Ubuntu Dock) is not enabled; dock motion is off');
+            console.warn('[flourish] no active Dash to Dock or Ubuntu Dock; dock motion is off');
             return;
         }
 

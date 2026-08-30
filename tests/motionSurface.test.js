@@ -1,386 +1,224 @@
+import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+import {neighborScaleAt} from '../flourish@orsso.github.io/lib/motion/transforms.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
-import {FakeEmitter} from './fakes.js';
+import {
+    FakeBox,
+    FakeContainer,
+    FakeEmitter,
+    FakeIcon,
+    makeScheduler,
+} from './fakes.js';
 
-class FakeActor extends FakeEmitter {
-    constructor() {
-        super();
-        this.parent = null;
-        this.children = [];
-    }
+const EXPRESSIVE = getBuiltInRecipe('expressive');
 
-    get_parent() {
-        return this.parent;
-    }
-
-    get_children() {
-        return this.children;
-    }
-
-    add_child(child) {
-        child.parent = this;
-        this.children.push(child);
-        this.emit('child-added', child);
-    }
-}
-
-class FakeController {
-    constructor(options) {
-        this.options = options;
-        this.recipes = [];
-        this.neighbor = Infinity;
-        this.affects = true;
-        this.applies = 0;
-        this.refreshCount = 0;
-        this.disposeCount = 0;
-    }
-
-    setRecipe(recipe) {
-        this.recipes.push(recipe);
-    }
-
-    setNeighborDistance(distance) {
-        const changed = this.neighbor !== distance;
-        this.neighbor = distance;
-        return changed && this.affects;
-    }
-
-    applyHoverState() {
-        this.applies++;
-    }
-
-    refreshStyle() {
-        this.refreshCount++;
-    }
-
-    dispose() {
-        this.disposeCount++;
-        this.options.onDestroyed(this);
-    }
-
-    onTargetDestroyed() {
-        this.options.onDestroyed(this);
-    }
-}
-
-function makeIcon() {
-    const icon = new FakeActor();
-    icon.icon = {_iconBin: {}};
-    return icon;
-}
-
-function makeContainer(icon) {
-    const container = new FakeActor();
-    container.child = icon;
-    return container;
-}
-
-function makeBox(iconCount) {
-    const box = new FakeActor();
-    const icons = [];
-    for (let index = 0; index < iconCount; index++) {
-        const icon = makeIcon();
-        const container = makeContainer(icon);
-        container.parent = box;
-        box.children.push(container);
-        icons.push(icon);
-    }
-    return {box, icons};
-}
-
-function makeScheduler() {
-    return {
-        nextId: 1,
-        pending: new Map(),
-        cancelled: [],
-        schedule(callback) {
-            const id = this.nextId++;
-            this.pending.set(id, callback);
-            return id;
-        },
-        cancel(id) {
-            this.cancelled.push(id);
-            this.pending.delete(id);
-        },
-        flush() {
-            const callbacks = [...this.pending.values()];
-            this.pending.clear();
-            for (const callback of callbacks)
-                callback();
-        },
-    };
-}
-
-function makeSurface({onMeasured, controllerFactory} = {}) {
-    const controllers = [];
+function makeSurface(recipe = EXPRESSIVE, iconCount = 0) {
     const scheduler = makeScheduler();
-    const surface = new MotionSurface({
-        controllerFactory: options => {
-            const controller = controllerFactory
-                ? controllerFactory(options)
-                : new FakeController(options);
-            controllers.push(controller);
-            return controller;
-        },
-        recipe: 'recipe-1',
-        onMeasured,
-        scheduler,
-    });
-    return {surface, controllers, scheduler};
+    const surface = new MotionSurface({recipe, scheduler});
+    const box = new FakeBox(iconCount);
+    surface.addBox(box, 'bottom');
+    scheduler.flush();
+    const {icons} = box;
+    const bins = icons.map(icon => icon.icon._iconBin);
+    return {surface, scheduler, box, icons, bins};
+}
+
+function scales(bins) {
+    return bins.map(bin => Math.round(bin.scale_x * 1000) / 1000);
+}
+
+function neighbor(distance) {
+    return Math.round(neighborScaleAt(EXPRESSIVE.hover, distance) * 1000) / 1000;
+}
+
+function eases(bins) {
+    return bins.map(bin => bin.easeTargets.length);
+}
+
+function clearEases(bins) {
+    for (const bin of bins)
+        bin.easeTargets.length = 0;
 }
 
 test('addBox registers a controller per icon container', () => {
-    const {surface, controllers} = makeSurface();
-    const {box} = makeBox(3);
-    surface.addBox(box, 'bottom');
-    assertEqual(controllers.length, 3);
-    assertEqual(controllers[0].options.position, 'bottom');
-    assertEqual(controllers[0].options.recipe, 'recipe-1');
+    const {surface} = makeSurface(EXPRESSIVE, 3);
+    assertEqual(surface.controllers.length, 3);
+    assertEqual(surface.controllers[0].position, 'bottom');
+    assertEqual(surface.controllers[0].recipe, EXPRESSIVE);
 });
 
 test('containers without an icon bin are skipped', () => {
-    const {surface, controllers} = makeSurface();
-    const {box} = makeBox(1);
-    const separator = new FakeActor();
-    separator.parent = box;
-    box.children.push(separator);
+    const scheduler = makeScheduler();
+    const surface = new MotionSurface({recipe: EXPRESSIVE, scheduler});
+    const box = new FakeBox(1);
+    box.append(new FakeEmitter());
     surface.addBox(box, 'bottom');
-    assertEqual(controllers.length, 1);
+    assertEqual(surface.controllers.length, 1);
 });
 
 test('child-added registers late containers', () => {
-    const {surface, controllers} = makeSurface();
-    const {box} = makeBox(1);
-    surface.addBox(box, 'bottom');
-    box.add_child(makeContainer(makeIcon()));
-    assertEqual(controllers.length, 2);
+    const {surface, box} = makeSurface(EXPRESSIVE, 1);
+    box.add_child(new FakeContainer());
+    assertEqual(surface.controllers.length, 2);
 });
 
 test('addBox refuses the same box twice', () => {
-    const {surface, controllers} = makeSurface();
-    const {box} = makeBox(2);
+    const {surface, box} = makeSurface(EXPRESSIVE, 2);
     surface.addBox(box, 'bottom');
-    surface.addBox(box, 'bottom');
-    assertEqual(controllers.length, 2);
+    assertEqual(surface.controllers.length, 2);
     assertEqual(box.handlers.size, 2);
 });
 
 test('getController maps the icon actor to its controller', () => {
-    const {surface, controllers} = makeSurface();
-    const {box, icons} = makeBox(2);
-    surface.addBox(box, 'bottom');
-    assertEqual(surface.getController(icons[1]), controllers[1]);
-    assertEqual(surface.getController(new FakeActor()), undefined);
+    const {surface, icons} = makeSurface(EXPRESSIVE, 2);
+    assertEqual(surface.getController(icons[1]), surface.controllers[1]);
+    assertEqual(surface.getController(new FakeIcon()), undefined);
 });
 
 test('setRecipe reaches every controller', () => {
-    const {surface, controllers} = makeSurface();
-    const {box} = makeBox(2);
-    surface.addBox(box, 'bottom');
-    surface.setRecipe('recipe-2');
-    assertDeepEqual(controllers.map(c => c.recipes), [['recipe-2'], ['recipe-2']]);
+    const {surface} = makeSurface(EXPRESSIVE, 2);
+    const subtle = getBuiltInRecipe('subtle');
+    surface.setRecipe(subtle);
+    assertEqual(surface.controllers.every(c => c.recipe === subtle), true);
 });
 
 test('refreshStyles touches every controller', () => {
-    const {surface, controllers} = makeSurface();
-    const {box} = makeBox(2);
-    surface.addBox(box, 'bottom');
+    const {surface, icons} = makeSurface(EXPRESSIVE, 2);
     surface.refreshStyles();
-    assertDeepEqual(controllers.map(c => c.refreshCount), [1, 1]);
+    assertDeepEqual(icons.map(icon => icon.styleCalls.length), [5, 5]);
 });
 
-test('hovering an icon sends each controller its distance', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(4);
-    surface.addBox(box, 'bottom');
-    controllers[1].options.onHoverChanged(controllers[1], true);
+test('hovering an icon scales its neighbors by distance', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 4);
+    icons[1].setHover(true);
     scheduler.flush();
-    assertDeepEqual(controllers.map(c => c.neighbor), [1, 0, 1, 2]);
+    assertDeepEqual(scales(bins), [neighbor(1), 1.22, neighbor(1), neighbor(2)]);
 });
 
-test('unhover pushes every distance to infinity', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(3);
-    surface.addBox(box, 'bottom');
-    controllers[1].options.onHoverChanged(controllers[1], true);
+test('unhover returns every icon to rest', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 3);
+    icons[1].setHover(true);
     scheduler.flush();
-    controllers[1].options.onHoverChanged(controllers[1], false);
+    icons[1].setHover(false);
     scheduler.flush();
-    assertEqual(controllers.every(c => c.neighbor === Infinity), true);
+    assertDeepEqual(scales(bins), [1, 1, 1]);
 });
 
-test('distances beyond the maximum radius collapse to infinity', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(6);
-    surface.addBox(box, 'bottom');
-    controllers[0].options.onHoverChanged(controllers[0], true);
+test('icons beyond the neighbor radius stay at rest', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 6);
+    icons[0].setHover(true);
     scheduler.flush();
-    assertEqual(controllers[3].neighbor, 3);
-    assertEqual(controllers[4].neighbor, Infinity);
-    assertEqual(controllers[5].neighbor, Infinity);
+    assertDeepEqual(scales(bins).slice(2), [neighbor(2), 1, 1, 1]);
 });
 
 test('removing a non-hovered icon resyncs the distances', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box, icons} = makeBox(4);
-    surface.addBox(box, 'bottom');
-    controllers[2].options.onHoverChanged(controllers[2], true);
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 4);
+    icons[2].setHover(true);
     scheduler.flush();
     icons[1].destroy();
     scheduler.flush();
-    assertEqual(controllers[0].neighbor, 1);
+    assertEqual(scales(bins)[0], neighbor(1));
 });
 
 test('a destroyed icon leaves the neighbor group', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box, icons} = makeBox(3);
-    surface.addBox(box, 'bottom');
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 3);
     icons[1].destroy();
-    controllers[0].options.onHoverChanged(controllers[0], true);
+    icons[0].setHover(true);
     scheduler.flush();
-    assertEqual(controllers[2].neighbor, 1);
+    assertEqual(scales(bins)[2], neighbor(1));
 });
 
-test('dispose disposes controllers and stops watching the box', () => {
-    const {surface, controllers} = makeSurface();
-    const {box} = makeBox(2);
-    surface.addBox(box, 'bottom');
+test('dispose releases the icons and stops watching the box', () => {
+    const {surface, box, icons} = makeSurface(EXPRESSIVE, 2);
     surface.dispose();
-    assertDeepEqual(controllers.map(c => c.disposeCount), [1, 1]);
-    box.add_child(makeContainer(makeIcon()));
-    assertEqual(controllers.length, 2);
+    assertEqual(icons.every(icon => icon.handlers.size === 0), true);
+    assertEqual(icons.every(icon => icon.icon.icon.size === 48), true);
+    box.add_child(new FakeContainer());
+    assertEqual(surface.controllers.length, 0);
     assertEqual(box.handlers.size, 0);
 });
 
 test('hover updates wait for the scheduled frame flush', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(4);
-    surface.addBox(box, 'bottom');
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 4);
+    icons[1].setHover(true);
+    assertDeepEqual(scales(bins), [1, 1, 1, 1]);
     scheduler.flush();
-    controllers[1].options.onHoverChanged(controllers[1], true);
-    assertDeepEqual(controllers.map(c => c.neighbor),
-        [Infinity, Infinity, Infinity, Infinity]);
-    scheduler.flush();
-    assertDeepEqual(controllers.map(c => c.neighbor), [1, 0, 1, 2]);
+    assertDeepEqual(scales(bins), [neighbor(1), 1.22, neighbor(1), neighbor(2)]);
 });
 
-test('the flush applies the flipped controller and affected neighbors only', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(5);
-    surface.addBox(box, 'bottom');
+test('without a neighbor effect only the flipped icon eases', () => {
+    const recipe = getBuiltInRecipe('balanced');
+    const {scheduler, icons, bins} = makeSurface(recipe, 5);
+    icons[1].setHover(true);
     scheduler.flush();
+    assertDeepEqual(eases(bins), [0, 1, 0, 0, 0]);
+});
 
-    // Distance changes cannot affect this recipe: only the flip applies.
-    for (const controller of controllers)
-        controller.affects = false;
-    controllers[1].options.onHoverChanged(controllers[1], true);
+test('a crossing eases the flipped icons and the shifted neighbors', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 5);
+    icons[1].setHover(true);
     scheduler.flush();
-    assertDeepEqual(controllers.map(c => c.applies), [0, 1, 0, 0, 0]);
-
-    // Distance changes matter again: shifted neighbors apply too.
-    for (const controller of controllers)
-        controller.affects = true;
-    controllers[1].options.onHoverChanged(controllers[1], false);
-    controllers[2].options.onHoverChanged(controllers[2], true);
+    clearEases(bins);
+    icons[1].setHover(false);
+    icons[2].setHover(true);
     scheduler.flush();
-    assertDeepEqual(controllers.map(c => c.applies), [1, 2, 1, 1, 1]);
+    assertDeepEqual(eases(bins), [1, 1, 1, 1, 1]);
 });
 
 test('a flip made during a flush is applied by the next flush', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(3);
-    surface.addBox(box, 'bottom');
-    scheduler.flush();
-    for (const controller of controllers)
-        controller.affects = false;
-
-    // The first apply reacts by unhovering, like a pointer exit mid-flush.
-    let reacted = false;
-    controllers[0].applyHoverState = function () {
-        this.applies++;
-        if (!reacted) {
-            reacted = true;
-            this.options.onHoverChanged(this, false);
-        }
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 3);
+    // The first ease reacts by unhovering, like a pointer exit mid-flush.
+    bins[0].onEase = () => {
+        bins[0].onEase = null;
+        icons[0].setHover(false);
     };
-    controllers[0].options.onHoverChanged(controllers[0], true);
+    icons[0].setHover(true);
     scheduler.flush();
     assertEqual(scheduler.pending.size, 1);
     scheduler.flush();
-    assertEqual(controllers[0].applies, 2);
+    assertDeepEqual(scales(bins), [1, 1, 1]);
 });
 
 test('a burst of hover flips coalesces into one flush', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(4);
-    surface.addBox(box, 'bottom');
-    scheduler.flush();
-    controllers[0].options.onHoverChanged(controllers[0], true);
-    controllers[0].options.onHoverChanged(controllers[0], false);
-    controllers[1].options.onHoverChanged(controllers[1], true);
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 4);
+    icons[0].setHover(true);
+    icons[0].setHover(false);
+    icons[1].setHover(true);
     assertEqual(scheduler.pending.size, 1);
     scheduler.flush();
-    assertDeepEqual(controllers.map(c => c.neighbor), [1, 0, 1, 2]);
-    assertDeepEqual(controllers.map(c => c.applies), [1, 1, 1, 1]);
+    assertDeepEqual(scales(bins), [neighbor(1), 1.22, neighbor(1), neighbor(2)]);
+    assertDeepEqual(eases(bins), [1, 1, 1, 1]);
 });
 
 test('dispose cancels the pending flush', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(2);
-    surface.addBox(box, 'bottom');
-    scheduler.flush();
-    controllers[0].options.onHoverChanged(controllers[0], true);
+    const {surface, scheduler, icons} = makeSurface(EXPRESSIVE, 2);
+    icons[0].setHover(true);
     surface.dispose();
     assertEqual(scheduler.pending.size, 0);
     assertEqual(scheduler.cancelled.length, 1);
 });
 
 test('box destruction cancels the pending flush', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box} = makeBox(2);
-    surface.addBox(box, 'bottom');
-    scheduler.flush();
-    controllers[0].options.onHoverChanged(controllers[0], true);
+    const {scheduler, box, icons} = makeSurface(EXPRESSIVE, 2);
+    icons[0].setHover(true);
     box.destroy();
     assertEqual(scheduler.pending.size, 0);
 });
 
-test('a removed controller is not applied by the pending flush', () => {
-    const {surface, controllers, scheduler} = makeSurface();
-    const {box, icons} = makeBox(3);
-    surface.addBox(box, 'bottom');
-    scheduler.flush();
-    controllers[1].options.onHoverChanged(controllers[1], true);
+test('a destroyed icon is not applied by the pending flush', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 3);
+    icons[1].setHover(true);
     icons[1].destroy();
     scheduler.flush();
-    assertEqual(controllers[1].applies, 0);
+    assertEqual(bins[1].easeTargets.length, 0);
 });
 
-test('a controller born hovered resolves at the next flush', () => {
-    // The real controller reports a pre-existing hover during construction.
-    let bornHovered = null;
-    const {surface, controllers, scheduler} = makeSurface({
-        controllerFactory: options => {
-            const controller = new FakeController(options);
-            if (!bornHovered) {
-                bornHovered = controller;
-                options.onHoverChanged(controller, true);
-            }
-            return controller;
-        },
-    });
-    const {box} = makeBox(3);
+test('an icon born hovered resolves at the next flush', () => {
+    const scheduler = makeScheduler();
+    const surface = new MotionSurface({recipe: EXPRESSIVE, scheduler});
+    const box = new FakeBox(3);
+    box.icons[0].hover = true;
     surface.addBox(box, 'bottom');
     scheduler.flush();
-    assertDeepEqual(controllers.map(c => c.neighbor), [0, 1, 2]);
-    assertEqual(controllers[0].applies, 1);
-});
-
-test('onMeasured flows through the controller options', () => {
-    const measured = [];
-    const {surface, controllers} = makeSurface(
-        {onMeasured: measurement => measured.push(measurement)});
-    const {box} = makeBox(1);
-    surface.addBox(box, 'bottom');
-    controllers[0].options.onMeasured('measurement');
-    assertDeepEqual(measured, ['measurement']);
+    const bins = box.icons.map(icon => icon.icon._iconBin);
+    assertDeepEqual(scales(bins), [1.22, neighbor(1), neighbor(2)]);
 });

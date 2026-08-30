@@ -213,7 +213,7 @@ export class IconMotionController {
                 launching: this.#launching,
                 neighborDistance: this.#neighborDistance,
             }))
-            ? this.#measureBudget()
+            ? this.measure()
             : null;
         if (this.#pendingBudgetReport) {
             this.#pendingBudgetReport = false;
@@ -268,10 +268,6 @@ export class IconMotionController {
     }
 
     measure() {
-        return this.#measureBudget();
-    }
-
-    #measureBudget() {
         const bin = this.#bin;
         if (!bin)
             return null;

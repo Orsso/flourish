@@ -9,14 +9,16 @@ export class BackgroundStyle {
         this.#file = Gio.File.new_for_path(`${extension.path}/${cssFileName}`);
     }
 
+    // True when a stylesheet was loaded or unloaded.
     setEnabled(enabled) {
         if (this.#loaded === enabled)
-            return;
+            return false;
         if (enabled)
             this.#theme().load_stylesheet(this.#file);
         else
             this.#theme().unload_stylesheet(this.#file);
         this.#loaded = enabled;
+        return true;
     }
 
     disable() {

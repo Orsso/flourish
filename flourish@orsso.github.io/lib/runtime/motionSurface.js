@@ -1,15 +1,14 @@
 import {NeighborRadius} from '../motion/catalog.js';
+import {IconMotionController} from './iconMotionController.js';
 import {LiveRegistry} from './liveRegistry.js';
 
 export class MotionSurface {
-    #controllerFactory;
     #onMeasured;
     #recipe;
     #registry = new LiveRegistry();
     #scheduler;
 
-    constructor({controllerFactory, recipe, onMeasured = () => {}, scheduler}) {
-        this.#controllerFactory = controllerFactory;
+    constructor({recipe, onMeasured = () => {}, scheduler}) {
         this.#recipe = recipe;
         this.#onMeasured = onMeasured;
         this.#scheduler = scheduler;
@@ -39,7 +38,7 @@ export class MotionSurface {
         const added = this.#registry.addBox(box, () => {
             box.disconnectObject(this);
             group.dispose();
-        }, () => group.onBoxDestroyed());
+        }, () => group.dispose());
         if (!added)
             return;
         for (const container of box.get_children())
@@ -60,7 +59,7 @@ export class MotionSurface {
         if (!bin || this.#registry.getIcon(icon))
             return;
 
-        const controller = this.#controllerFactory({
+        const controller = new IconMotionController({
             icon,
             bin,
             position,
@@ -110,12 +109,6 @@ class NeighborGroup {
     }
 
     dispose() {
-        this.#cancelFlush();
-        this.#hovered = null;
-        this.#entries = [];
-    }
-
-    onBoxDestroyed() {
         this.#cancelFlush();
         this.#hovered = null;
         this.#entries = [];

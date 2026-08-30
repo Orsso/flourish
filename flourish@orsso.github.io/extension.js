@@ -6,7 +6,6 @@ import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {readActiveRecipe} from './lib/motion/settings.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
 import {DockIntegration} from './lib/runtime/dockIntegration.js';
-import {IconMotionController} from './lib/runtime/iconMotionController.js';
 import {LaunchEngine} from './lib/runtime/launchEngine.js';
 import {BackgroundStyle} from './lib/runtime/backgroundStyle.js';
 
@@ -25,12 +24,10 @@ export default class FlourishExtension extends Extension {
         };
 
         this._dockIntegration = new DockIntegration({
-            controllerFactory: options => new IconMotionController(options),
             scheduler: this._frameScheduler,
             settings: this._settings,
         });
         this._dashIntegration = new DashIntegration({
-            controllerFactory: options => new IconMotionController(options),
             scheduler: this._frameScheduler,
         });
 
@@ -102,16 +99,19 @@ export default class FlourishExtension extends Extension {
         this._recipe = readActiveRecipe(this._settings);
         this._dockIntegration.setRecipe(this._recipe);
         this._dashIntegration.setRecipe(this._recipe);
-        this._syncStyles();
-        this._refreshStyles();
+        if (this._syncStyles())
+            this._refreshStyles();
     }
 
     _syncStyles() {
         const hideHover = !this._settings.get_boolean('show-hover-background');
-        this._hoverStyle.setEnabled(hideHover);
-        this._dashHoverStyle.setEnabled(hideHover);
-        this._focusedAppStyle.setEnabled(
-            !this._settings.get_boolean('show-focused-app-background'));
+        const hideFocused = !this._settings.get_boolean('show-focused-app-background');
+        // No short-circuit: every sheet must sync.
+        return [
+            this._hoverStyle.setEnabled(hideHover),
+            this._dashHoverStyle.setEnabled(hideHover),
+            this._focusedAppStyle.setEnabled(hideFocused),
+        ].includes(true);
     }
 
     _refreshStyles() {

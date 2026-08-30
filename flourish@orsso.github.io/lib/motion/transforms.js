@@ -285,13 +285,6 @@ export function shouldRetreatOnHandoff({
     return overviewVisible && !overviewVisibleTarget && dashContainsTarget;
 }
 
-export function launchRepeatPause(state) {
-    if (!shouldRepeatLaunch(state))
-        return 0;
-    const pause = Number(state.repeatPause);
-    return Number.isFinite(pause) ? Math.max(0, Math.round(pause)) : 0;
-}
-
 export function launchDuration(segments) {
     return segments.reduce((total, item) => total + item.duration, 0);
 }

@@ -14,7 +14,6 @@ import {
     hoverIntroScale,
     hoverNeedsBudget,
     launchDuration,
-    launchRepeatPause,
     neighborScaleAt,
     projectHoverTransform,
     resolveIconTransform,
@@ -424,33 +423,6 @@ test('handoff settles into the dash of a steady overview', () => {
         overviewVisibleTarget: true,
         dashContainsTarget: true,
     }), false);
-});
-
-test('repeated launch cycles pause briefly between hops', () => {
-    assertEqual(launchRepeatPause({
-        wasLaunching: true,
-        appRunning: false,
-        repeat: true,
-        repeatPause: 300,
-        elapsed: 500,
-        maxDuration: 10000,
-    }), 300);
-    assertEqual(launchRepeatPause({
-        wasLaunching: true,
-        appRunning: true,
-        repeat: true,
-        repeatPause: 300,
-        elapsed: 500,
-        maxDuration: 10000,
-    }), 0);
-    assertEqual(launchRepeatPause({
-        wasLaunching: true,
-        appRunning: false,
-        repeat: true,
-        repeatPause: 0,
-        elapsed: 500,
-        maxDuration: 10000,
-    }), 0);
 });
 
 test('launch segment sampling uses the shared timeline', () => {

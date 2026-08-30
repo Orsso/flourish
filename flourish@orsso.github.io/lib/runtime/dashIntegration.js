@@ -6,13 +6,11 @@ import {MotionSurface} from './motionSurface.js';
 
 export class DashIntegration {
     #box = null;
-    #controllerFactory;
     #savedClip = false;
     #scheduler;
     #surface = null;
 
-    constructor({controllerFactory, scheduler}) {
-        this.#controllerFactory = controllerFactory;
+    constructor({scheduler}) {
         this.#scheduler = scheduler;
     }
 
@@ -29,7 +27,6 @@ export class DashIntegration {
         }
 
         this.#surface = new MotionSurface({
-            controllerFactory: this.#controllerFactory,
             recipe,
             scheduler: this.#scheduler,
         });

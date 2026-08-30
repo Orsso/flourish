@@ -15,7 +15,6 @@ import {
     getOrientation,
     hoverIntroLift,
     hoverIntroScale,
-    launchRepeatPause,
     shouldRepeatLaunch,
     shouldRetreatOnHandoff,
 } from '../motion/transforms.js';
@@ -59,7 +58,7 @@ export class LaunchEngine {
         this.#injections.clear();
         this.#injections = null;
         for (const session of [...this.#sessions.values()])
-            this.#cancelLive(session);
+            this.#finish(session);
         this.#deferredEnds.flush();
     }
 
@@ -124,7 +123,6 @@ export class LaunchEngine {
             finished: false,
             hoverDuration,
             introLift,
-            introScale,
             magnifyBase: magnify,
             originalOpacity: target.opacity,
             launchPivot,
@@ -138,7 +136,7 @@ export class LaunchEngine {
                 : false,
         };
         target.connectObject('destroy',
-            () => this.#discardDestroyed(session), session);
+            () => this.#finish(session, {targetDestroyed: true}), session);
         if (session.app) {
             Shell.AppSystem.get_default().connectObject('app-state-changed',
                 (_system, app) => {
@@ -146,7 +144,7 @@ export class LaunchEngine {
                         app.state !== Shell.AppState.RUNNING)
                         return;
                     session.appSeenRunning = true;
-                    this.#clearAppStateWatch(session);
+                    Shell.AppSystem.get_default().disconnectObject(session);
                 }, session);
         }
         this.#sessions.set(target, session);
@@ -263,28 +261,23 @@ export class LaunchEngine {
         });
     }
 
+    #shouldRepeat(session) {
+        const launch = session.controller.recipe.launch;
+        return shouldRepeatLaunch({
+            wasLaunching: session.wasLaunching,
+            appRunning: session.appSeenRunning || !session.app ||
+                session.app.state === Shell.AppState.RUNNING,
+            repeat: launch.repeat,
+            elapsed: GLib.get_monotonic_time() / 1000 - session.startedAt,
+            maxDuration: launch.maxDuration,
+        });
+    }
+
     #finishCycle(session) {
         const launch = session.controller.recipe.launch;
-        const elapsed = GLib.get_monotonic_time() / 1000 - session.startedAt;
-        const appRunning = session.appSeenRunning || !session.app ||
-            session.app.state === Shell.AppState.RUNNING;
-        if (shouldRepeatLaunch({
-            wasLaunching: session.wasLaunching,
-            appRunning,
-            repeat: launch.repeat,
-            elapsed,
-            maxDuration: launch.maxDuration,
-        })) {
-            const pause = launchRepeatPause({
-                wasLaunching: session.wasLaunching,
-                appRunning,
-                repeat: launch.repeat,
-                repeatPause: launch.repeatPause,
-                elapsed,
-                maxDuration: launch.maxDuration,
-            });
+        if (this.#shouldRepeat(session)) {
             session.cycle++;
-            this.#scheduleNextCycle(session, pause);
+            this.#scheduleNextCycle(session, launch.repeatPause);
             return;
         }
         const momentum = launch.effect !== LaunchEffect.PULSE &&
@@ -299,24 +292,10 @@ export class LaunchEngine {
                 session.repeatSourceId = 0;
                 if (session.finished)
                     return GLib.SOURCE_REMOVE;
-
-                const launch = session.controller.recipe.launch;
-                const elapsed = GLib.get_monotonic_time() / 1000 -
-                    session.startedAt;
-                const appRunning = session.appSeenRunning || !session.app ||
-                    session.app.state === Shell.AppState.RUNNING;
-                if (!shouldRepeatLaunch({
-                    wasLaunching: session.wasLaunching,
-                    appRunning,
-                    repeat: launch.repeat,
-                    elapsed,
-                    maxDuration: launch.maxDuration,
-                })) {
+                if (this.#shouldRepeat(session))
+                    this.#runCycle(session);
+                else
                     this.#handoff(session);
-                    return GLib.SOURCE_REMOVE;
-                }
-
-                this.#runCycle(session);
                 return GLib.SOURCE_REMOVE;
             });
     }
@@ -346,7 +325,7 @@ export class LaunchEngine {
                 mode: momentum
                     ? Clutter.AnimationMode.EASE_OUT_QUAD
                     : Clutter.AnimationMode.EASE_IN_QUAD,
-                onComplete: () => this.#completeLive(session),
+                onComplete: () => this.#finish(session),
             });
             return;
         }
@@ -363,46 +342,27 @@ export class LaunchEngine {
             translation_y: 0,
             duration: HANDOFF_DURATION,
             mode: Clutter.AnimationMode.EASE_OUT_QUAD,
-            onComplete: () => this.#completeLive(session),
+            onComplete: () => this.#finish(session),
         });
     }
 
-    #completeLive(session) {
+    // With a destroyed target, the controller's end waits for idle.
+    #finish(session, {targetDestroyed = false} = {}) {
         if (session.finished)
             return;
         session.finished = true;
         this.#clearRepeatTimer(session);
-        this.#clearAppStateWatch(session);
-        session.target.disconnectObject(session);
+        Shell.AppSystem.get_default().disconnectObject(session);
+        session.clone.remove_all_transitions();
         session.clone.destroy();
         this.#sessions.delete(session.target);
-        this.#endControllerLaunch(session);
-    }
-
-    #cancelLive(session) {
-        if (session.finished)
+        if (targetDestroyed) {
+            this.#deferredEnds.defer(session.controller);
             return;
-        session.finished = true;
-        this.#clearRepeatTimer(session);
-        this.#clearAppStateWatch(session);
-        session.clone.remove_all_transitions();
+        }
         session.target.opacity = session.originalOpacity;
         session.target.disconnectObject(session);
-        session.clone.destroy();
-        this.#sessions.delete(session.target);
-        this.#endControllerLaunch(session);
-    }
-
-    #discardDestroyed(session) {
-        if (session.finished)
-            return;
-        session.finished = true;
-        this.#clearRepeatTimer(session);
-        this.#clearAppStateWatch(session);
-        session.clone.remove_all_transitions();
-        session.clone.destroy();
-        this.#sessions.delete(session.target);
-        this.#endControllerLaunch(session, {defer: true});
+        session.controller.endLaunch();
     }
 
     #clearRepeatTimer(session) {
@@ -412,17 +372,6 @@ export class LaunchEngine {
         session.repeatSourceId = 0;
     }
 
-    #clearAppStateWatch(session) {
-        Shell.AppSystem.get_default().disconnectObject(session);
-    }
-
-    #endControllerLaunch(session, {defer = false} = {}) {
-        if (defer) {
-            this.#deferredEnds.defer(session.controller);
-            return;
-        }
-        session.controller.endLaunch();
-    }
 }
 
 function actorGeometry(actor) {
