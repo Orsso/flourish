@@ -5,6 +5,9 @@
 - Icons stay sharp while magnified: each dash icon now renders at twice
   its size and is scaled down at rest.
 - Flourish no longer loads a Dash to Dock that is installed but disabled.
+- Fixed a stuck launch repeat on apps whose window opens while the shell
+  still reports them as starting, such as Bazaar.
+- Fixed an error in the preferences launch preview.
 
 ## 1.0.0
 

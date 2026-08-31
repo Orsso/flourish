@@ -263,10 +263,12 @@ export class LaunchEngine {
 
     #shouldRepeat(session) {
         const launch = session.controller.recipe.launch;
+        // A mapped window does not end STARTING; the startup sequence does.
         return shouldRepeatLaunch({
             wasLaunching: session.wasLaunching,
             appRunning: session.appSeenRunning || !session.app ||
-                session.app.state === Shell.AppState.RUNNING,
+                session.app.state === Shell.AppState.RUNNING ||
+                session.app.get_n_windows() > 0,
             repeat: launch.repeat,
             elapsed: GLib.get_monotonic_time() / 1000 - session.startedAt,
             maxDuration: launch.maxDuration,
