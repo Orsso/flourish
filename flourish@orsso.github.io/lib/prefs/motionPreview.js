@@ -421,7 +421,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 this._motionTransform = {...IDENTITY};
             } else {
                 this._animateMotion(
-                    this._recipe.hover.duration, null, Adw.Easing.EASE_OUT_CUBIC);
+                    this._recipe.hover.duration, () => {},
+                    Adw.Easing.EASE_OUT_CUBIC);
             }
             this._playLaunch(onComplete);
         } else {
