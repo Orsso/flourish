@@ -50,17 +50,9 @@ The build compiles `po/*.po` on its own.
 
 ## Reporting a Bug
 
-Please include what you did, what happened, and the output of:
-
-```bash
-gnome-shell --version
-gnome-extensions info dash-to-dock@micxgx.gmail.com
-gnome-extensions info flourish@orsso.github.io
-journalctl --user -b --no-pager | rg 'flourish|JS ERROR|CRITICAL'
-```
-
-On Ubuntu Dock, use `ubuntu-dock@ubuntu.com` instead of the Dash to Dock
-id. Without either dock, skip that line.
+Open a [bug report](https://github.com/Orsso/flourish/issues/new?template=bug_report.yml).
+The form asks for what you did, what happened, your versions, and the
+relevant log lines.
 
 Mention whether it also happens with other extensions and custom themes
 disabled. That helps a lot for visual bugs.

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Releases
+    url: https://github.com/Orsso/flourish/releases
+    about: Check that you run the latest release before reporting a bug.

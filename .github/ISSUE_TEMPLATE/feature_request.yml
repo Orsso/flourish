@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest something for Flourish.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like
+      placeholder: An animation when an app receives a notification...
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What it would help you with, or what is missing today.
+    validations:
+      required: true
+  - type: dropdown
+    id: dock
+    attributes:
+      label: Dock
+      options:
+        - Dash to Dock
+        - Ubuntu Dock
+        - Plain GNOME dash
+    validations:
+      required: true

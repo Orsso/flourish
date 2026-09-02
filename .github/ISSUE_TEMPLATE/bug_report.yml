@@ -1,0 +1,64 @@
+name: Bug report
+description: Something in Flourish does not work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: What did you do
+      placeholder: Hovered the dock, clicked an icon, launched an app...
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. Screenshots and screen recordings help a lot for visual bugs.
+    validations:
+      required: true
+  - type: input
+    id: shell-version
+    attributes:
+      label: GNOME Shell version
+      description: Output of `gnome-shell --version`.
+      placeholder: GNOME Shell 48.2
+    validations:
+      required: true
+  - type: dropdown
+    id: dock
+    attributes:
+      label: Dock
+      options:
+        - Dash to Dock
+        - Ubuntu Dock
+        - Plain GNOME dash
+    validations:
+      required: true
+  - type: input
+    id: dock-version
+    attributes:
+      label: Dock version
+      description: Output of `gnome-extensions info dash-to-dock@micxgx.gmail.com` or `gnome-extensions info ubuntu-dock@ubuntu.com`. Skip this on the plain dash.
+      placeholder: Version 105
+  - type: input
+    id: flourish-version
+    attributes:
+      label: Flourish version
+      description: Output of `gnome-extensions info flourish@orsso.github.io`.
+      placeholder: Version 1.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: "Output of: `journalctl --user -b --no-pager | rg 'flourish|JS ERROR|CRITICAL'`"
+      render: shell
+  - type: checkboxes
+    id: isolation
+    attributes:
+      label: Isolation
+      description: This helps a lot for visual bugs.
+      options:
+        - label: It still happens with other extensions disabled
+        - label: It still happens with the default theme
