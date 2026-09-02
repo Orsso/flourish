@@ -121,15 +121,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
 
         buildAdvancedPage(advanced, controls, settings, state);
 
-        // The focused app tile is a Dash to Dock concept.
         controls.dockPresent = dashToDockEnabled();
-        if (!controls.dockPresent) {
-            for (const row of [controls.focusedAppBackground,
-                controls.advancedFocusedAppBackground]) {
-                row.sensitive = false;
-                row.subtitle = _('Requires Dash to Dock or Ubuntu Dock');
-            }
-        }
 
         const sync = () => syncControls(settings, controls, state);
         const changedId = settings.connect('changed', sync);

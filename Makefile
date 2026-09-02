@@ -35,6 +35,7 @@ pack: check
 		--extra-source=hover-background-hidden.css \
 		--extra-source=focused-app-background-hidden.css \
 		--extra-source=dash-hover-background-hidden.css \
+		--extra-source=dash-focused-app-background.css \
 		--extra-source=../README.md \
 		--extra-source=../LICENSE \
 		$(UUID)

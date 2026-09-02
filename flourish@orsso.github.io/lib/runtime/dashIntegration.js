@@ -1,11 +1,14 @@
+import Shell from 'gi://Shell';
 import {Dash} from 'resource:///org/gnome/shell/ui/dash.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DockPosition} from '../motion/catalog.js';
+import {FocusHighlight} from './focusHighlight.js';
 import {MotionSurface} from './motionSurface.js';
 
 export class DashIntegration {
     #box = null;
+    #highlight = null;
     #savedClip = false;
     #scheduler;
     #surface = null;
@@ -33,7 +36,13 @@ export class DashIntegration {
         this.#box = box;
         box.connectObject('destroy', () => {
             this.#box = null;
+            this.#highlight = null;
         }, this);
+        this.#highlight = new FocusHighlight({
+            box,
+            tracker: Shell.WindowTracker.get_default(),
+        });
+        this.#highlight.enable();
         // The dash clips its row; hover motion overflows it.
         this.#savedClip = box.clip_to_allocation;
         box.clip_to_allocation = false;
@@ -47,9 +56,11 @@ export class DashIntegration {
         this.#surface.dispose();
         this.#surface = null;
         if (this.#box) {
+            this.#highlight.disable();
             this.#box.disconnectObject(this);
             this.#box.clip_to_allocation = this.#savedClip;
         }
+        this.#highlight = null;
         this.#box = null;
     }
 

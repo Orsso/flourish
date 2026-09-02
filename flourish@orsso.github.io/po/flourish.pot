@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-30 16:16+0200\n"
+"POT-Creation-Date: 2026-09-02 18:56+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -85,26 +85,22 @@ msgstr ""
 msgid "Timing, effects, and repeats"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:130
-msgid "Requires Dash to Dock or Ubuntu Dock"
-msgstr ""
-
-#: flourish@orsso.github.io/prefs.js:202
+#: flourish@orsso.github.io/prefs.js:193
 #, javascript-format
 msgid "Switch to %s?"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:203
+#: flourish@orsso.github.io/prefs.js:194
 #, javascript-format
 msgid ""
 "Your Custom recipe will be abandoned and replaced by the %s preset values."
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:205
+#: flourish@orsso.github.io/prefs.js:196
 msgid "Cancel"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:206
+#: flourish@orsso.github.io/prefs.js:197
 msgid "Switch"
 msgstr ""
 
@@ -341,9 +337,9 @@ msgid "Show focused app background"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/rows.js:27
-msgid "Keep the tile shown behind the focused app (off hides it)"
+msgid "Mark the app that owns the focused window"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/rows.js:128
+#: flourish@orsso.github.io/lib/prefs/rows.js:127
 msgid "Why this limit?"
 msgstr ""

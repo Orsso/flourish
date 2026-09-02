@@ -21,7 +21,7 @@ if bash "$repo_root/scripts/verify-package.sh" "$work_dir/extension.zip" 2>/dev/
     exit 1
 fi
 
-for css in hover-background-hidden.css focused-app-background-hidden.css dash-hover-background-hidden.css; do
+for css in hover-background-hidden.css focused-app-background-hidden.css dash-hover-background-hidden.css dash-focused-app-background.css; do
     (cd "$work_dir/contents" && zip -qr "$work_dir/$css.zip" .)
     zip -qd "$work_dir/$css.zip" "$css"
     if bash "$repo_root/scripts/verify-package.sh" "$work_dir/$css.zip" 2>/dev/null; then

@@ -36,6 +36,8 @@ export default class FlourishExtension extends Extension {
             new BackgroundStyle(this, 'focused-app-background-hidden.css');
         this._dashHoverStyle =
             new BackgroundStyle(this, 'dash-hover-background-hidden.css');
+        this._dashFocusedStyle =
+            new BackgroundStyle(this, 'dash-focused-app-background.css');
         this._syncStyles();
 
         this._dockIntegration.enable(this._recipe);
@@ -84,6 +86,8 @@ export default class FlourishExtension extends Extension {
         this._focusedAppStyle = null;
         this._dashHoverStyle.disable();
         this._dashHoverStyle = null;
+        this._dashFocusedStyle.disable();
+        this._dashFocusedStyle = null;
         // Dock widgets restyle through the controllers, so before those go.
         this._refreshStyles();
         this._dashIntegration.disable();
@@ -105,12 +109,13 @@ export default class FlourishExtension extends Extension {
 
     _syncStyles() {
         const hideHover = !this._settings.get_boolean('show-hover-background');
-        const hideFocused = !this._settings.get_boolean('show-focused-app-background');
+        const showFocused = this._settings.get_boolean('show-focused-app-background');
         // No short-circuit: every sheet must sync.
         return [
             this._hoverStyle.setEnabled(hideHover),
             this._dashHoverStyle.setEnabled(hideHover),
-            this._focusedAppStyle.setEnabled(hideFocused),
+            this._focusedAppStyle.setEnabled(!showFocused),
+            this._dashFocusedStyle.setEnabled(showFocused),
         ].includes(true);
     }
 

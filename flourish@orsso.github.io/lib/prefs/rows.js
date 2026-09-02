@@ -24,7 +24,7 @@ const BACKGROUND_ROWS = {
     hover: ['show-hover-background', N_('Show hover background'),
         N_('Keep the tile shown under the pointed icon (off hides it)')],
     focusedApp: ['show-focused-app-background', N_('Show focused app background'),
-        N_('Keep the tile shown behind the focused app (off hides it)')],
+        N_('Mark the app that owns the focused window')],
 };
 
 // The same switch lives on both pages.

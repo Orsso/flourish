@@ -19,6 +19,7 @@ required=(
     lib/runtime/dashIntegration.js
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
+    lib/runtime/focusHighlight.js
     lib/runtime/iconMotionController.js
     lib/runtime/iconTexture.js
     lib/runtime/launchEngine.js
@@ -31,6 +32,7 @@ required=(
     hover-background-hidden.css
     focused-app-background-hidden.css
     dash-hover-background-hidden.css
+    dash-focused-app-background.css
 )
 
 for path in "${required[@]}"; do

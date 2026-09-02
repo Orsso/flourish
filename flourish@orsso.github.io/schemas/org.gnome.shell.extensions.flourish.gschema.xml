@@ -156,7 +156,7 @@
     <key name="show-focused-app-background" type="b">
       <default>false</default>
       <summary>Show the focused app background</summary>
-      <description>When false, hide Dash to Dock's focused app tile.</description>
+      <description>Mark the app that owns the focused window in the dash or dock.</description>
     </key>
 
     <key name="measured-hover-budget" type="d">
