@@ -29,8 +29,8 @@ required=(
     metadata.json
     prefs.js
     schemas/org.gnome.shell.extensions.flourish.gschema.xml
-    hover-background-hidden.css
-    focused-app-background-hidden.css
+    dock-hover-background-hidden.css
+    dock-focused-app-background-hidden.css
     dash-hover-background-hidden.css
     dash-focused-app-background.css
 )

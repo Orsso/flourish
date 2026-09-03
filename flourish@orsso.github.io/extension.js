@@ -32,9 +32,9 @@ export default class FlourishExtension extends Extension {
         });
 
         this._hoverStyle = new BackgroundStyle({
-            extension: this, cssFileName: 'hover-background-hidden.css'});
+            extension: this, cssFileName: 'dock-hover-background-hidden.css'});
         this._focusedAppStyle = new BackgroundStyle({
-            extension: this, cssFileName: 'focused-app-background-hidden.css'});
+            extension: this, cssFileName: 'dock-focused-app-background-hidden.css'});
         this._dashHoverStyle = new BackgroundStyle({
             extension: this, cssFileName: 'dash-hover-background-hidden.css'});
         this._dashFocusedStyle = new BackgroundStyle({

@@ -32,8 +32,8 @@ pack: check
 	mkdir -p $(DIST_DIR)
 	gnome-extensions pack --force --out-dir=$(DIST_DIR) \
 		--extra-source=lib \
-		--extra-source=hover-background-hidden.css \
-		--extra-source=focused-app-background-hidden.css \
+		--extra-source=dock-hover-background-hidden.css \
+		--extra-source=dock-focused-app-background-hidden.css \
 		--extra-source=dash-hover-background-hidden.css \
 		--extra-source=dash-focused-app-background.css \
 		--extra-source=../README.md \
