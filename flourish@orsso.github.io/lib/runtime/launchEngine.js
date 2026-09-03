@@ -12,18 +12,16 @@ import {
     composeIconTransform,
     dimOpacity,
     getLaunchPivot,
-    getOrientation,
     hoverIntroLift,
     hoverIntroScale,
     shouldRepeatLaunch,
     shouldRetreatOnHandoff,
 } from '../motion/transforms.js';
 import {DeferredLaunchEnds} from './deferredLaunchEnds.js';
+import {actorGeometry} from './geometry.js';
+import {OPAQUE, createIconClone, retreatClone, runSegments} from './iconClone.js';
 
 const HANDOFF_DURATION = 80;
-const RETREAT_DURATION = 180;
-const RETREAT_SHRINK = 0.85;
-const OPAQUE = 255;
 
 export class LaunchEngine {
     #deferredEnds;
@@ -94,17 +92,11 @@ export class LaunchEngine {
         const introScale = hoverIntroScale(visibleGeometry, neutralGeometry);
         const introLift = hoverIntroLift(
             visibleGeometry, neutralGeometry, launchPivot);
-        const clone = new Clutter.Clone({
-            source: target,
-            reactive: false,
-            ...neutralGeometry,
-            opacity: OPAQUE,
+        const clone = createIconClone(target, neutralGeometry, Main.uiGroup, {
+            pivot: launchPivot,
+            scale: introScale,
+            translation: introLift,
         });
-        clone.set_pivot_point(...launchPivot);
-        clone.set_scale(introScale.x, introScale.y);
-        clone.translation_x = introLift.x;
-        clone.translation_y = introLift.y;
-        Main.uiGroup.add_child(clone);
 
         const pressTransform = composeIconTransform({
             edge: controller.edge,
@@ -237,27 +229,10 @@ export class LaunchEngine {
             this.#handoff(session);
             return;
         }
-        this.#runSegment(session, segments, 0);
-    }
-
-    #runSegment(session, segments, index) {
-        if (session.finished)
-            return;
-        if (index >= segments.length) {
-            this.#finishCycle(session);
-            return;
-        }
-
-        const segment = segments[index];
-        const {magnify, liftX, liftY} = this.#magnifyState(session);
-        session.clone.ease({
-            scale_x: magnify * segment.scaleX,
-            scale_y: magnify * segment.scaleY,
-            translation_x: segment.translationX + liftX,
-            translation_y: segment.translationY + liftY,
-            duration: segment.duration,
-            mode: resolveAnimationMode(segment.easing, Clutter.AnimationMode),
-            onComplete: () => this.#runSegment(session, segments, index + 1),
+        runSegments(session.clone, segments, {
+            blend: () => this.#magnifyState(session),
+            isCancelled: () => session.finished,
+            onComplete: () => this.#finishCycle(session),
         });
     }
 
@@ -315,18 +290,8 @@ export class LaunchEngine {
             dashContainsTarget: Main.overview.dash.contains(session.target),
         });
         if (retreat) {
-            const {outward} = getOrientation(session.controller.edge);
-            const [width, height] = session.clone.get_transformed_size();
-            session.clone.ease({
-                translation_x: session.clone.translation_x - outward[0] * width,
-                translation_y: session.clone.translation_y - outward[1] * height,
-                scale_x: session.clone.scale_x * RETREAT_SHRINK,
-                scale_y: session.clone.scale_y * RETREAT_SHRINK,
-                opacity: 0,
-                duration: RETREAT_DURATION,
-                mode: momentum
-                    ? Clutter.AnimationMode.EASE_OUT_QUAD
-                    : Clutter.AnimationMode.EASE_IN_QUAD,
+            retreatClone(session.clone, session.controller.edge, {
+                momentum,
                 onComplete: () => this.#finish(session),
             });
             return;
@@ -374,10 +339,4 @@ export class LaunchEngine {
         session.repeatSourceId = 0;
     }
 
-}
-
-function actorGeometry(actor) {
-    const [x, y] = actor.get_transformed_position();
-    const [width, height] = actor.get_transformed_size();
-    return {x, y, width, height};
 }

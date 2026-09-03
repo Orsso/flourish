@@ -21,6 +21,8 @@ required=(
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
     lib/runtime/focusHighlight.js
+    lib/runtime/geometry.js
+    lib/runtime/iconClone.js
     lib/runtime/iconMotionController.js
     lib/runtime/iconTexture.js
     lib/runtime/launchEngine.js
