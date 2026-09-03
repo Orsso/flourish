@@ -34,10 +34,11 @@ export function buildAdvancedPage(page, controls, settings, state) {
         subtitle: _('Measured from the dock'),
     });
     budgetRow.add_suffix(createHelpButton(
-        _('The dock clips icons at its edge. Magnification and lift share ' +
-        'the space that is left; a smaller dock icon size usually ' +
-        'leaves more room. This only concerns the dock: the overview dash ' +
-        'is never clipped, so the full values always apply there.')));
+        _('Dash to Dock cuts off anything that reaches past its edge. ' +
+        'This is the padding it leaves around the icons, in pixels. ' +
+        'Flourish keeps magnification and lift within it. The padding ' +
+        'comes from the theme, and the Shrink option of Dash to Dock ' +
+        'makes it smaller. The overview dash has no such limit.')));
     controls.budgetRow = budgetRow;
     budgetGroup.add(budgetRow);
     page.add(budgetGroup);
