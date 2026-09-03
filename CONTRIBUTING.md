@@ -39,7 +39,7 @@ the schema, the easing row in `lib/prefs/advancedPage.js`, and a test in
 `tests/transforms.test.js` are the only places to touch.
 
 The preview cards only play the presets, so try a new effect through the
-Custom profile in a real session.
+Custom preset in a real session.
 
 ## Translations
 

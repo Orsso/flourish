@@ -1,6 +1,6 @@
-export const Profile = {
+export const Preset = {
     SUBTLE: 'subtle',
-    BALANCED: 'balanced',
+    BALANCED: 'balanced', // Lively in the preferences window
     EXPRESSIVE: 'expressive',
     CUSTOM: 'custom',
 };
@@ -61,7 +61,7 @@ export const RecipePart = {
 // The gschema range mirrors these bounds; keep them in sync.
 export const NeighborRadius = {MIN: 1, MAX: 3};
 
-export const DEFAULT_PROFILE = Profile.SUBTLE;
+export const DEFAULT_PRESET = Preset.SUBTLE;
 
 const COMMON_LAUNCH = {
     enabled: true,
@@ -74,8 +74,8 @@ const COMMON_LAUNCH = {
 };
 
 const BUILTIN_RECIPES = {
-    [Profile.SUBTLE]: {
-        id: Profile.SUBTLE,
+    [Preset.SUBTLE]: {
+        id: Preset.SUBTLE,
         hover: {
             enabled: false,
             scale: 1.10,
@@ -101,8 +101,8 @@ const BUILTIN_RECIPES = {
             maxDuration: 8000,
         },
     },
-    [Profile.BALANCED]: {
-        id: Profile.BALANCED,
+    [Preset.BALANCED]: {
+        id: Preset.BALANCED,
         hover: {
             enabled: true,
             scale: 1.10,
@@ -127,8 +127,8 @@ const BUILTIN_RECIPES = {
             maxDuration: 8000,
         },
     },
-    [Profile.EXPRESSIVE]: {
-        id: Profile.EXPRESSIVE,
+    [Preset.EXPRESSIVE]: {
+        id: Preset.EXPRESSIVE,
         hover: {
             enabled: true,
             scale: 1.22,
@@ -155,6 +155,6 @@ const BUILTIN_RECIPES = {
     },
 };
 
-export function getBuiltInRecipe(profile) {
-    return JSON.parse(JSON.stringify(BUILTIN_RECIPES[profile]));
+export function getBuiltInRecipe(preset) {
+    return JSON.parse(JSON.stringify(BUILTIN_RECIPES[preset]));
 }

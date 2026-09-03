@@ -35,7 +35,7 @@
           path="/org/gnome/shell/extensions/flourish/">
     <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
       <default>"subtle"</default>
-      <summary>Current profile</summary>
+      <summary>Current preset</summary>
     </key>
 
     <key name="custom-hover-enabled" type="b">

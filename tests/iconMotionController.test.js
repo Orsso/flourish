@@ -30,7 +30,7 @@ class MeasurableBin extends FakeBin {
     }
 }
 
-function makeMeasuredController(profile = 'expressive') {
+function makeMeasuredController(preset = 'expressive') {
     const measured = [];
     const icon = new FakeIcon();
     const bin = new MeasurableBin();
@@ -38,13 +38,13 @@ function makeMeasuredController(profile = 'expressive') {
         icon,
         bin,
         edge: 'bottom',
-        recipe: getBuiltInRecipe(profile),
+        recipe: getBuiltInRecipe(preset),
         onMeasured: measurement => measured.push(measurement),
     });
     return {controller, icon, bin, measured};
 }
 
-function makeController(profile = 'expressive') {
+function makeController(preset = 'expressive') {
     const hoverEvents = [];
     const icon = new FakeIcon();
     const bin = new FakeBin();
@@ -52,7 +52,7 @@ function makeController(profile = 'expressive') {
         icon,
         bin,
         edge: 'bottom',
-        recipe: getBuiltInRecipe(profile),
+        recipe: getBuiltInRecipe(preset),
         onHoverChanged: (_controller, hovered) => hoverEvents.push(hovered),
     });
     return {controller, icon, bin, hoverEvents};

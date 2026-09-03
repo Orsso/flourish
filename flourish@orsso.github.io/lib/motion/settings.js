@@ -1,4 +1,4 @@
-import {DEFAULT_PROFILE, Profile, RecipePart, getBuiltInRecipe} from './catalog.js';
+import {DEFAULT_PRESET, Preset, RecipePart, getBuiltInRecipe} from './catalog.js';
 
 const DEFINITIONS = [
     definition('custom-hover-enabled', 'boolean', RecipePart.HOVER, 'enabled'),
@@ -29,11 +29,13 @@ const DEFINITIONS = [
 
 const DEFINITION_BY_KEY = new Map(DEFINITIONS.map(item => [item.key, item]));
 
+// The motion-profile key predates the preset wording; renaming it would
+// reset every user's choice.
 export function readActiveRecipe(settings) {
-    const profile = settings.get_string('motion-profile');
-    if (profile !== Profile.CUSTOM)
-        return getBuiltInRecipe(profile);
-    return {id: Profile.CUSTOM, ...readCustomValues(settings)};
+    const preset = settings.get_string('motion-profile');
+    if (preset !== Preset.CUSTOM)
+        return getBuiltInRecipe(preset);
+    return {id: Preset.CUSTOM, ...readCustomValues(settings)};
 }
 
 function readCustomValues(settings) {
@@ -51,16 +53,16 @@ export function writeCustomRecipe(settings, recipe) {
 export function editCustomSetting(settings, key, value) {
     const item = DEFINITION_BY_KEY.get(key);
     settings.delay();
-    const currentProfile = settings.get_string('motion-profile');
-    if (currentProfile !== Profile.CUSTOM)
-        writeCustomRecipe(settings, getBuiltInRecipe(currentProfile));
+    const currentPreset = settings.get_string('motion-profile');
+    if (currentPreset !== Preset.CUSTOM)
+        writeCustomRecipe(settings, getBuiltInRecipe(currentPreset));
     write(settings, item, value);
-    settings.set_string('motion-profile', Profile.CUSTOM);
+    settings.set_string('motion-profile', Preset.CUSTOM);
     settings.apply();
 }
 
-export function selectProfile(settings, profile) {
-    settings.set_string('motion-profile', profile);
+export function selectPreset(settings, preset) {
+    settings.set_string('motion-profile', preset);
     // delay() sticks for this GSettings object, so presets call apply() too.
     settings.apply();
 }
@@ -70,17 +72,17 @@ export function setBooleanCommitted(settings, key, value) {
     settings.apply();
 }
 
-export function switchToPresetFromCustom(settings, profile) {
+export function switchToPresetFromCustom(settings, preset) {
     settings.delay();
-    writeCustomRecipe(settings, getBuiltInRecipe(profile));
-    settings.set_string('motion-profile', profile);
+    writeCustomRecipe(settings, getBuiltInRecipe(preset));
+    settings.set_string('motion-profile', preset);
     settings.apply();
 }
 
 export function resetCustom(settings) {
     settings.delay();
-    writeCustomRecipe(settings, getBuiltInRecipe(DEFAULT_PROFILE));
-    settings.set_string('motion-profile', Profile.CUSTOM);
+    writeCustomRecipe(settings, getBuiltInRecipe(DEFAULT_PRESET));
+    settings.set_string('motion-profile', Preset.CUSTOM);
     settings.apply();
 }
 

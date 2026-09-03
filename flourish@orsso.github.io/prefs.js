@@ -3,11 +3,11 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {Profile, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
-    selectProfile,
+    selectPreset,
     switchToPresetFromCustom,
 } from './lib/motion/settings.js';
 import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
@@ -20,9 +20,9 @@ import {
 
 const N_ = s => s;
 const PRESET_DETAILS = [
-    [Profile.SUBTLE, N_('Subtle')],
-    [Profile.BALANCED, N_('Lively')],
-    [Profile.EXPRESSIVE, N_('Expressive')],
+    [Preset.SUBTLE, N_('Subtle')],
+    [Preset.BALANCED, N_('Lively')],
+    [Preset.EXPRESSIVE, N_('Expressive')],
 ];
 
 export default class FlourishPreferences extends ExtensionPreferences {
@@ -44,7 +44,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         window.add(essentials);
         window.add(advanced);
 
-        const profileGroup = new Adw.PreferencesGroup({
+        const presetGroup = new Adw.PreferencesGroup({
             title: _('Presets'),
             description: _('Hover to preview. Click to apply.'),
         });
@@ -52,26 +52,26 @@ export default class FlourishPreferences extends ExtensionPreferences {
         customBadge.add_css_class('accent');
         customBadge.add_css_class('caption-heading');
         customBadge.visible = false;
-        profileGroup.set_header_suffix(customBadge);
+        presetGroup.set_header_suffix(customBadge);
         controls.customBadge = customBadge;
 
-        const profileRow = new Gtk.Box({
+        const presetRow = new Gtk.Box({
             orientation: Gtk.Orientation.HORIZONTAL,
             spacing: 12,
             homogeneous: true,
             margin_top: 6,
             margin_bottom: 6,
         });
-        profileGroup.add(profileRow);
-        essentials.add(profileGroup);
+        presetGroup.add(presetRow);
+        essentials.add(presetGroup);
 
-        controls.profiles = new Map();
-        for (const [profile, title] of PRESET_DETAILS) {
-            const recipe = getBuiltInRecipe(profile);
-            const {button, preview} = createProfileCard(_(title), recipe);
-            button.connect('clicked', () => onProfileClicked({
+        controls.presets = new Map();
+        for (const [preset, title] of PRESET_DETAILS) {
+            const recipe = getBuiltInRecipe(preset);
+            const {button, preview} = createPresetCard(_(title), recipe);
+            button.connect('clicked', () => onPresetClicked({
                 window,
-                profile,
+                preset,
                 state,
                 settings,
                 controls,
@@ -80,8 +80,8 @@ export default class FlourishPreferences extends ExtensionPreferences {
             hover.connect('enter', () => preview.playLoop());
             hover.connect('leave', () => preview.stopLoop());
             button.add_controller(hover);
-            profileRow.append(button);
-            controls.profiles.set(profile, {button, preview});
+            presetRow.append(button);
+            controls.presets.set(preset, {button, preview});
         }
 
         const featureGroup = new Adw.PreferencesGroup({title: _('Motion')});
@@ -135,14 +135,14 @@ export default class FlourishPreferences extends ExtensionPreferences {
 
 function syncControls(settings, controls, state) {
     state.syncing = true;
-    const profile = settings.get_string('motion-profile');
+    const preset = settings.get_string('motion-profile');
     const recipe = readActiveRecipe(settings);
 
-    for (const [id, card] of controls.profiles) {
-        card.preview.setSelected(id === profile);
-        card.button.active = id === profile;
+    for (const [id, card] of controls.presets) {
+        card.preview.setSelected(id === preset);
+        card.button.active = id === preset;
     }
-    controls.customBadge.visible = profile === Profile.CUSTOM;
+    controls.customBadge.visible = preset === Preset.CUSTOM;
 
     controls.hoverEnabled.active = recipe.hover.enabled;
     controls.pressEnabled.active = recipe.press.enabled;
@@ -156,7 +156,7 @@ function syncControls(settings, controls, state) {
     state.syncing = false;
 }
 
-function createProfileCard(title, recipe) {
+function createPresetCard(title, recipe) {
     const button = new Gtk.ToggleButton({hexpand: true});
     button.add_css_class('card');
     const content = new Gtk.Box({
@@ -176,19 +176,19 @@ function createProfileCard(title, recipe) {
     return {button, preview};
 }
 
-function onProfileClicked({window, profile, state, settings, controls}) {
+function onPresetClicked({window, preset, state, settings, controls}) {
     if (state.syncing)
         return;
     const current = settings.get_string('motion-profile');
-    if (current !== Profile.CUSTOM) {
-        if (profile === current) {
+    if (current !== Preset.CUSTOM) {
+        if (preset === current) {
             syncControls(settings, controls, state);
             return;
         }
-        selectProfile(settings, profile);
+        selectPreset(settings, preset);
         return;
     }
-    const title = _(PRESET_DETAILS.find(([id]) => id === profile)[1]);
+    const title = _(PRESET_DETAILS.find(([id]) => id === preset)[1]);
     const dialog = new Adw.AlertDialog({
         heading: _('Switch to %s?').replace('%s', title),
         body: _('Your Custom recipe will be abandoned and replaced by the %s preset values.').replace('%s', title),
@@ -200,7 +200,7 @@ function onProfileClicked({window, profile, state, settings, controls}) {
     dialog.set_close_response('cancel');
     dialog.connect('response', (_dialog, response) => {
         if (response === 'switch')
-            switchToPresetFromCustom(settings, profile);
+            switchToPresetFromCustom(settings, preset);
         else
             syncControls(settings, controls, state);
     });
