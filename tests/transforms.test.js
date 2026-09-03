@@ -340,7 +340,7 @@ test('launch state suppresses hover magnification', () => {
         edge: 'bottom',
         recipe: getBuiltInRecipe('balanced'),
         hovered: true,
-        launching: true,
+        overlaid: true,
     });
     assertDeepEqual(transform, {
         scaleX: 1,
@@ -532,7 +532,7 @@ test('the budget is needed only when the hover reach can move', () => {
     assertEqual(hoverNeedsBudget(
         {recipe: expressive, hovered: false, neighborDistance: 3}), false);
     assertEqual(hoverNeedsBudget(
-        {recipe: expressive, hovered: true, launching: true}), false);
+        {recipe: expressive, hovered: true, overlaid: true}), false);
     assertEqual(hoverNeedsBudget(
         {recipe: getBuiltInRecipe('subtle'), hovered: true}), false);
 });

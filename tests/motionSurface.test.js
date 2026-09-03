@@ -277,3 +277,22 @@ test('leaving the dock returns every icon to rest', () => {
         assertClose(bin.translation_y, 0);
     }
 });
+
+test('the surface reports urgent icons, including ones already urgent when found', () => {
+    const scheduler = makeScheduler();
+    const seen = [];
+    const surface = new MotionSurface({
+        recipe: EXPRESSIVE,
+        scheduler,
+        onUrgentChanged: (controller, urgent) => seen.push([controller.icon, urgent]),
+    });
+    const box = new FakeBox(1);
+    box.icons[0].urgent = true;
+    surface.addBox(box, 'bottom');
+    const late = new FakeContainer();
+    box.add_child(late);
+    late.child.urgent = true;
+    late.child.emit('notify::urgent');
+    assertDeepEqual(seen.map(([icon, urgent]) => [box.icons.indexOf(icon), urgent]),
+        [[0, true], [1, true]]);
+});

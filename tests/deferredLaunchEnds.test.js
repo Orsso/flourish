@@ -26,7 +26,7 @@ class FakeScheduler {
 function controller() {
     return {
         endCount: 0,
-        endLaunch() {
+        endOverlay() {
             this.endCount++;
         },
     };

@@ -1,5 +1,6 @@
 import GLib from 'gi://GLib';
 import St from 'gi://St';
+import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -15,22 +16,26 @@ const DASH_TO_DOCK_BUILDS = [
 export class DockIntegration {
     #attachIdleId = 0;
     #generation = 0;
+    #injections = null;
     #manager = null;
     #managerSignals = [];
     #measureId = 0;
+    #onUrgentChanged;
     #scheduler;
     #settings;
     #surface = null;
 
-    constructor({scheduler, settings}) {
+    constructor({scheduler, settings, onUrgentChanged = () => {}}) {
         this.#scheduler = scheduler;
         this.#settings = settings;
+        this.#onUrgentChanged = onUrgentChanged;
     }
 
     enable(recipe) {
         this.#surface = new MotionSurface({
             recipe,
             onMeasured: measurement => this.#publishBudget(measurement),
+            onUrgentChanged: this.#onUrgentChanged,
             scheduler: this.#scheduler,
         });
         this.#generation++;
@@ -48,6 +53,7 @@ export class DockIntegration {
         this.#generation++;
         Main.extensionManager.disconnectObject(this);
         this.#cancelScheduledAttach();
+        this.#restoreWiggle();
         this.#detachManager();
         this.#cancelBudgetMeasure();
         this.#surface.dispose();
@@ -132,6 +138,8 @@ export class DockIntegration {
             return;
         }
 
+        this.#overrideWiggle(docks[0]?.dash?.iconAnimator);
+
         for (const dock of docks) {
             const box = dock.dash._box;
             if (!box) {
@@ -142,6 +150,29 @@ export class DockIntegration {
         }
         this.#scheduleBudgetMeasure();
         this.refreshStyles();
+    }
+
+    // Flourish owns the attention motion; the stock wiggle would double it.
+    #overrideWiggle(animator) {
+        if (this.#injections || !animator)
+            return;
+        const prototype = Object.getPrototypeOf(animator);
+        if (typeof prototype?.addAnimation !== 'function') {
+            console.warn('[flourish] Dash to Dock exposes no icon animator; its wiggle stays on');
+            return;
+        }
+        this.#injections = new InjectionManager();
+        this.#injections.overrideMethod(prototype, 'addAnimation',
+            original => function (target, name) {
+                if (name === 'wiggle')
+                    return undefined;
+                return original.call(this, target, name);
+            });
+    }
+
+    #restoreWiggle() {
+        this.#injections?.clear();
+        this.#injections = null;
     }
 
     // Populate the prefs readout before the first hover.

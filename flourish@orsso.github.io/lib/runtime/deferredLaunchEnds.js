@@ -1,4 +1,4 @@
-// endLaunch inside the target's destroy handler would ease a dying bin; wait for idle.
+// endOverlay in the target's destroy handler would ease a dying bin, so wait for idle.
 export class DeferredLaunchEnds {
     #cancel;
     #pending = new Map();
@@ -16,7 +16,7 @@ export class DeferredLaunchEnds {
             if (!pending)
                 return false;
             this.#pending.delete(sourceId);
-            pending.endLaunch();
+            pending.endOverlay();
             return false;
         });
         this.#pending.set(sourceId, controller);
@@ -27,7 +27,7 @@ export class DeferredLaunchEnds {
         this.#pending.clear();
         for (const [sourceId, controller] of pending) {
             this.#cancel(sourceId);
-            controller.endLaunch();
+            controller.endOverlay();
         }
     }
 }

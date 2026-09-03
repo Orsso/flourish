@@ -28,12 +28,13 @@ export class IconMotionController {
     #hovered = false;
     #icon;
     #lastApplied = null;
-    #launching = false;
     #neighborDistance = Infinity;
     #onDestroyed;
     #onHoverChanged;
     #onMeasured;
+    #onUrgentChanged;
     #original;
+    #overlaid = false;
     #pendingBudgetReport = false;
     #edge;
     #press = new PressInteraction();
@@ -49,6 +50,7 @@ export class IconMotionController {
         onHoverChanged = () => {},
         onDestroyed = () => {},
         onMeasured = () => {},
+        onUrgentChanged = () => {},
     }) {
         this.#icon = icon;
         this.#bin = bin;
@@ -57,6 +59,7 @@ export class IconMotionController {
         this.#onHoverChanged = onHoverChanged;
         this.#onDestroyed = onDestroyed;
         this.#onMeasured = onMeasured;
+        this.#onUrgentChanged = onUrgentChanged;
         this.#urgent = icon.urgent;
         this.#restoreTexture = sharpenIconTexture(icon.icon);
 
@@ -83,7 +86,9 @@ export class IconMotionController {
             'notify::hover', () => this.#syncHover(),
             'notify::urgent', () => {
                 this.#urgent = this.#icon.urgent;
-                this.#apply();
+                this.#onUrgentChanged(this, this.#urgent);
+                // Dash to Dock centers the pivot for its wiggle first.
+                this.applyHoverState();
             },
             'button-press-event', (_actor, event) => {
                 if (event.get_button() === Clutter.BUTTON_PRIMARY &&
@@ -112,6 +117,40 @@ export class IconMotionController {
         return this.#recipe;
     }
 
+    get icon() {
+        return this.#icon;
+    }
+
+    get urgent() {
+        return this.#urgent;
+    }
+
+    // While a clone moves in place of the bin, hover and neighbor motion hold.
+    get overlaid() {
+        return this.#overlaid;
+    }
+
+    get atRest() {
+        const {hover} = this.#recipe;
+        return !this.#hovered && !this.#overlaid &&
+            (!hover.enabled || neighborScaleAt(hover, this.#neighborDistance) === 1);
+    }
+
+    beginOverlay() {
+        if (this.#overlaid)
+            return false;
+        this.#overlaid = true;
+        this.#apply(0);
+        return true;
+    }
+
+    endOverlay() {
+        if (!this.#overlaid)
+            return;
+        this.#overlaid = false;
+        this.#apply(this.#recipe.hover.duration);
+    }
+
     setRecipe(recipe) {
         this.#recipe = recipe;
         this.#press.reset();
@@ -127,7 +166,7 @@ export class IconMotionController {
             neighborScaleAt(hover, this.#neighborDistance) !==
             neighborScaleAt(hover, distance);
         this.#neighborDistance = distance;
-        return visibleChange && !this.#hovered && !this.#launching;
+        return visibleChange && !this.#hovered && !this.#overlaid;
     }
 
     refreshStyle() {
@@ -137,7 +176,7 @@ export class IconMotionController {
 
     beginLaunch(launchEnabled) {
         const steps = this.#press.consumeLaunchSteps(this.#recipe.press);
-        if (this.#launching ||
+        if (this.#overlaid ||
             (!launchEnabled && steps.length === 0)) {
             return {
                 active: false,
@@ -146,12 +185,11 @@ export class IconMotionController {
             };
         }
 
-        this.#launching = true;
         this.#press.applyStep(false);
         const magnify = !this.#recipe.hover.enabled ? 1
             : this.#hovered ? this.#recipe.hover.scale
                 : neighborScaleAt(this.#recipe.hover, this.#neighborDistance);
-        this.#apply(0);
+        this.beginOverlay();
         return {
             active: true,
             hoverDuration: this.#recipe.hover.duration,
@@ -160,16 +198,9 @@ export class IconMotionController {
         };
     }
 
-    endLaunch() {
-        if (!this.#launching)
-            return;
-        this.#launching = false;
-        this.#apply(this.#recipe.hover.duration);
-    }
-
     onTargetDestroyed() {
         this.#dimmed = false;
-        this.#launching = false;
+        this.#overlaid = false;
         this.#bin = null;
         this.#icon = null;
         this.#onDestroyed(this);
@@ -185,9 +216,9 @@ export class IconMotionController {
         this.#icon = null;
     }
 
-    // The launch clone owns the bin until endLaunch.
+    // The overlay clone owns the bin until endOverlay.
     applyHoverState() {
-        if (this.#launching)
+        if (this.#overlaid)
             return;
         this.#apply();
     }
@@ -210,7 +241,7 @@ export class IconMotionController {
             (animationsEnabled && hoverNeedsBudget({
                 recipe: this.#recipe,
                 hovered: this.#hovered,
-                launching: this.#launching,
+                overlaid: this.#overlaid,
                 neighborDistance: this.#neighborDistance,
             }))
             ? this.measure()
@@ -224,7 +255,7 @@ export class IconMotionController {
             edge: this.#edge,
             recipe: this.#recipe,
             hovered: this.#hovered,
-            launching: this.#launching,
+            overlaid: this.#overlaid,
             neighborDistance: this.#neighborDistance,
             pressed: this.#press.pressed,
             animationsEnabled,
@@ -241,8 +272,7 @@ export class IconMotionController {
         };
 
         this.#syncDim(transform.dim);
-        // Dash to Dock wiggles urgent icons around a centered pivot.
-        this.#bin.set_pivot_point(...(this.#urgent ? [0.5, 0.5] : transform.pivot));
+        this.#bin.set_pivot_point(...transform.pivot);
         // Same target: keep the in-flight transition; instant applies still land.
         const last = this.#lastApplied;
         if (duration > 0 && last &&

@@ -329,7 +329,7 @@ export class LaunchEngine {
         }
         session.target.opacity = session.originalOpacity;
         session.target.disconnectObject(session);
-        session.controller.endLaunch();
+        session.controller.endOverlay();
     }
 
     #clearRepeatTimer(session) {

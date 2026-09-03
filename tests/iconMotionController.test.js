@@ -162,14 +162,14 @@ test('distance changes with an unchanged visible scale stay quiet', () => {
     assertEqual(controller.setNeighborDistance(Infinity), false);
 });
 
-test('distance changes cannot affect a hovered or launching icon', () => {
+test('distance changes cannot affect a hovered or overlaid icon', () => {
     const {controller, icon} = makeController('expressive');
     icon.setHover(true);
     assertEqual(controller.setNeighborDistance(1), false);
     icon.setHover(false);
     controller.beginLaunch(true);
     assertEqual(controller.setNeighborDistance(2), false);
-    controller.endLaunch();
+    controller.endOverlay();
     assertEqual(controller.setNeighborDistance(3), true);
 });
 
@@ -257,11 +257,11 @@ test('a subtle hover still measures once to publish the budget', () => {
     assertEqual(bin.measures, 1);
 });
 
-test('endLaunch does not replay the hover notification', () => {
+test('endOverlay does not replay the hover notification', () => {
     const {controller, icon, hoverEvents} = makeController();
     icon.setHover(true);
     controller.beginLaunch(true);
-    controller.endLaunch();
+    controller.endOverlay();
     assertDeepEqual(hoverEvents, [true]);
 });
 
@@ -278,13 +278,13 @@ test('dispose restores the stock icon texture', () => {
     assertDeepEqual(sizes(), [48, 96, 48]);
 });
 
-test('endLaunch after the target is destroyed is inert', () => {
+test('endOverlay after the target is destroyed is inert', () => {
     const {controller, bin} = makeController();
     controller.beginLaunch(true);
     const eases = bin.eases;
 
     controller.onTargetDestroyed();
-    controller.endLaunch();
+    controller.endOverlay();
 
     assertEqual(bin.eases, eases);
 });
@@ -301,4 +301,55 @@ test('refreshStyle invalidates and redraws the icon', () => {
         ['relayout'],
         ['redraw'],
     ]);
+});
+
+test('an overlay holds the bin at rest until it ends', () => {
+    const icon = new FakeIcon();
+    const bin = icon.icon._iconBin;
+    const controller = new IconMotionController({
+        icon, bin, edge: 'bottom', recipe: getBuiltInRecipe('expressive'),
+    });
+    assertEqual(controller.overlaid, false);
+    assertEqual(controller.atRest, true);
+    assertEqual(controller.beginOverlay(), true);
+    assertEqual(controller.overlaid, true);
+    assertEqual(controller.atRest, false);
+    assertEqual(controller.beginOverlay(), false);
+    icon.setHover(true);
+    controller.applyHoverState();
+    assertEqual(bin.scale_x, 1);
+    controller.endOverlay();
+    assertEqual(controller.overlaid, false);
+    controller.applyHoverState();
+    assertEqual(bin.scale_x > 1, true);
+});
+
+test('a hovered or scaled neighbor icon is not at rest', () => {
+    const icon = new FakeIcon();
+    const controller = new IconMotionController({
+        icon, bin: icon.icon._iconBin, edge: 'bottom', recipe: getBuiltInRecipe('expressive'),
+    });
+    icon.setHover(true);
+    assertEqual(controller.atRest, false);
+    icon.setHover(false);
+    controller.setNeighborDistance(1);
+    assertEqual(controller.atRest, false);
+    controller.setNeighborDistance(Infinity);
+    assertEqual(controller.atRest, true);
+});
+
+test('urgent changes reach the listener with the controller', () => {
+    const icon = new FakeIcon();
+    const seen = [];
+    const controller = new IconMotionController({
+        icon, bin: icon.icon._iconBin, edge: 'bottom', recipe: getBuiltInRecipe('subtle'),
+        onUrgentChanged: (changed, urgent) => seen.push([changed === controller, urgent]),
+    });
+    assertEqual(controller.icon, icon);
+    icon.urgent = true;
+    icon.emit('notify::urgent');
+    icon.urgent = false;
+    icon.emit('notify::urgent');
+    assertDeepEqual(seen, [[true, true], [true, false]]);
+    assertEqual(controller.urgent, false);
 });

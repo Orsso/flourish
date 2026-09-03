@@ -4,13 +4,15 @@ import {LiveRegistry} from './liveRegistry.js';
 
 export class MotionSurface {
     #onMeasured;
+    #onUrgentChanged;
     #recipe;
     #registry = new LiveRegistry();
     #scheduler;
 
-    constructor({recipe, onMeasured = () => {}, scheduler}) {
+    constructor({recipe, onMeasured = () => {}, onUrgentChanged = () => {}, scheduler}) {
         this.#recipe = recipe;
         this.#onMeasured = onMeasured;
+        this.#onUrgentChanged = onUrgentChanged;
         this.#scheduler = scheduler;
     }
 
@@ -67,9 +69,13 @@ export class MotionSurface {
             onHoverChanged: (changed, hovered) => group.setHovered(changed, hovered),
             onDestroyed: destroyed => group.remove(destroyed),
             onMeasured: measurement => this.#onMeasured(measurement),
+            onUrgentChanged: (changed, urgent) => this.#onUrgentChanged(changed, urgent),
         });
         group.add(controller, container, boxChildren(container));
         this.#registry.addController(icon, controller);
+        // An icon can be urgent before Flourish finds it.
+        if (controller.urgent)
+            this.#onUrgentChanged(controller, true);
     }
 }
 

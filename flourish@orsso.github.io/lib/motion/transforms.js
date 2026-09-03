@@ -140,11 +140,11 @@ export function neighborScaleAt(hover, distance) {
 export function hoverNeedsBudget({
     recipe,
     hovered = false,
-    launching = false,
+    overlaid = false,
     neighborDistance = Infinity,
 }) {
     const {hover} = recipe;
-    if (!hover.enabled || launching)
+    if (!hover.enabled || overlaid)
         return false;
     if (hovered)
         return hover.scale !== 1 || hover.lift !== 0;
@@ -157,7 +157,7 @@ export function resolveIconTransform({
     hovered = false,
     neighborDistance = Infinity,
     pressed = false,
-    launching = false,
+    overlaid = false,
     animationsEnabled = true,
     budgetPx = Infinity,
     iconNormalSize = 0,
@@ -174,7 +174,7 @@ export function resolveIconTransform({
         };
     }
 
-    const hoverEnabled = recipe.hover.enabled && !launching;
+    const hoverEnabled = recipe.hover.enabled && !overlaid;
     const hoverScale = hoverEnabled && hovered
         ? recipe.hover.scale
         : hoverEnabled
