@@ -39,10 +39,14 @@ function clearEases(bins) {
         bin.easeTargets.length = 0;
 }
 
+function countEases(bins) {
+    return bins.reduce((total, bin) => total + bin.easeTargets.length, 0);
+}
+
 test('addBox registers a controller per icon container', () => {
     const {surface} = makeSurface(EXPRESSIVE, 3);
     assertEqual(surface.controllers.length, 3);
-    assertEqual(surface.controllers[0].position, 'bottom');
+    assertEqual(surface.controllers[0].edge, 'bottom');
     assertEqual(surface.controllers[0].recipe, EXPRESSIVE);
 });
 
@@ -221,4 +225,55 @@ test('an icon born hovered resolves at the next flush', () => {
     scheduler.flush();
     const bins = box.icons.map(icon => icon.icon._iconBin);
     assertDeepEqual(scales(bins), [1.22, neighbor(1), neighbor(2)]);
+});
+
+test('a coalesced crossing eases straight to the final state', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 6);
+    icons[0].setHover(true);
+    scheduler.flush();
+    clearEases(bins);
+
+    icons[0].setHover(false);
+    icons[1].setHover(true);
+    scheduler.flush();
+
+    for (const bin of bins) {
+        if (bin.easeTargets.length > 1)
+            throw new Error(`two waves reached one bin: ${bin.easeTargets}`);
+        // The intermediate "nobody hovered" state must never be eased.
+        if (bin.easeTargets.some(target => Math.abs(target - 1) < 1e-6))
+            throw new Error(`identity eased mid-crossing: ${bin.easeTargets}`);
+    }
+    assertEqual(countEases(bins), 4);
+});
+
+test('an expressive sweep stays under the per-crossing ease bound', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 6);
+    icons[0].setHover(true);
+    scheduler.flush();
+    for (let index = 1; index < icons.length; index++) {
+        icons[index - 1].setHover(false);
+        icons[index].setHover(true);
+        scheduler.flush();
+    }
+    // Entry wave plus five crossings; the uncoalesced double wave blows this.
+    assertEqual(countEases(bins) <= 30, true);
+});
+
+test('leaving the dock returns every icon to rest', () => {
+    const {scheduler, icons, bins} = makeSurface(EXPRESSIVE, 4);
+    icons[0].setHover(true);
+    scheduler.flush();
+    icons[0].setHover(false);
+    icons[1].setHover(true);
+    scheduler.flush();
+
+    icons[1].setHover(false);
+    scheduler.flush();
+    for (const bin of bins) {
+        assertClose(bin.scale_x, 1);
+        assertClose(bin.scale_y, 1);
+        assertClose(bin.translation_x, 0);
+        assertClose(bin.translation_y, 0);
+    }
 });

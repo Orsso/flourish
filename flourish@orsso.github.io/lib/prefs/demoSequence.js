@@ -1,4 +1,4 @@
-import {LaunchEffect, PressMode} from '../motion/catalog.js';
+import {LaunchEffect, PressMode, RecipePart} from '../motion/catalog.js';
 
 export const HOVER_HOLD_MS = 650;
 export const PRE_LAUNCH_PAUSE_MS = 520;
@@ -26,15 +26,15 @@ export function hoverIsActive(recipe) {
         (recipe.hover.scale > 1 || recipe.hover.lift > 0);
 }
 
-// Single-effect loops; a repeating launch paces the loop on its own pause.
-export function buildEffectSequence(effect, recipe) {
-    switch (effect) {
-        case 'hover':
+// One part at a time; a repeating launch paces the loop on its own pause.
+export function buildPartSequence(part, recipe) {
+    switch (part) {
+        case RecipePart.HOVER:
             return [DemoPhase.HOVER_IN, DemoPhase.HOLD,
                 DemoPhase.RESET, DemoPhase.NEUTRAL_HOLD];
-        case 'press':
+        case RecipePart.PRESS:
             return [DemoPhase.CLICK, DemoPhase.NEUTRAL_HOLD];
-        case 'launch':
+        case RecipePart.LAUNCH:
             if (recipe.launch.repeat &&
                 recipe.launch.effect !== LaunchEffect.STOCK)
                 return [DemoPhase.LAUNCH, DemoPhase.REPEAT_PAUSE];

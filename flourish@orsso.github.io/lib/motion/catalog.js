@@ -27,14 +27,13 @@ export const Easing = {
     EASE_OUT_QUAD: 'ease-out-quad',
     EASE_OUT_CUBIC: 'ease-out-cubic',
     EASE_OUT_BACK: 'ease-out-back',
+    // Launch segments only; the hover easing row lists the four above.
+    EASE_IN_QUAD: 'ease-in-quad',
 };
-
-// Segment easing only; Easing holds the four user-facing modes.
-export const EASE_IN_QUAD = 'ease-in-quad';
 
 const ANIMATION_MODE_NAMES = {
     [Easing.LINEAR]: 'LINEAR',
-    [EASE_IN_QUAD]: 'EASE_IN_QUAD',
+    [Easing.EASE_IN_QUAD]: 'EASE_IN_QUAD',
     [Easing.EASE_OUT_QUAD]: 'EASE_OUT_QUAD',
     [Easing.EASE_OUT_CUBIC]: 'EASE_OUT_CUBIC',
     [Easing.EASE_OUT_BACK]: 'EASE_OUT_BACK',
@@ -45,11 +44,18 @@ export function resolveAnimationMode(easing, modes) {
     return modes[ANIMATION_MODE_NAMES[easing]];
 }
 
-export const DockPosition = {
+export const ScreenEdge = {
     BOTTOM: 'bottom',
     TOP: 'top',
     LEFT: 'left',
     RIGHT: 'right',
+};
+
+// The three parts of a recipe; the values index a recipe object.
+export const RecipePart = {
+    HOVER: 'hover',
+    PRESS: 'press',
+    LAUNCH: 'launch',
 };
 
 // The gschema range mirrors these bounds; keep them in sync.

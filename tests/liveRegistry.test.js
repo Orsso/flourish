@@ -42,27 +42,27 @@ class FakeController {
     }
 }
 
-test('destroy callbacks prune icon records without actor access', () => {
+test('destroy callbacks prune controller records without actor access', () => {
     const registry = new LiveRegistry();
     const actor = new FakeActor();
     const controller = new FakeController();
-    registry.addIcon(actor, controller);
+    registry.addController(actor, controller);
     actor.destroy();
-    assertEqual(registry.iconCount, 0);
+    assertEqual(registry.controllerCount, 0);
     assertEqual(controller.destroyedCount, 1);
     assertEqual(controller.disposeCount, 0);
     assertEqual(actor.postDestroyTouches, 0);
 });
 
-test('explicit disable disposes only live icon records once', () => {
+test('explicit disable disposes only live controller records once', () => {
     const registry = new LiveRegistry();
     const actor = new FakeActor();
     const controller = new FakeController();
-    registry.addIcon(actor, controller);
+    registry.addController(actor, controller);
     registry.disable();
     registry.disable();
     assertEqual(controller.disposeCount, 1);
-    assertEqual(registry.iconCount, 0);
+    assertEqual(registry.controllerCount, 0);
 });
 
 test('destroy callbacks prune box records without cleanup access', () => {

@@ -1,88 +1,8 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
-import {FakeBaseIcon, FakeEmitter} from './fakes.js';
+import {FakeBin, FakeIcon} from './fakes.js';
 
-class FakeIcon extends FakeEmitter {
-    constructor() {
-        super();
-        this.hover = false;
-        this.urgent = false;
-        this.pressed = false;
-        this.icon = new FakeBaseIcon();
-        this.styleCalls = [];
-    }
-
-    add_style_class_name(name) {
-        this.styleCalls.push(['add', name]);
-    }
-
-    remove_style_class_name(name) {
-        this.styleCalls.push(['remove', name]);
-    }
-
-    ensure_style() {
-        this.styleCalls.push(['ensure']);
-    }
-
-    queue_relayout() {
-        this.styleCalls.push(['relayout']);
-    }
-
-    queue_redraw() {
-        this.styleCalls.push(['redraw']);
-    }
-}
-
-class FakeBin {
-    constructor() {
-        this.scale_x = 1;
-        this.scale_y = 1;
-        this.translation_x = 0;
-        this.translation_y = 0;
-        this.opacity = 255;
-        this.offscreen_redirect = 0;
-        this.eases = 0;
-        this.parentProbes = 0;
-        this.removedTransitions = 0;
-    }
-
-    get_pivot_point() {
-        return [0, 0];
-    }
-
-    set_pivot_point() {}
-
-    set_scale(x, y) {
-        this.scale_x = x;
-        this.scale_y = y;
-    }
-
-    add_style_class_name() {}
-
-    remove_style_class_name() {}
-
-    ensure_style() {}
-
-    queue_relayout() {}
-
-    queue_redraw() {}
-
-    get_parent() {
-        this.parentProbes++;
-        return null;
-    }
-
-    remove_transition() {
-        this.removedTransitions++;
-    }
-
-    ease(props) {
-        this.eases++;
-        this.lastEase = props;
-    }
-}
-
-// A bin with a clipped grandparent, enough for #measureBudget to succeed.
+// A bin with a clipped grandparent, enough for measure() to succeed.
 class MeasurableBin extends FakeBin {
     constructor() {
         super();
@@ -117,7 +37,7 @@ function makeMeasuredController(profile = 'expressive') {
     const controller = new IconMotionController({
         icon,
         bin,
-        position: 'bottom',
+        edge: 'bottom',
         recipe: getBuiltInRecipe(profile),
         onMeasured: measurement => measured.push(measurement),
     });
@@ -131,38 +51,33 @@ function makeController(profile = 'expressive') {
     const controller = new IconMotionController({
         icon,
         bin,
-        position: 'bottom',
+        edge: 'bottom',
         recipe: getBuiltInRecipe(profile),
         onHoverChanged: (_controller, hovered) => hoverEvents.push(hovered),
     });
     return {controller, icon, bin, hoverEvents};
 }
 
-function hoverIcon(icon, hovered) {
-    icon.hover = hovered;
-    icon.emit('notify::hover');
-}
-
 test('hover changes notify the neighbor group', () => {
     const {icon, hoverEvents} = makeController();
-    hoverIcon(icon, true);
-    hoverIcon(icon, false);
+    icon.setHover(true);
+    icon.setHover(false);
     assertDeepEqual(hoverEvents, [true, false]);
 });
 
 test('beginLaunch leaves the neighbor group hover in place', () => {
     const {controller, icon, hoverEvents} = makeController();
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.beginLaunch(true);
     assertDeepEqual(hoverEvents, [true]);
 });
 
 test('hover changes mid-launch still reach the neighbor group', () => {
     const {controller, icon, hoverEvents} = makeController();
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.beginLaunch(true);
-    hoverIcon(icon, false);
-    hoverIcon(icon, true);
+    icon.setHover(false);
+    icon.setHover(true);
     assertDeepEqual(hoverEvents, [true, false, true]);
 });
 
@@ -171,8 +86,8 @@ test('press dim settles back even with two controllers on the same bin', () => {
     const bin = new FakeBin();
     const recipe = getBuiltInRecipe('subtle');
     const controllers = [
-        new IconMotionController({icon, bin, position: 'bottom', recipe}),
-        new IconMotionController({icon, bin, position: 'bottom', recipe}),
+        new IconMotionController({icon, bin, edge: 'bottom', recipe}),
+        new IconMotionController({icon, bin, edge: 'bottom', recipe}),
     ];
     for (let click = 0; click < 3; click++) {
         icon.emit('button-press-event', {get_button: () => 1});
@@ -188,7 +103,7 @@ test('press dim settles back even with two controllers on the same bin', () => {
 
 test('a hover flip alone does not ease until applyHoverState', () => {
     const {controller, icon, bin} = makeController('expressive');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     assertEqual(bin.eases, 0);
     controller.applyHoverState();
     assertEqual(bin.eases, 1);
@@ -196,9 +111,9 @@ test('a hover flip alone does not ease until applyHoverState', () => {
 
 test('hover with an unchanged transform does not ease', () => {
     const {icon, bin} = makeController('subtle');
-    hoverIcon(icon, true);
-    hoverIcon(icon, false);
-    hoverIcon(icon, true);
+    icon.setHover(true);
+    icon.setHover(false);
+    icon.setHover(true);
     assertEqual(bin.eases, 0);
 });
 
@@ -217,7 +132,7 @@ test('setRecipe reapplies even when the transform is unchanged', () => {
 
 test('beginLaunch snaps instantly even when the transform is unchanged', () => {
     const {controller, icon, bin} = makeController('subtle');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.beginLaunch(true);
     assertEqual(bin.removedTransitions, 4);
 });
@@ -249,9 +164,9 @@ test('distance changes with an unchanged visible scale stay quiet', () => {
 
 test('distance changes cannot affect a hovered or launching icon', () => {
     const {controller, icon} = makeController('expressive');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     assertEqual(controller.setNeighborDistance(1), false);
-    hoverIcon(icon, false);
+    icon.setHover(false);
     controller.beginLaunch(true);
     assertEqual(controller.setNeighborDistance(2), false);
     controller.endLaunch();
@@ -260,11 +175,11 @@ test('distance changes cannot affect a hovered or launching icon', () => {
 
 test('applyHoverState is inert during a launch', () => {
     const {controller, icon, bin} = makeController('expressive');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.beginLaunch(true);
     const probes = bin.parentProbes;
     const eases = bin.eases;
-    hoverIcon(icon, false);
+    icon.setHover(false);
     controller.applyHoverState();
     assertEqual(bin.parentProbes, probes);
     assertEqual(bin.eases, eases);
@@ -272,7 +187,7 @@ test('applyHoverState is inert during a launch', () => {
 
 test('the hover budget is published once by the next apply', () => {
     const {controller, icon, bin, measured} = makeMeasuredController();
-    hoverIcon(icon, true);
+    icon.setHover(true);
     assertEqual(measured.length, 0);
     assertEqual(bin.measures, 0);
     controller.applyHoverState();
@@ -285,22 +200,22 @@ test('the hover budget is published once by the next apply', () => {
 
 test('a hover that leaves before the apply publishes nothing', () => {
     const {controller, icon, measured} = makeMeasuredController();
-    hoverIcon(icon, true);
-    hoverIcon(icon, false);
+    icon.setHover(true);
+    icon.setHover(false);
     controller.applyHoverState();
     assertEqual(measured.length, 0);
 });
 
 test('a press stays immediate while a hover flush is pending', () => {
     const {icon, bin} = makeController('subtle');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     icon.emit('button-press-event', {get_button: () => 1});
     assertEqual(bin.opacity, 228);
 });
 
 test('beginLaunch snaps immediately while a hover flush is pending', () => {
     const {controller, icon, bin} = makeController('expressive');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     const result = controller.beginLaunch(true);
     assertEqual(result.active, true);
     assertEqual(bin.removedTransitions, 4);
@@ -308,7 +223,7 @@ test('beginLaunch snaps immediately while a hover flush is pending', () => {
 
 test('setRecipe with a pending hover flush lands on the final state', () => {
     const {controller, icon, bin} = makeController('expressive');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.setRecipe(getBuiltInRecipe('expressive'));
     assertEqual(bin.eases, 1);
     assertClose(bin.lastEase.scale_x, 1.22);
@@ -319,10 +234,10 @@ test('setRecipe with a pending hover flush lands on the final state', () => {
 
 test('applies toward identity skip the geometry measure', () => {
     const {controller, icon, bin} = makeMeasuredController('expressive');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.applyHoverState();
     const measures = bin.measures;
-    hoverIcon(icon, false);
+    icon.setHover(false);
     controller.applyHoverState();
     assertEqual(bin.measures, measures);
 });
@@ -336,7 +251,7 @@ test('a press without hover reach skips the geometry measure', () => {
 
 test('a subtle hover still measures once to publish the budget', () => {
     const {controller, icon, bin, measured} = makeMeasuredController('subtle');
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.applyHoverState();
     assertEqual(measured.length, 1);
     assertEqual(bin.measures, 1);
@@ -344,7 +259,7 @@ test('a subtle hover still measures once to publish the budget', () => {
 
 test('endLaunch does not replay the hover notification', () => {
     const {controller, icon, hoverEvents} = makeController();
-    hoverIcon(icon, true);
+    icon.setHover(true);
     controller.beginLaunch(true);
     controller.endLaunch();
     assertDeepEqual(hoverEvents, [true]);
@@ -354,7 +269,7 @@ test('dispose restores the stock icon texture', () => {
     const icon = new FakeIcon();
     const sizes = () => icon.icon.created.map(created => created.size);
     const controller = new IconMotionController({
-        icon, bin: new FakeBin(), position: 'bottom', recipe: getBuiltInRecipe('expressive'),
+        icon, bin: new FakeBin(), edge: 'bottom', recipe: getBuiltInRecipe('expressive'),
     });
     assertDeepEqual(sizes(), [48, 96]);
 

@@ -1,8 +1,5 @@
 import {PressMode} from '../flourish@orsso.github.io/lib/motion/catalog.js';
-
-const pressModule = await import(
-    '../flourish@orsso.github.io/lib/motion/pressInteraction.js'
-).catch(() => ({}));
+import {PressInteraction} from '../flourish@orsso.github.io/lib/motion/pressInteraction.js';
 
 const allPrimary = {
     enabled: true,
@@ -14,8 +11,7 @@ const launchesOnly = {
 };
 
 test('canonical button release clears press without leaving hover', () => {
-    assertEqual(typeof pressModule.PressInteraction, 'function');
-    const interaction = new pressModule.PressInteraction();
+    const interaction = new PressInteraction();
 
     interaction.beginPrimary(allPrimary);
     assertEqual(interaction.pressed, true);
@@ -25,8 +21,7 @@ test('canonical button release clears press without leaving hover', () => {
 });
 
 test('all-primary launch waits for the released shape', () => {
-    assertEqual(typeof pressModule.PressInteraction, 'function');
-    const interaction = new pressModule.PressInteraction();
+    const interaction = new PressInteraction();
 
     interaction.beginPrimary(allPrimary);
     interaction.syncButtonPressed(false, allPrimary);
@@ -37,8 +32,7 @@ test('all-primary launch waits for the released shape', () => {
 });
 
 test('launch-only feedback releases before handing off', () => {
-    assertEqual(typeof pressModule.PressInteraction, 'function');
-    const interaction = new pressModule.PressInteraction();
+    const interaction = new PressInteraction();
 
     assertDeepEqual(interaction.consumeLaunchSteps(launchesOnly), [
         {pressed: true, durationFactor: 0.5},
@@ -48,7 +42,7 @@ test('launch-only feedback releases before handing off', () => {
 
 test('every launch preparation sequence ends released', () => {
     for (const config of [allPrimary, launchesOnly]) {
-        const interaction = new pressModule.PressInteraction();
+        const interaction = new PressInteraction();
         interaction.beginPrimary(config);
         interaction.syncButtonPressed(false, config);
         const steps = interaction.consumeLaunchSteps(config);

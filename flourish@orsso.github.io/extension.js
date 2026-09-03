@@ -31,13 +31,14 @@ export default class FlourishExtension extends Extension {
             scheduler: this._frameScheduler,
         });
 
-        this._hoverStyle = new BackgroundStyle(this, 'hover-background-hidden.css');
-        this._focusedAppStyle =
-            new BackgroundStyle(this, 'focused-app-background-hidden.css');
-        this._dashHoverStyle =
-            new BackgroundStyle(this, 'dash-hover-background-hidden.css');
-        this._dashFocusedStyle =
-            new BackgroundStyle(this, 'dash-focused-app-background.css');
+        this._hoverStyle = new BackgroundStyle({
+            extension: this, cssFileName: 'hover-background-hidden.css'});
+        this._focusedAppStyle = new BackgroundStyle({
+            extension: this, cssFileName: 'focused-app-background-hidden.css'});
+        this._dashHoverStyle = new BackgroundStyle({
+            extension: this, cssFileName: 'dash-hover-background-hidden.css'});
+        this._dashFocusedStyle = new BackgroundStyle({
+            extension: this, cssFileName: 'dash-focused-app-background.css'});
         this._syncStyles();
 
         this._dockIntegration.enable(this._recipe);

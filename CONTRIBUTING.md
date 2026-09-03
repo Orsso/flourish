@@ -35,7 +35,7 @@ Launch and press effects are small pure functions in
 `lib/motion/transforms.js`. The easiest way to add one is to copy an existing
 one (`bounceSegments()` for a launch effect, an entry of `PRESS_EFFECTS` for
 a press effect) and grep for its name: the enum in `catalog.js`, the nick in
-the schema, the dropdown in `prefs.js`, and a test in
+the schema, the easing row in `lib/prefs/advancedPage.js`, and a test in
 `tests/transforms.test.js` are the only places to touch.
 
 The preview cards only play the presets, so try a new effect through the

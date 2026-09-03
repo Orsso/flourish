@@ -1,7 +1,7 @@
 import {LaunchEffect, PressMode, getBuiltInRecipe, Profile} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
     buildDemoSequence,
-    buildEffectSequence,
+    buildPartSequence,
     DemoPhase,
     hoverIsActive,
 } from '../flourish@orsso.github.io/lib/prefs/demoSequence.js';
@@ -70,29 +70,29 @@ test('launch-only press feedback keeps the launch click when the effect is disab
     assertEqual(sequence.includes(DemoPhase.CLICK_LAUNCH), true);
 });
 
-test('effect sequences play a single effect and come back to rest', () => {
+test('a part sequence plays that part alone and comes back to rest', () => {
     const recipe = getBuiltInRecipe(Profile.BALANCED);
-    assertDeepEqual(buildEffectSequence('hover', recipe), [
+    assertDeepEqual(buildPartSequence('hover', recipe), [
         DemoPhase.HOVER_IN,
         DemoPhase.HOLD,
         DemoPhase.RESET,
         DemoPhase.NEUTRAL_HOLD,
     ]);
-    assertDeepEqual(buildEffectSequence('press', recipe), [
+    assertDeepEqual(buildPartSequence('press', recipe), [
         DemoPhase.CLICK,
         DemoPhase.NEUTRAL_HOLD,
     ]);
 });
 
-test('launch effect sequence keeps an even rhythm while repeat is on', () => {
+test('the launch sequence keeps an even rhythm while repeat is on', () => {
     const recipe = getBuiltInRecipe(Profile.BALANCED);
     assertEqual(recipe.launch.repeat, true);
-    assertDeepEqual(buildEffectSequence('launch', recipe), [
+    assertDeepEqual(buildPartSequence('launch', recipe), [
         DemoPhase.LAUNCH,
         DemoPhase.REPEAT_PAUSE,
     ]);
     recipe.launch.repeat = false;
-    assertDeepEqual(buildEffectSequence('launch', recipe), [
+    assertDeepEqual(buildPartSequence('launch', recipe), [
         DemoPhase.LAUNCH,
         DemoPhase.SETTLE,
         DemoPhase.NEUTRAL_HOLD,
@@ -102,15 +102,15 @@ test('launch effect sequence keeps an even rhythm while repeat is on', () => {
 test('stock launch never repeats in the preview', () => {
     const recipe = getBuiltInRecipe(Profile.BALANCED);
     recipe.launch.effect = LaunchEffect.STOCK;
-    assertDeepEqual(buildEffectSequence('launch', recipe), [
+    assertDeepEqual(buildPartSequence('launch', recipe), [
         DemoPhase.LAUNCH,
         DemoPhase.SETTLE,
         DemoPhase.NEUTRAL_HOLD,
     ]);
 });
 
-test('unknown effect sequences are empty', () => {
-    assertDeepEqual(buildEffectSequence('nope', getBuiltInRecipe(Profile.BALANCED)), []);
+test('unknown part sequences are empty', () => {
+    assertDeepEqual(buildPartSequence('nope', getBuiltInRecipe(Profile.BALANCED)), []);
 });
 
 test('hover activity requires the toggle and a visible transform', () => {

@@ -45,7 +45,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         window.add(advanced);
 
         const profileGroup = new Adw.PreferencesGroup({
-            title: _('Profiles'),
+            title: _('Presets'),
             description: _('Hover to preview. Click to apply.'),
         });
         const customBadge = new Gtk.Label({label: _('Custom')});

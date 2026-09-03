@@ -134,7 +134,7 @@
     <key name="custom-bounce-decay" type="d">
       <default>0.0</default>
       <range min="0.0" max="1.0"/>
-      <summary>Secondary bounce height</summary>
+      <summary>Height kept by each further bounce</summary>
     </key>
     <key name="custom-pulse-count" type="i">
       <default>2</default>
@@ -150,7 +150,7 @@
     <key name="show-hover-background" type="b">
       <default>false</default>
       <summary>Show the hover background</summary>
-      <description>When false, hide Dash to Dock's hover tile.</description>
+      <description>When false, hide the hover tile behind the icon.</description>
     </key>
 
     <key name="show-focused-app-background" type="b">

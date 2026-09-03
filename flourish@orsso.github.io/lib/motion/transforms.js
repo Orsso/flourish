@@ -1,34 +1,33 @@
 import {
-    DockPosition,
-    EASE_IN_QUAD,
     Easing,
     LaunchEffect,
     PressEffect,
+    ScreenEdge,
 } from './catalog.js';
 
 const ORIENTATIONS = {
-    [DockPosition.BOTTOM]: {
+    [ScreenEdge.BOTTOM]: {
         horizontal: true,
         normalAxis: 'y',
         tangentAxis: 'x',
         pivot: [0.5, 1],
         outward: [0, -1],
     },
-    [DockPosition.TOP]: {
+    [ScreenEdge.TOP]: {
         horizontal: true,
         normalAxis: 'y',
         tangentAxis: 'x',
         pivot: [0.5, 0],
         outward: [0, 1],
     },
-    [DockPosition.LEFT]: {
+    [ScreenEdge.LEFT]: {
         horizontal: false,
         normalAxis: 'x',
         tangentAxis: 'y',
         pivot: [0, 0.5],
         outward: [1, 0],
     },
-    [DockPosition.RIGHT]: {
+    [ScreenEdge.RIGHT]: {
         horizontal: false,
         normalAxis: 'x',
         tangentAxis: 'y',
@@ -37,8 +36,8 @@ const ORIENTATIONS = {
     },
 };
 
-export function getOrientation(position) {
-    const orientation = ORIENTATIONS[position];
+export function getOrientation(edge) {
+    const orientation = ORIENTATIONS[edge];
     return {
         horizontal: orientation.horizontal,
         normalAxis: orientation.normalAxis,
@@ -48,10 +47,10 @@ export function getOrientation(position) {
     };
 }
 
-export function getLaunchPivot(effect, position) {
+export function getLaunchPivot(effect, edge) {
     return effect === LaunchEffect.PULSE
         ? [0.5, 0.5]
-        : getOrientation(position).pivot;
+        : getOrientation(edge).pivot;
 }
 
 const PRESS_SQUASH_FACTOR = 0.22;
@@ -89,13 +88,13 @@ function pressTransform({
 }
 
 export function composeIconTransform({
-    position = DockPosition.BOTTOM,
+    edge = ScreenEdge.BOTTOM,
     hoverScale = 1,
     lift = 0,
     pressIntensity = 0,
     pressEffect = PressEffect.SQUASH,
 } = {}) {
-    const orientation = getOrientation(position);
+    const orientation = getOrientation(edge);
     const press = resolvePressTransform(pressEffect, pressIntensity, orientation);
     return {
         scaleX: hoverScale * press.scaleX,
@@ -153,7 +152,7 @@ export function hoverNeedsBudget({
 }
 
 export function resolveIconTransform({
-    position = DockPosition.BOTTOM,
+    edge = ScreenEdge.BOTTOM,
     recipe,
     hovered = false,
     neighborDistance = Infinity,
@@ -163,7 +162,7 @@ export function resolveIconTransform({
     budgetPx = Infinity,
     iconNormalSize = 0,
 }) {
-    const orientation = getOrientation(position);
+    const orientation = getOrientation(edge);
     if (!animationsEnabled) {
         return {
             scaleX: 1,
@@ -192,7 +191,7 @@ export function resolveIconTransform({
         hoverScale, lift, iconNormalSize, budgetPx, overshoot);
 
     return composeIconTransform({
-        position,
+        edge,
         hoverScale: fitted.hoverScale,
         lift: fitted.lift,
         pressIntensity,
@@ -201,14 +200,14 @@ export function resolveIconTransform({
 }
 
 export function projectHoverTransform({
-    position = DockPosition.BOTTOM,
+    edge = ScreenEdge.BOTTOM,
     recipe,
     hovered = false,
     neighborDistance = Infinity,
     progress = 1,
 }) {
     const target = resolveIconTransform({
-        position,
+        edge,
         recipe,
         hovered,
         neighborDistance,
@@ -242,24 +241,24 @@ export function hoverIntroLift(visible, neutral, pivot) {
     };
 }
 
-export function buildLaunchSegments(effect, recipe, position, cycleIndex = 0) {
-    const orientation = getOrientation(position);
-    const intensity = clamp(recipe.intensity, 0, 1);
-    const speed = clamp(recipe.speed, 0.3, 1);
-    const cycleScale = recipe.softenRepeats === false
+export function buildLaunchSegments(effect, launch, edge, cycleIndex = 0) {
+    const orientation = getOrientation(edge);
+    const intensity = clamp(launch.intensity, 0, 1);
+    const speed = clamp(launch.speed, 0.3, 1);
+    const cycleScale = launch.softenRepeats === false
         ? 1
         : 0.85 ** Math.max(0, cycleIndex);
 
     switch (effect) {
         case LaunchEffect.PULSE:
-            return pulseSegments(recipe, intensity * cycleScale, speed);
+            return pulseSegments(launch, intensity * cycleScale, speed);
         case LaunchEffect.STRETCH:
-            return stretchSegments(recipe, orientation, intensity * cycleScale, speed);
+            return stretchSegments(launch, orientation, intensity * cycleScale, speed);
         case LaunchEffect.STOCK:
             return [];
         case LaunchEffect.BOUNCE:
         default:
-            return bounceSegments(recipe, orientation, intensity * cycleScale, speed);
+            return bounceSegments(launch, orientation, intensity * cycleScale, speed);
     }
 }
 
@@ -310,8 +309,8 @@ export function sampleLaunchSegments(segments, elapsed) {
     return previous;
 }
 
-function pulseSegments(recipe, intensity, speed) {
-    const count = Math.round(clamp(recipe.pulseCount, 1, 4));
+function pulseSegments(launch, intensity, speed) {
+    const count = Math.round(clamp(launch.pulseCount, 1, 4));
     const scale = 1 + 0.14 * intensity;
     const segments = [];
     for (let index = 0; index < count; index++) {
@@ -329,9 +328,9 @@ function pulseSegments(recipe, intensity, speed) {
     return segments;
 }
 
-function bounceSegments(recipe, orientation, intensity, speed) {
+function bounceSegments(launch, orientation, intensity, speed) {
     const height = (12 + 36 * intensity);
-    const decay = clamp(recipe.bounceDecay, 0, 1);
+    const decay = clamp(launch.bounceDecay, 0, 1);
     const segments = [];
     for (let index = 0; index < 3; index++) {
         const distance = height * decay ** index;
@@ -345,14 +344,14 @@ function bounceSegments(recipe, orientation, intensity, speed) {
         }));
         segments.push(segment({
             duration: duration(210 - index * 25, speed),
-            easing: EASE_IN_QUAD,
+            easing: Easing.EASE_IN_QUAD,
         }));
     }
     return segments;
 }
 
-function stretchSegments(recipe, orientation, intensity, speed) {
-    const elasticity = clamp(recipe.stretchElasticity, 0, 1);
+function stretchSegments(launch, orientation, intensity, speed) {
+    const elasticity = clamp(launch.stretchElasticity, 0, 1);
     const tangentScale = 1 + 0.18 * intensity;
     const compressedScale = 1 - 0.25 * intensity;
     const extendedScale = 1 + (0.18 + 0.18 * elasticity) * intensity;
@@ -453,7 +452,7 @@ function ease(mode, progress) {
             return value;
         case Easing.EASE_OUT_QUAD:
             return 1 - (1 - value) ** 2;
-        case EASE_IN_QUAD:
+        case Easing.EASE_IN_QUAD:
             return value ** 2;
         case Easing.EASE_OUT_BACK: {
             const overshoot = 1.70158;

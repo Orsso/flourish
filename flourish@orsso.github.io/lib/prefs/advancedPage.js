@@ -9,6 +9,7 @@ import {
     NeighborRadius,
     PressEffect,
     PressMode,
+    RecipePart,
 } from '../motion/catalog.js';
 import {editCustomSetting, readActiveRecipe, resetCustom} from '../motion/settings.js';
 import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../motion/transforms.js';
@@ -25,7 +26,7 @@ import {
 } from './rows.js';
 
 export function buildAdvancedPage(page, controls, settings, state) {
-    controls.effectPreviews = {};
+    controls.partPreviews = {};
 
     const budgetGroup = new Adw.PreferencesGroup();
     const budgetRow = new Adw.ActionRow({
@@ -41,7 +42,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
     budgetGroup.add(budgetRow);
     page.add(budgetGroup);
 
-    const hover = createEffectGroup(page, controls, settings, _('Hover'), 'hover');
+    const hover = createPartGroup(page, controls, settings, _('Hover'), RecipePart.HOVER);
     controls.hoverScale = createScaleRow(
         hover.group, _('Magnification'), 1, 1.30, 0.01,
         value => editCustomSetting(settings, 'custom-hover-scale', value), state);
@@ -71,7 +72,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
     holdWhileSliding(controls.hoverScale, hover);
     holdWhileSliding(controls.neighborScale, hover);
 
-    const press = createEffectGroup(page, controls, settings, _('Press'), 'press');
+    const press = createPartGroup(page, controls, settings, _('Press'), RecipePart.PRESS);
     controls.pressMode = createComboRow(
         press.group, _('Trigger'),
         [
@@ -93,7 +94,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
         _('ms'));
     holdWhileSliding(controls.pressIntensity, press);
 
-    const launch = createEffectGroup(page, controls, settings, _('Launch'), 'launch');
+    const launch = createPartGroup(page, controls, settings, _('Launch'), RecipePart.LAUNCH);
     controls.launchEffect = createComboRow(
         launch.group, _('Effect'),
         [
@@ -146,7 +147,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
     const resetGroup = new Adw.PreferencesGroup();
     const resetRow = new Adw.ActionRow({
         title: _('Reset Custom'),
-        subtitle: _('Copy the Subtle profile into Custom'),
+        subtitle: _('Copy the Subtle preset into Custom'),
     });
     const resetButton = new Gtk.Button({label: _('Reset'), valign: Gtk.Align.CENTER});
     resetButton.add_css_class('destructive-action');
@@ -203,19 +204,19 @@ export function syncAdvancedPage(settings, controls, recipe) {
         settings.get_boolean('show-hover-background');
     controls.advancedFocusedAppBackground.active =
         settings.get_boolean('show-focused-app-background');
-    for (const preview of Object.values(controls.effectPreviews))
+    for (const preview of Object.values(controls.partPreviews))
         preview.updateRecipe(recipe);
 }
 
-function createEffectGroup(page, controls, settings, title, effect) {
+function createPartGroup(page, controls, settings, title, part) {
     const group = new Adw.PreferencesGroup({title});
-    const preview = new MotionPreview({recipe: readActiveRecipe(settings), effect});
+    const preview = new MotionPreview({recipe: readActiveRecipe(settings), part});
     const pointer = new Gtk.EventControllerMotion();
     pointer.connect('enter', () => preview.playLoop());
     pointer.connect('leave', () => preview.stopLoop());
     group.add_controller(pointer);
     group.set_header_suffix(preview);
-    controls.effectPreviews[effect] = preview;
+    controls.partPreviews[part] = preview;
     page.add(group);
     return {group, preview, pointer};
 }

@@ -1,30 +1,30 @@
-import {DEFAULT_PROFILE, Profile, getBuiltInRecipe} from './catalog.js';
+import {DEFAULT_PROFILE, Profile, RecipePart, getBuiltInRecipe} from './catalog.js';
 
 const DEFINITIONS = [
-    definition('custom-hover-enabled', 'boolean', 'hover', 'enabled'),
-    definition('custom-hover-scale', 'double', 'hover', 'scale'),
-    definition('custom-hover-lift', 'int', 'hover', 'lift'),
-    definition('custom-hover-duration', 'int', 'hover', 'duration'),
-    definition('custom-hover-easing', 'string', 'hover', 'easing'),
-    definition('custom-neighbor-scale', 'double', 'hover', 'neighborScale'),
-    definition('custom-neighbor-radius', 'int', 'hover', 'neighborRadius'),
-    definition('custom-press-enabled', 'boolean', 'press', 'enabled'),
-    definition('custom-press-mode', 'string', 'press', 'mode'),
-    definition('custom-press-effect', 'string', 'press', 'effect'),
-    definition('custom-press-intensity', 'double', 'press', 'intensity'),
-    definition('custom-press-duration', 'int', 'press', 'duration'),
-    definition('custom-launch-enabled', 'boolean', 'launch', 'enabled'),
-    definition('custom-launch-effect', 'string', 'launch', 'effect'),
-    definition('custom-launch-intensity', 'double', 'launch', 'intensity'),
-    definition('custom-launch-speed', 'double', 'launch', 'speed'),
-    definition('custom-launch-repeat', 'boolean', 'launch', 'repeat'),
+    definition('custom-hover-enabled', 'boolean', RecipePart.HOVER, 'enabled'),
+    definition('custom-hover-scale', 'double', RecipePart.HOVER, 'scale'),
+    definition('custom-hover-lift', 'int', RecipePart.HOVER, 'lift'),
+    definition('custom-hover-duration', 'int', RecipePart.HOVER, 'duration'),
+    definition('custom-hover-easing', 'string', RecipePart.HOVER, 'easing'),
+    definition('custom-neighbor-scale', 'double', RecipePart.HOVER, 'neighborScale'),
+    definition('custom-neighbor-radius', 'int', RecipePart.HOVER, 'neighborRadius'),
+    definition('custom-press-enabled', 'boolean', RecipePart.PRESS, 'enabled'),
+    definition('custom-press-mode', 'string', RecipePart.PRESS, 'mode'),
+    definition('custom-press-effect', 'string', RecipePart.PRESS, 'effect'),
+    definition('custom-press-intensity', 'double', RecipePart.PRESS, 'intensity'),
+    definition('custom-press-duration', 'int', RecipePart.PRESS, 'duration'),
+    definition('custom-launch-enabled', 'boolean', RecipePart.LAUNCH, 'enabled'),
+    definition('custom-launch-effect', 'string', RecipePart.LAUNCH, 'effect'),
+    definition('custom-launch-intensity', 'double', RecipePart.LAUNCH, 'intensity'),
+    definition('custom-launch-speed', 'double', RecipePart.LAUNCH, 'speed'),
+    definition('custom-launch-repeat', 'boolean', RecipePart.LAUNCH, 'repeat'),
     definition(
-        'custom-launch-soften-repeats', 'boolean', 'launch', 'softenRepeats'),
-    definition('custom-launch-repeat-pause', 'int', 'launch', 'repeatPause'),
-    definition('custom-launch-max-duration', 'int', 'launch', 'maxDuration'),
-    definition('custom-bounce-decay', 'double', 'launch', 'bounceDecay'),
-    definition('custom-pulse-count', 'int', 'launch', 'pulseCount'),
-    definition('custom-stretch-elasticity', 'double', 'launch', 'stretchElasticity'),
+        'custom-launch-soften-repeats', 'boolean', RecipePart.LAUNCH, 'softenRepeats'),
+    definition('custom-launch-repeat-pause', 'int', RecipePart.LAUNCH, 'repeatPause'),
+    definition('custom-launch-max-duration', 'int', RecipePart.LAUNCH, 'maxDuration'),
+    definition('custom-bounce-decay', 'double', RecipePart.LAUNCH, 'bounceDecay'),
+    definition('custom-pulse-count', 'int', RecipePart.LAUNCH, 'pulseCount'),
+    definition('custom-stretch-elasticity', 'double', RecipePart.LAUNCH, 'stretchElasticity'),
 ];
 
 const DEFINITION_BY_KEY = new Map(DEFINITIONS.map(item => [item.key, item]));
@@ -39,13 +39,13 @@ export function readActiveRecipe(settings) {
 function readCustomValues(settings) {
     const values = {hover: {}, press: {}, launch: {}};
     for (const item of DEFINITIONS)
-        values[item.group][item.property] = read(settings, item);
+        values[item.part][item.property] = read(settings, item);
     return values;
 }
 
 export function writeCustomRecipe(settings, recipe) {
     for (const item of DEFINITIONS)
-        write(settings, item, recipe[item.group][item.property]);
+        write(settings, item, recipe[item.part][item.property]);
 }
 
 export function editCustomSetting(settings, key, value) {
@@ -84,8 +84,8 @@ export function resetCustom(settings) {
     settings.apply();
 }
 
-function definition(key, type, group, property) {
-    return {key, type, group, property};
+function definition(key, type, part, property) {
+    return {key, type, part, property};
 }
 
 function read(settings, item) {

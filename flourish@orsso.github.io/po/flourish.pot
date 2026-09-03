@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-02 18:56+0200\n"
+"POT-Creation-Date: 2026-09-03 04:32+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,7 +38,7 @@ msgid "More"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:48
-msgid "Profiles"
+msgid "Presets"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:49
@@ -284,7 +284,7 @@ msgid "Reset Custom"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/advancedPage.js:149
-msgid "Copy the Subtle profile into Custom"
+msgid "Copy the Subtle preset into Custom"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/advancedPage.js:151

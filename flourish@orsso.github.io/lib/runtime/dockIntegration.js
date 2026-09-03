@@ -3,7 +3,7 @@ import St from 'gi://St';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {DockPosition} from '../motion/catalog.js';
+import {ScreenEdge} from '../motion/catalog.js';
 import {MotionSurface} from './motionSurface.js';
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.
@@ -138,7 +138,7 @@ export class DockIntegration {
                 console.warn('[flourish] a Dash to Dock instance has no icon box');
                 continue;
             }
-            this.#surface.addBox(box, positionFromSide(dock.position));
+            this.#surface.addBox(box, edgeFromSide(dock.position));
         }
         this.#scheduleBudgetMeasure();
         this.refreshStyles();
@@ -191,16 +191,16 @@ function lookupDashToDock() {
         .find(extension => extension?.state === ExtensionState.ACTIVE) ?? null;
 }
 
-function positionFromSide(side) {
+function edgeFromSide(side) {
     switch (side) {
         case St.Side.TOP:
-            return DockPosition.TOP;
+            return ScreenEdge.TOP;
         case St.Side.LEFT:
-            return DockPosition.LEFT;
+            return ScreenEdge.LEFT;
         case St.Side.RIGHT:
-            return DockPosition.RIGHT;
+            return ScreenEdge.RIGHT;
         case St.Side.BOTTOM:
         default:
-            return DockPosition.BOTTOM;
+            return ScreenEdge.BOTTOM;
     }
 }

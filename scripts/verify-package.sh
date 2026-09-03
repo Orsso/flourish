@@ -16,6 +16,7 @@ required=(
     lib/prefs/demoSequence.js
     lib/prefs/motionPreview.js
     lib/prefs/rows.js
+    lib/runtime/backgroundStyle.js
     lib/runtime/dashIntegration.js
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
@@ -25,7 +26,6 @@ required=(
     lib/runtime/launchEngine.js
     lib/runtime/liveRegistry.js
     lib/runtime/motionSurface.js
-    lib/runtime/backgroundStyle.js
     metadata.json
     prefs.js
     schemas/org.gnome.shell.extensions.flourish.gschema.xml

@@ -1,40 +1,40 @@
 export class LiveRegistry {
     #boxes = new Map();
-    #icons = new Map();
+    #controllers = new Map();
 
     get boxCount() {
         return this.#boxes.size;
     }
 
-    get iconCount() {
-        return this.#icons.size;
+    get controllerCount() {
+        return this.#controllers.size;
     }
 
-    get icons() {
-        return [...this.#icons.values()];
+    get controllers() {
+        return [...this.#controllers.values()];
     }
 
-    getIcon(actor) {
-        return this.#icons.get(actor);
+    getController(actor) {
+        return this.#controllers.get(actor);
     }
 
-    addIcon(actor, controller) {
-        if (this.#icons.has(actor))
-            return this.#icons.get(actor);
+    addController(actor, controller) {
+        if (this.#controllers.has(actor))
+            return this.#controllers.get(actor);
 
         actor.connectObject('destroy', () => {
-            this.#icons.delete(actor);
+            this.#controllers.delete(actor);
             controller.onTargetDestroyed();
         }, this);
-        this.#icons.set(actor, controller);
+        this.#controllers.set(actor, controller);
         return controller;
     }
 
-    removeLiveIcon(actor) {
-        const controller = this.#icons.get(actor);
+    removeLiveController(actor) {
+        const controller = this.#controllers.get(actor);
         if (!controller)
             return;
-        this.#icons.delete(actor);
+        this.#controllers.delete(actor);
         actor.disconnectObject(this);
         controller.dispose();
     }
@@ -61,8 +61,8 @@ export class LiveRegistry {
     }
 
     disable() {
-        for (const actor of [...this.#icons.keys()])
-            this.removeLiveIcon(actor);
+        for (const actor of [...this.#controllers.keys()])
+            this.removeLiveController(actor);
         for (const box of [...this.#boxes.keys()])
             this.removeLiveBox(box);
     }

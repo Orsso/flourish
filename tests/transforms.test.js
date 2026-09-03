@@ -51,7 +51,7 @@ test('directional launches keep the dock-facing pivot', () => {
 
 test('press composition compresses the normal axis on a horizontal dock', () => {
     const transform = composeIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         hoverScale: 1.2,
         lift: 4,
         pressIntensity: 0.5,
@@ -63,14 +63,14 @@ test('press composition compresses the normal axis on a horizontal dock', () => 
 
 test('press feedback compresses without widening past the hover scale', () => {
     const bottom = composeIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         hoverScale: 1.2,
         pressIntensity: 0.85,
     });
     assertClose(bottom.scaleX, 1.2);          // tangent axis stays at hover, no bulge
     assertEqual(bottom.scaleY < 1.2, true);   // normal axis compresses
     const left = composeIconTransform({
-        position: 'left',
+        edge: 'left',
         hoverScale: 1.2,
         pressIntensity: 0.85,
     });
@@ -80,7 +80,7 @@ test('press feedback compresses without widening past the hover scale', () => {
 
 test('press composition swaps axes on a vertical dock', () => {
     const transform = composeIconTransform({
-        position: 'left',
+        edge: 'left',
         hoverScale: 1.2,
         lift: 4,
         pressIntensity: 0.5,
@@ -227,7 +227,7 @@ test('repeat softening can be disabled', () => {
     assertDeepEqual(third, first);
 });
 
-test('stock launch effect produces no companion segments', () => {
+test('the stock launch produces no clone segments', () => {
     assertDeepEqual(buildLaunchSegments(LaunchEffect.STOCK, {
         intensity: 0.6,
         speed: 1,
@@ -237,7 +237,7 @@ test('stock launch effect produces no companion segments', () => {
 test('hover and press compose into one controller target', () => {
     const recipe = getBuiltInRecipe('expressive');
     const transform = resolveIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         hovered: true,
         pressed: true,
@@ -250,7 +250,7 @@ test('hover and press compose into one controller target', () => {
 test('neighbor response uses only the configured neighbor scale', () => {
     const recipe = getBuiltInRecipe('expressive');
     const transform = resolveIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         neighborDistance: 1,
     });
@@ -262,19 +262,19 @@ test('neighbor response uses only the configured neighbor scale', () => {
 test('preview neighbor hover follows one shared progress', () => {
     const recipe = getBuiltInRecipe('expressive');
     const start = projectHoverTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         neighborDistance: 1,
         progress: 0,
     });
     const halfway = projectHoverTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         neighborDistance: 1,
         progress: 0.5,
     });
     const end = projectHoverTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         neighborDistance: 1,
         progress: 1,
@@ -305,13 +305,13 @@ test('resolved transform applies the falloff to far neighbors', () => {
     const recipe = getBuiltInRecipe('expressive');
     recipe.hover.neighborRadius = 2;
     const transform = resolveIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         neighborDistance: 2,
     });
     assertClose(transform.scaleX, 1 + (recipe.hover.neighborScale - 1) / 2);
     assertEqual(resolveIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         neighborDistance: 3,
     }).scaleX, 1);
@@ -319,7 +319,7 @@ test('resolved transform applies the falloff to far neighbors', () => {
 
 test('disabled system animations return the identity transform', () => {
     const transform = resolveIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe: getBuiltInRecipe('expressive'),
         hovered: true,
         pressed: true,
@@ -337,7 +337,7 @@ test('disabled system animations return the identity transform', () => {
 
 test('launch state suppresses hover magnification', () => {
     const transform = resolveIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe: getBuiltInRecipe('balanced'),
         hovered: true,
         launching: true,
@@ -513,7 +513,7 @@ test('budget fit is inert without measurable geometry', () => {
 test('resolved transform fits the hovered reach within the dock budget', () => {
     const recipe = getBuiltInRecipe('balanced'); // scale 1.10, lift 0, cubic
     const transform = resolveIconTransform({
-        position: 'bottom',
+        edge: 'bottom',
         recipe,
         hovered: true,
         budgetPx: 4,

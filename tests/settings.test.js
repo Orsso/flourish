@@ -9,7 +9,7 @@ import {
     writeCustomRecipe,
 } from '../flourish@orsso.github.io/lib/motion/settings.js';
 
-class FakeSettings {
+class ImmediateSettings {
     constructor(profile = Profile.BALANCED) {
         this.values = {'motion-profile': profile};
         this.applyCount = 0;
@@ -59,7 +59,7 @@ class FakeSettings {
 }
 
 // Small Gio.Settings fake with delay/apply behavior.
-class DelayAwareSettings {
+class DelayedSettings {
     constructor(profile = Profile.BALANCED) {
         this.committed = {'motion-profile': profile};
         this.pending = {};
@@ -121,7 +121,7 @@ class DelayAwareSettings {
 }
 
 test('selecting a preset writes through after a custom edit', () => {
-    const settings = new DelayAwareSettings(Profile.BALANCED);
+    const settings = new DelayedSettings(Profile.BALANCED);
     editCustomSetting(settings, 'custom-hover-scale', 1.18);
     assertEqual(settings.committed['motion-profile'], Profile.CUSTOM);
     selectProfile(settings, Profile.SUBTLE);
@@ -129,7 +129,7 @@ test('selecting a preset writes through after a custom edit', () => {
 });
 
 test('switching from custom to a preset writes recipe and profile', () => {
-    const settings = new DelayAwareSettings(Profile.BALANCED);
+    const settings = new DelayedSettings(Profile.BALANCED);
     editCustomSetting(settings, 'custom-hover-scale', 1.18);
     switchToPresetFromCustom(settings, Profile.SUBTLE);
     assertEqual(settings.committed['motion-profile'], Profile.SUBTLE);
@@ -138,7 +138,7 @@ test('switching from custom to a preset writes recipe and profile', () => {
 });
 
 test('background visibility writes through after a custom edit', () => {
-    const settings = new DelayAwareSettings(Profile.BALANCED);
+    const settings = new DelayedSettings(Profile.BALANCED);
 
     editCustomSetting(settings, 'custom-hover-scale', 1.18);
     setBooleanCommitted(settings, 'show-hover-background', true);
@@ -149,7 +149,7 @@ test('background visibility writes through after a custom edit', () => {
 });
 
 test('editing a preset copies it to custom before applying the edit', () => {
-    const settings = new FakeSettings(Profile.SUBTLE);
+    const settings = new ImmediateSettings(Profile.SUBTLE);
     editCustomSetting(settings, 'custom-hover-scale', 1.18);
     assertEqual(settings.values['motion-profile'], Profile.CUSTOM);
     assertEqual(settings.values['custom-hover-scale'], 1.18);
@@ -159,7 +159,7 @@ test('editing a preset copies it to custom before applying the edit', () => {
 });
 
 test('selecting a preset preserves saved custom values', () => {
-    const settings = new FakeSettings(Profile.CUSTOM);
+    const settings = new ImmediateSettings(Profile.CUSTOM);
     settings.values['custom-hover-scale'] = 1.27;
     selectProfile(settings, Profile.SUBTLE);
     assertEqual(settings.values['motion-profile'], Profile.SUBTLE);
@@ -167,7 +167,7 @@ test('selecting a preset preserves saved custom values', () => {
 });
 
 test('reset custom copies the default preset values', () => {
-    const settings = new FakeSettings(Profile.EXPRESSIVE);
+    const settings = new ImmediateSettings(Profile.EXPRESSIVE);
     settings.values['custom-hover-scale'] = 1.29;
     resetCustom(settings);
     assertEqual(settings.values['motion-profile'], Profile.CUSTOM);
@@ -178,7 +178,7 @@ test('reset custom copies the default preset values', () => {
 });
 
 test('active recipe reads presets without touching custom', () => {
-    const settings = new FakeSettings(Profile.EXPRESSIVE);
+    const settings = new ImmediateSettings(Profile.EXPRESSIVE);
     settings.values['custom-hover-scale'] = 1.01;
     const recipe = readActiveRecipe(settings);
     assertEqual(recipe.id, Profile.EXPRESSIVE);
@@ -186,7 +186,7 @@ test('active recipe reads presets without touching custom', () => {
 });
 
 test('feature toggles create custom from the active preset', () => {
-    const settings = new FakeSettings(Profile.BALANCED);
+    const settings = new ImmediateSettings(Profile.BALANCED);
     editCustomSetting(settings, 'custom-launch-enabled', false);
     assertEqual(settings.values['motion-profile'], Profile.CUSTOM);
     assertEqual(settings.values['custom-launch-enabled'], false);
@@ -194,7 +194,7 @@ test('feature toggles create custom from the active preset', () => {
 });
 
 test('press effect round-trips through custom settings', () => {
-    const settings = new FakeSettings(Profile.BALANCED);
+    const settings = new ImmediateSettings(Profile.BALANCED);
     editCustomSetting(settings, 'custom-press-effect', 'dim');
     assertEqual(settings.values['motion-profile'], Profile.CUSTOM);
     assertEqual(settings.values['custom-press-effect'], 'dim');
@@ -202,7 +202,7 @@ test('press effect round-trips through custom settings', () => {
 });
 
 test('repeat softening round-trips through custom settings', () => {
-    const settings = new FakeSettings(Profile.BALANCED);
+    const settings = new ImmediateSettings(Profile.BALANCED);
     editCustomSetting(settings, 'custom-launch-soften-repeats', false);
     assertEqual(settings.values['motion-profile'], Profile.CUSTOM);
     assertEqual(settings.values['custom-launch-soften-repeats'], false);
@@ -210,7 +210,7 @@ test('repeat softening round-trips through custom settings', () => {
 });
 
 test('the custom profile reads the stored values', () => {
-    const settings = new FakeSettings(Profile.CUSTOM);
+    const settings = new ImmediateSettings(Profile.CUSTOM);
     settings.values['custom-hover-scale'] = 1.27;
     settings.values['custom-launch-effect'] = 'stock';
     const recipe = readActiveRecipe(settings);
@@ -220,7 +220,7 @@ test('the custom profile reads the stored values', () => {
 });
 
 test('switching from custom to a preset overwrites custom values', () => {
-    const settings = new FakeSettings(Profile.CUSTOM);
+    const settings = new ImmediateSettings(Profile.CUSTOM);
     settings.values['custom-hover-scale'] = 1.29;
     switchToPresetFromCustom(settings, Profile.SUBTLE);
     assertEqual(settings.values['motion-profile'], Profile.SUBTLE);
@@ -230,7 +230,7 @@ test('switching from custom to a preset overwrites custom values', () => {
 });
 
 test('neighbor radius round-trips through custom settings', () => {
-    const settings = new FakeSettings(Profile.BALANCED);
+    const settings = new ImmediateSettings(Profile.BALANCED);
     editCustomSetting(settings, 'custom-neighbor-radius', 2);
     assertEqual(settings.values['motion-profile'], Profile.CUSTOM);
     assertEqual(settings.values['custom-neighbor-radius'], 2);
@@ -238,7 +238,7 @@ test('neighbor radius round-trips through custom settings', () => {
 });
 
 test('reset restores the default custom values after an edit', () => {
-    const settings = new FakeSettings(Profile.CUSTOM);
+    const settings = new ImmediateSettings(Profile.CUSTOM);
     editCustomSetting(settings, 'custom-hover-scale', 1.29);
     resetCustom(settings);
     assertEqual(settings.values['motion-profile'], Profile.CUSTOM);

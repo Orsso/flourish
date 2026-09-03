@@ -90,7 +90,7 @@ export class LaunchEngine {
         const recipe = controller.recipe;
         const {hoverDuration, magnify, pressSteps} = preparation;
         const launchPivot = getLaunchPivot(
-            recipe.launch.effect, controller.position);
+            recipe.launch.effect, controller.edge);
         const introScale = hoverIntroScale(visibleGeometry, neutralGeometry);
         const introLift = hoverIntroLift(
             visibleGeometry, neutralGeometry, launchPivot);
@@ -107,7 +107,7 @@ export class LaunchEngine {
         Main.uiGroup.add_child(clone);
 
         const pressTransform = composeIconTransform({
-            position: controller.position,
+            edge: controller.edge,
             pressIntensity: recipe.press.intensity,
             pressEffect: recipe.press.effect,
         });
@@ -231,7 +231,7 @@ export class LaunchEngine {
             return;
         const {launch} = session.controller.recipe;
         const segments = buildLaunchSegments(
-            launch.effect, launch, session.controller.position, session.cycle);
+            launch.effect, launch, session.controller.edge, session.cycle);
         // The recipe can turn stock mid-session.
         if (segments.length === 0) {
             this.#handoff(session);
@@ -315,7 +315,7 @@ export class LaunchEngine {
             dashContainsTarget: Main.overview.dash.contains(session.target),
         });
         if (retreat) {
-            const {outward} = getOrientation(session.controller.position);
+            const {outward} = getOrientation(session.controller.edge);
             const [width, height] = session.clone.get_transformed_size();
             session.clone.ease({
                 translation_x: session.clone.translation_x - outward[0] * width,

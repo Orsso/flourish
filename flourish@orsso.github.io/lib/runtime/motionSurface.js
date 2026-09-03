@@ -15,11 +15,11 @@ export class MotionSurface {
     }
 
     get controllers() {
-        return this.#registry.icons;
+        return this.#registry.controllers;
     }
 
     getController(appIcon) {
-        return this.#registry.getIcon(appIcon);
+        return this.#registry.getController(appIcon);
     }
 
     setRecipe(recipe) {
@@ -33,7 +33,7 @@ export class MotionSurface {
             controller.refreshStyle();
     }
 
-    addBox(box, position) {
+    addBox(box, edge) {
         const group = new NeighborGroup(this.#scheduler);
         const added = this.#registry.addBox(box, () => {
             box.disconnectObject(this);
@@ -42,9 +42,9 @@ export class MotionSurface {
         if (!added)
             return;
         for (const container of box.get_children())
-            this.#registerContainer(container, position, group);
+            this.#registerContainer(container, edge, group);
         box.connectObject('child-added', (_box, container) => {
-            this.#registerContainer(container, position, group);
+            this.#registerContainer(container, edge, group);
         }, this);
     }
 
@@ -52,24 +52,24 @@ export class MotionSurface {
         this.#registry.disable();
     }
 
-    #registerContainer(container, position, group) {
+    #registerContainer(container, edge, group) {
         // Separators and drag placeholders are not app icons.
         const icon = container.child ?? container;
-        const bin = icon?.icon?._iconBin;
-        if (!bin || this.#registry.getIcon(icon))
+        const bin = icon.icon?._iconBin;
+        if (!bin || this.#registry.getController(icon))
             return;
 
         const controller = new IconMotionController({
             icon,
             bin,
-            position,
+            edge,
             recipe: this.#recipe,
             onHoverChanged: (changed, hovered) => group.setHovered(changed, hovered),
             onDestroyed: destroyed => group.remove(destroyed),
             onMeasured: measurement => this.#onMeasured(measurement),
         });
         group.add(controller, container, boxChildren(container));
-        this.#registry.addIcon(icon, controller);
+        this.#registry.addController(icon, controller);
     }
 }
 

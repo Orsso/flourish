@@ -2,7 +2,7 @@ import Shell from 'gi://Shell';
 import {Dash} from 'resource:///org/gnome/shell/ui/dash.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {DockPosition} from '../motion/catalog.js';
+import {ScreenEdge} from '../motion/catalog.js';
 import {FocusHighlight} from './focusHighlight.js';
 import {MotionSurface} from './motionSurface.js';
 
@@ -46,7 +46,7 @@ export class DashIntegration {
         // The dash clips its row; hover motion overflows it.
         this.#savedClip = box.clip_to_allocation;
         box.clip_to_allocation = false;
-        this.#surface.addBox(box, DockPosition.BOTTOM);
+        this.#surface.addBox(box, ScreenEdge.BOTTOM);
         this.#surface.refreshStyles();
     }
 

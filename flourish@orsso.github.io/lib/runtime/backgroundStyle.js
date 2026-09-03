@@ -3,26 +3,29 @@ import St from 'gi://St';
 
 export class BackgroundStyle {
     #file;
-    #loaded = false;
 
-    constructor(extension, cssFileName) {
+    constructor({extension, cssFileName}) {
         this.#file = Gio.File.new_for_path(`${extension.path}/${cssFileName}`);
     }
 
     // True when a stylesheet was loaded or unloaded.
     setEnabled(enabled) {
-        if (this.#loaded === enabled)
+        const theme = this.#theme();
+        if (this.#isLoaded(theme) === enabled)
             return false;
         if (enabled)
-            this.#theme().load_stylesheet(this.#file);
+            theme.load_stylesheet(this.#file);
         else
-            this.#theme().unload_stylesheet(this.#file);
-        this.#loaded = enabled;
+            theme.unload_stylesheet(this.#file);
         return true;
     }
 
     disable() {
         this.setEnabled(false);
+    }
+
+    #isLoaded(theme) {
+        return theme.get_custom_stylesheets().some(file => file.equal(this.#file));
     }
 
     #theme() {

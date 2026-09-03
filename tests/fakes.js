@@ -105,6 +105,13 @@ export class FakeBin {
         this.offscreen_redirect = 0;
         this.easeTargets = [];
         this.onEase = null;
+        this.lastEase = null;
+        this.parentProbes = 0;
+        this.removedTransitions = 0;
+    }
+
+    get eases() {
+        return this.easeTargets.length;
     }
 
     get_pivot_point() {
@@ -121,10 +128,13 @@ export class FakeBin {
     }
 
     get_parent() {
+        this.parentProbes++;
         return null;
     }
 
-    remove_transition() {}
+    remove_transition() {
+        this.removedTransitions++;
+    }
 
     add_style_class_name() {}
 
@@ -137,6 +147,7 @@ export class FakeBin {
     queue_redraw() {}
 
     ease(props) {
+        this.lastEase = props;
         this.easeTargets.push(props.scale_x ?? this.scale_x);
         for (const key of ['scale_x', 'scale_y', 'translation_x', 'translation_y']) {
             if (props[key] !== undefined)

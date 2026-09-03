@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 
-import {PressMode} from '../motion/catalog.js';
+import {Easing, PressMode, RecipePart, ScreenEdge} from '../motion/catalog.js';
 import {
     buildLaunchSegments,
     getLaunchPivot,
@@ -15,7 +15,7 @@ import {
 } from '../motion/transforms.js';
 import {
     buildDemoSequence,
-    buildEffectSequence,
+    buildPartSequence,
     DemoPhase,
     hoverIsActive,
     HOVER_HOLD_MS,
@@ -41,17 +41,18 @@ const INLINE_ICON_SIZE = 24;
 const INLINE_STEP = INLINE_ICON_SIZE + 10;
 const COUNT_GROW_MS = 250;
 
+// The prefs process has no Clutter; Adw carries the same curves.
 const EASINGS = {
-    linear: Adw.Easing.LINEAR,
-    'ease-out-quad': Adw.Easing.EASE_OUT_QUAD,
-    'ease-out-cubic': Adw.Easing.EASE_OUT_CUBIC,
-    'ease-out-back': Adw.Easing.EASE_OUT_BACK,
+    [Easing.LINEAR]: Adw.Easing.LINEAR,
+    [Easing.EASE_OUT_QUAD]: Adw.Easing.EASE_OUT_QUAD,
+    [Easing.EASE_OUT_CUBIC]: Adw.Easing.EASE_OUT_CUBIC,
+    [Easing.EASE_OUT_BACK]: Adw.Easing.EASE_OUT_BACK,
 };
 
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
-    _init({recipe, effect = null, ...params}) {
-        const inline = Boolean(effect);
-        const iconCount = effect === 'hover' ? hoverIconCount(recipe) : 1;
+    _init({recipe, part = null, ...params}) {
+        const inline = Boolean(part);
+        const iconCount = part === RecipePart.HOVER ? hoverIconCount(recipe) : 1;
         super._init({
             height_request: inline ? 64 : 96,
             width_request: inline ? inlineWidth(iconCount) : -1,
@@ -60,7 +61,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             ...params,
         });
         this._selected = false;
-        this._effect = effect;
+        this._part = part;
         this._iconCount = iconCount;
         this._visibleCount = iconCount;
         this._countAnimation = IDLE_ANIMATION;
@@ -89,17 +90,17 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _adoptRecipe(recipe) {
-        if (!this._effect || recipe[this._effect].enabled)
+        if (!this._part || recipe[this._part].enabled)
             return recipe;
         return {
             ...recipe,
-            [this._effect]: {...recipe[this._effect], enabled: true},
+            [this._part]: {...recipe[this._part], enabled: true},
         };
     }
 
     _resolveMotion() {
         return resolveIconTransform({
-            position: 'bottom',
+            edge: ScreenEdge.BOTTOM,
             recipe: this._recipe,
             hovered: this._hovered,
             pressed: this._pressed,
@@ -116,7 +117,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _syncIconCount() {
-        if (this._effect !== 'hover')
+        if (this._part !== RecipePart.HOVER)
             return;
         const count = hoverIconCount(this._recipe);
         if (count === this._iconCount)
@@ -184,9 +185,9 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             return;
         const generation = GLib.get_monotonic_time();
         this._loop = generation;
-        if (this._effect) {
+        if (this._part) {
             this._runSequence(generation,
-                () => buildEffectSequence(this._effect, this._recipe));
+                () => buildPartSequence(this._part, this._recipe));
             return;
         }
         if (!hoverIsActive(this._recipe)) {
@@ -213,7 +214,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                         this._hovered = true;
                         this._hoverProgress = 0;
                         this._motionTransform = resolveIconTransform({
-                            position: 'bottom',
+                            edge: ScreenEdge.BOTTOM,
                             recipe: this._recipe,
                             hovered: true,
                         });
@@ -261,8 +262,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     holdPose() {
         this._cancelLoop();
         this._held = true;
-        this._hovered = this._effect === 'hover';
-        this._pressed = this._effect === 'press';
+        this._hovered = this._part === RecipePart.HOVER;
+        this._pressed = this._part === RecipePart.PRESS;
         this._animateMotion(this._pressed
             ? this._recipe.press.duration
             : this._recipe.hover.duration);
@@ -415,7 +416,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._launching = true;
         this._pressed = false;
         if (this._recipe.launch.enabled) {
-            if (this._effect === 'launch') {
+            if (this._part === RecipePart.LAUNCH) {
                 this._motionAnimation.reset();
                 this._motionAnimation = IDLE_ANIMATION;
                 this._motionTransform = {...IDENTITY};
@@ -433,7 +434,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
     _playLaunch(onComplete = () => {}) {
         const segments = buildLaunchSegments(
-            this._recipe.launch.effect, this._recipe.launch, 'bottom');
+            this._recipe.launch.effect, this._recipe.launch, ScreenEdge.BOTTOM);
         const duration = launchDuration(segments);
         this._launchAnimation.reset();
         const target = Adw.CallbackAnimationTarget.new(value => {
@@ -455,7 +456,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             return;
         }
         this._launching = false;
-        if (this._effect === 'launch') {
+        if (this._part === RecipePart.LAUNCH) {
             this._motionTransform = {...IDENTITY};
             onComplete();
             return;
@@ -464,7 +465,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _draw(cr, width, height) {
-        if (this._effect) {
+        if (this._part) {
             this._drawInline(cr, width, height);
             return;
         }
@@ -516,7 +517,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 continue;
             const transforms = this._iconTransforms(i, middle);
             const color = ICON_COLORS[
-                EFFECT_COLOR_INDEX[this._effect] ??
+                PART_COLOR_INDEX[this._part] ??
                 (i + colorOffset + ICON_COLORS.length) % ICON_COLORS.length];
             drawIcon(cr, first + i * INLINE_STEP, iconTop, INLINE_ICON_SIZE,
                 color, {
@@ -534,7 +535,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         if (this._sweepActive) {
             const intensity = Math.max(0, 1 - Math.abs(index - this._sweepValue));
             const hoverFull = resolveIconTransform({
-                position: 'bottom',
+                edge: ScreenEdge.BOTTOM,
                 recipe: this._recipe,
                 hovered: true,
             });
@@ -550,13 +551,13 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 motion: this._motionTransform,
                 launch: this._launchTransform,
                 launchPivot: this._launching
-                    ? getLaunchPivot(this._recipe.launch.effect, 'bottom')
+                    ? getLaunchPivot(this._recipe.launch.effect, ScreenEdge.BOTTOM)
                     : BOTTOM_PIVOT,
             };
         }
         return {
             motion: projectHoverTransform({
-                position: 'bottom',
+                edge: ScreenEdge.BOTTOM,
                 recipe: this._recipe,
                 neighborDistance: distance,
                 progress: this._hoverProgress,
@@ -577,7 +578,7 @@ const ICON_COLORS = [
     [0.66, 0.45, 0.86],
 ];
 
-const EFFECT_COLOR_INDEX = {press: 1, launch: 3};
+const PART_COLOR_INDEX = {[RecipePart.PRESS]: 1, [RecipePart.LAUNCH]: 3};
 
 function hoverIconCount(recipe) {
     return 2 * recipe.hover.neighborRadius + 1;

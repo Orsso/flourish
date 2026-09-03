@@ -2,7 +2,7 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {DockPosition, resolveAnimationMode} from '../motion/catalog.js';
+import {ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
 import {PressInteraction} from '../motion/pressInteraction.js';
 import {
     dimOpacity,
@@ -35,7 +35,7 @@ export class IconMotionController {
     #onMeasured;
     #original;
     #pendingBudgetReport = false;
-    #position;
+    #edge;
     #press = new PressInteraction();
     #recipe;
     #restoreTexture;
@@ -44,7 +44,7 @@ export class IconMotionController {
     constructor({
         icon,
         bin,
-        position,
+        edge,
         recipe,
         onHoverChanged = () => {},
         onDestroyed = () => {},
@@ -52,7 +52,7 @@ export class IconMotionController {
     }) {
         this.#icon = icon;
         this.#bin = bin;
-        this.#position = position;
+        this.#edge = edge;
         this.#recipe = recipe;
         this.#onHoverChanged = onHoverChanged;
         this.#onDestroyed = onDestroyed;
@@ -104,8 +104,8 @@ export class IconMotionController {
         this.#syncHover();
     }
 
-    get position() {
-        return this.#position;
+    get edge() {
+        return this.#edge;
     }
 
     get recipe() {
@@ -221,7 +221,7 @@ export class IconMotionController {
                 this.#onMeasured(budget);
         }
         const transform = resolveIconTransform({
-            position: this.#position,
+            edge: this.#edge,
             recipe: this.#recipe,
             hovered: this.#hovered,
             launching: this.#launching,
@@ -297,14 +297,14 @@ export class IconMotionController {
         const clipLeft = clipX + clip[0];
         const clipRight = clipX + clip[0] + clip[2];
 
-        switch (this.#position) {
-            case DockPosition.TOP:
+        switch (this.#edge) {
+            case ScreenEdge.TOP:
                 return {budgetPx: clipBottom - bottom, iconNormalSize: box.y2 - box.y1};
-            case DockPosition.LEFT:
+            case ScreenEdge.LEFT:
                 return {budgetPx: left - clipLeft, iconNormalSize: box.x2 - box.x1};
-            case DockPosition.RIGHT:
+            case ScreenEdge.RIGHT:
                 return {budgetPx: clipRight - right, iconNormalSize: box.x2 - box.x1};
-            case DockPosition.BOTTOM:
+            case ScreenEdge.BOTTOM:
             default:
                 return {budgetPx: top - clipTop, iconNormalSize: box.y2 - box.y1};
         }
