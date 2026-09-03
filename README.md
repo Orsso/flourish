@@ -26,6 +26,9 @@ https://github.com/user-attachments/assets/2a218e67-96bf-4272-882a-71b7be4305e0
 Flourish listens to the signals the dash icons already emit and animates
 them from there. It overrides the stock launch zoom and loads the dash
 icons at twice their resolution so they stay sharp when magnified.
+It reaches into four private members to do so. `_box` is the icon row of
+the dash, `_iconBin` and `_createIconTexture` belong to each icon, and
+`_allDocks` is the list of docks Dash to Dock keeps.
 Everything is restored when the extension is disabled.
 
 ## Compatibility
