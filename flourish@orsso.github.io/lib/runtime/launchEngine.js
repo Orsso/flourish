@@ -21,6 +21,7 @@ import {
 import {DeferredLaunchEnds} from './deferredLaunchEnds.js';
 import {actorGeometry} from './geometry.js';
 import {OPAQUE, createIconClone, retreatClone, runSegments} from './iconClone.js';
+import {followIcon} from './iconFollower.js';
 
 const HANDOFF_DURATION = 80;
 
@@ -30,11 +31,15 @@ export class LaunchEngine {
     #getController;
     #getDockContext;
     #injections = null;
+    #scheduler;
     #sessions = new Map();
 
-    constructor({getController, getDockContext, beforeLaunch = () => {}}) {
+    constructor({
+        getController, getDockContext, scheduler, beforeLaunch = () => {},
+    }) {
         this.#getController = getController;
         this.#getDockContext = getDockContext;
+        this.#scheduler = scheduler;
         this.#beforeLaunch = beforeLaunch;
         this.#deferredEnds = new DeferredLaunchEnds({
             schedule: callback =>
@@ -89,11 +94,11 @@ export class LaunchEngine {
         const neutralGeometry = place(actorGeometry(target));
         this.#startLaunch(
             appIcon, controller, target, visibleGeometry,
-            neutralGeometry, preparation, {visibility});
+            neutralGeometry, preparation, {place, visibility});
     }
 
     #startLaunch(appIcon, controller, target, visibleGeometry,
-        neutralGeometry, preparation, {visibility}) {
+        neutralGeometry, preparation, {place, visibility}) {
         const recipe = controller.recipe;
         const {hoverDuration, magnify, pressSteps} = preparation;
         const launchPivot = getLaunchPivot(
@@ -132,6 +137,9 @@ export class LaunchEngine {
             repeatSourceId: 0,
             startedAt: GLib.get_monotonic_time() / 1000,
             target,
+            unfollow: followIcon({
+                target, clone, place, scheduler: this.#scheduler,
+            }),
             visibility,
             wasLaunching: appIcon.app
                 ? appIcon.app.state !== Shell.AppState.RUNNING
@@ -291,6 +299,7 @@ export class LaunchEngine {
         if (session.finished)
             return;
         this.#clearRepeatTimer(session);
+        session.unfollow();
         session.clone.remove_all_transitions();
         session.target.opacity = session.originalOpacity;
         const retreat = shouldRetreatOnHandoff({
@@ -331,6 +340,7 @@ export class LaunchEngine {
             return;
         session.finished = true;
         this.#clearRepeatTimer(session);
+        session.unfollow();
         Shell.AppSystem.get_default().disconnectObject(session);
         session.clone.remove_all_transitions();
         session.clone.destroy();
@@ -357,7 +367,6 @@ function placement(visibility, edge) {
     if (!visibility)
         return rect => rect;
     return rect => launchIconRect(rect, {
-        dockState: visibility.state,
         shownRect: visibility.shownRect,
         slidRect: visibility.measure(),
         edge,

@@ -46,6 +46,7 @@ export default class FlourishExtension extends Extension {
 
         this._attentionEngine = new AttentionEngine({
             getDockContext: icon => this._dockIntegration.getDockContext(icon),
+            scheduler: this._frameScheduler,
         });
         this._attentionEngine.enable();
 
@@ -57,6 +58,7 @@ export default class FlourishExtension extends Extension {
                 this._dockIntegration.getController(icon) ??
                 this._dashIntegration.getController(icon),
             getDockContext: icon => this._dockIntegration.getDockContext(icon),
+            scheduler: this._frameScheduler,
             beforeLaunch: icon => this._attentionEngine.interrupt(icon),
         });
         this._launchEngine.enable();

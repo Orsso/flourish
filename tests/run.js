@@ -22,6 +22,7 @@ const modules = [
     './catalog.test.js',
     './deferredLaunchEnds.test.js',
     './focusHighlight.test.js',
+    './iconFollower.test.js',
     './demoSequence.test.js',
     './dockVisibility.test.js',
     './iconMotionController.test.js',

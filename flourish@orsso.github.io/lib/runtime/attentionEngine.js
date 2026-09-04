@@ -17,6 +17,7 @@ import {
 } from '../motion/transforms.js';
 import {actorGeometry} from './geometry.js';
 import {OPAQUE, createIconClone, runSegments} from './iconClone.js';
+import {followIcon} from './iconFollower.js';
 
 const INTERRUPT_DURATION = 90;
 const MS_PER_SECOND = 1000;
@@ -32,10 +33,12 @@ export class AttentionEngine {
     #getDockContext;
     #notifications = null;
     #rearmIds = new Set();
+    #scheduler;
     #sessions = new Map();
 
-    constructor({getDockContext}) {
+    constructor({getDockContext, scheduler}) {
         this.#getDockContext = getDockContext;
+        this.#scheduler = scheduler;
     }
 
     enable() {
@@ -98,6 +101,7 @@ export class AttentionEngine {
             settling: false,
             target,
             timerId: 0,
+            unfollow: null,
             unsubscribe: null,
         };
         icon.connectObject(
@@ -249,6 +253,7 @@ export class AttentionEngine {
         const clone = createIconClone(
             target, actorGeometry(target), Main.uiGroup, {pivot: this.#pivot(session)});
         session.clone = clone;
+        session.unfollow = followIcon({target, clone, scheduler: this.#scheduler});
         session.originalOpacity = target.opacity;
         session.dimmedTarget = true;
         target.opacity = 0;
@@ -257,9 +262,10 @@ export class AttentionEngine {
 
     #playPeek(session) {
         const {context, controller, target} = session;
-        const rect = projectIconRect(
-            context.visibility.shownRect, context.visibility.measure(), actorGeometry(target),
+        const place = iconRect => projectIconRect(
+            context.visibility.shownRect, context.visibility.measure(), iconRect,
             controller.edge);
+        const rect = place(actorGeometry(target));
         const {outward} = getOrientation(controller.edge);
         const clone = createIconClone(target, rect, Main.uiGroup, {
             pivot: this.#pivot(session),
@@ -267,6 +273,9 @@ export class AttentionEngine {
             opacity: 0,
         });
         session.clone = clone;
+        session.unfollow = followIcon({
+            target, clone, place, scheduler: this.#scheduler,
+        });
         session.peeking = true;
         clone.ease({
             translation_x: 0,
@@ -333,6 +342,7 @@ export class AttentionEngine {
         if (!clone)
             return;
         session.clone = null;
+        this.#unfollow(session);
         clone.remove_all_transitions();
         if (session.peeking) {
             session.retreating = clone;
@@ -348,6 +358,11 @@ export class AttentionEngine {
         this.#releaseOverlay(session);
         if (!session.finished)
             this.#armTimer(session);
+    }
+
+    #unfollow(session) {
+        session.unfollow?.();
+        session.unfollow = null;
     }
 
     #rearm(controller) {
@@ -372,6 +387,7 @@ export class AttentionEngine {
             return;
         session.finished = true;
         this.#clearTimer(session);
+        this.#unfollow(session);
         session.unsubscribe?.();
         session.icon.disconnectObject(session);
         if (session.clone) {

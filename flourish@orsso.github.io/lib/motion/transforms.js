@@ -444,9 +444,10 @@ export function projectIconRect(shownRect, slidRect, iconRect, edge) {
     };
 }
 
-// A launch from a hidden dock plays where the icon sits once the dock is out.
-export function launchIconRect(iconRect, {dockState, shownRect, slidRect, edge}) {
-    if (dockState === DockState.SHOWN || !shownRect || !slidRect)
+// A launch clone stays where the icon sits with the dock out, whatever the
+// dock does meanwhile. With the dock out the projection is the identity.
+export function launchIconRect(iconRect, {shownRect, slidRect, edge}) {
+    if (!shownRect || !slidRect)
         return iconRect;
     return projectIconRect(shownRect, slidRect, iconRect, edge);
 }

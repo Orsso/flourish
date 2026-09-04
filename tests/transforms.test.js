@@ -622,27 +622,21 @@ test('a dock that recentred while hidden keeps the live tangent position', () =>
         {x: 16, y: 300, width: 48, height: 48});
 });
 
-test('a launch from a hidden dock plays at the shown position', () => {
+test('a launch clone stays at the shown position while the dock hides', () => {
     const shownRect = {x: 600, y: 1000, width: 720, height: 80};
-    const slidRect = {x: 600, y: 1080, width: 720, height: 80};
-    const icon = {x: 700, y: 1096, width: 48, height: 48};
     const edge = 'bottom';
-    assertDeepEqual(
-        launchIconRect(icon, {dockState: DockState.HIDDEN, shownRect, slidRect, edge}),
-        {x: 700, y: 1016, width: 48, height: 48});
-    assertDeepEqual(
-        launchIconRect(icon, {dockState: DockState.MOVING, shownRect, slidRect, edge}),
-        {x: 700, y: 1016, width: 48, height: 48});
+    for (const slide of [0, 30, 80]) {
+        const slidRect = {...shownRect, y: 1000 + slide};
+        const icon = {x: 700, y: 1016 + slide, width: 48, height: 48};
+        assertDeepEqual(launchIconRect(icon, {shownRect, slidRect, edge}),
+            {x: 700, y: 1016, width: 48, height: 48});
+    }
 });
 
-test('a launch from a shown or unmeasured dock plays in place', () => {
+test('a launch from an unmeasured dock plays in place', () => {
     const slidRect = {x: 600, y: 1000, width: 720, height: 80};
     const icon = {x: 700, y: 1016, width: 48, height: 48};
-    const edge = 'bottom';
-    assertEqual(launchIconRect(
-        icon, {dockState: DockState.SHOWN, shownRect: slidRect, slidRect, edge}), icon);
-    assertEqual(launchIconRect(
-        icon, {dockState: DockState.HIDDEN, shownRect: null, slidRect, edge}), icon);
+    assertEqual(launchIconRect(icon, {shownRect: null, slidRect, edge: 'bottom'}), icon);
 });
 
 test('wiggle segments rotate around zero and come back to rest', () => {
