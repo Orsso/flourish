@@ -388,12 +388,13 @@ export function shouldRepeatLaunch({
 
 export function shouldRetreatOnHandoff({
     targetMapped,
+    dockShown = true,
     overviewVisible,
     overviewVisibleTarget,
     dashContainsTarget,
 }) {
     // A dock can be Main.overview.dash; membership only counts while the overview closes.
-    if (!targetMapped)
+    if (!targetMapped || !dockShown)
         return true;
     return overviewVisible && !overviewVisibleTarget && dashContainsTarget;
 }
@@ -433,13 +434,21 @@ export function dockVisibilityState(rect, monitor, edge) {
     }
 }
 
-export function projectIconRect(shownRect, slidRect, iconRect) {
+// Hiding moves the dock along the edge normal only; the other axis stays live.
+export function projectIconRect(shownRect, slidRect, iconRect, edge) {
+    const {normalAxis} = getOrientation(edge);
     return {
-        x: shownRect.x + (iconRect.x - slidRect.x),
-        y: shownRect.y + (iconRect.y - slidRect.y),
-        width: iconRect.width,
-        height: iconRect.height,
+        ...iconRect,
+        [normalAxis]: shownRect[normalAxis] +
+            (iconRect[normalAxis] - slidRect[normalAxis]),
     };
+}
+
+// A launch from a hidden dock plays where the icon sits once the dock is out.
+export function launchIconRect(iconRect, {dockState, shownRect, slidRect, edge}) {
+    if (dockState === DockState.SHOWN || !shownRect || !slidRect)
+        return iconRect;
+    return projectIconRect(shownRect, slidRect, iconRect, edge);
 }
 
 export function launchDuration(segments) {

@@ -56,6 +56,7 @@ export default class FlourishExtension extends Extension {
             getController: icon =>
                 this._dockIntegration.getController(icon) ??
                 this._dashIntegration.getController(icon),
+            getDockContext: icon => this._dockIntegration.getDockContext(icon),
             beforeLaunch: icon => this._attentionEngine.interrupt(icon),
         });
         this._launchEngine.enable();

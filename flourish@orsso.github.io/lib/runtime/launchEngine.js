@@ -6,7 +6,7 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 import {AppIcon} from 'resource:///org/gnome/shell/ui/appDisplay.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {LaunchEffect, resolveAnimationMode} from '../motion/catalog.js';
+import {DockState, LaunchEffect, resolveAnimationMode} from '../motion/catalog.js';
 import {
     buildLaunchSegments,
     composeIconTransform,
@@ -14,6 +14,7 @@ import {
     getLaunchPivot,
     hoverIntroLift,
     hoverIntroScale,
+    launchIconRect,
     shouldRepeatLaunch,
     shouldRetreatOnHandoff,
 } from '../motion/transforms.js';
@@ -27,11 +28,13 @@ export class LaunchEngine {
     #beforeLaunch;
     #deferredEnds;
     #getController;
+    #getDockContext;
     #injections = null;
     #sessions = new Map();
 
-    constructor({getController, beforeLaunch = () => {}}) {
+    constructor({getController, getDockContext, beforeLaunch = () => {}}) {
         this.#getController = getController;
+        this.#getDockContext = getDockContext;
         this.#beforeLaunch = beforeLaunch;
         this.#deferredEnds = new DeferredLaunchEnds({
             schedule: callback =>
@@ -76,19 +79,21 @@ export class LaunchEngine {
             return;
 
         // beginLaunch resets the hover, so the clone needs both geometries.
-        const visibleGeometry = actorGeometry(target);
+        const visibility = this.#getDockContext(appIcon)?.visibility ?? null;
+        const place = placement(visibility, controller.edge);
+        const visibleGeometry = place(actorGeometry(target));
         const preparation = controller.beginLaunch(
             controller.recipe.launch.enabled);
         if (!preparation.active)
             return;
-        const neutralGeometry = actorGeometry(target);
+        const neutralGeometry = place(actorGeometry(target));
         this.#startLaunch(
             appIcon, controller, target, visibleGeometry,
-            neutralGeometry, preparation);
+            neutralGeometry, preparation, {visibility});
     }
 
     #startLaunch(appIcon, controller, target, visibleGeometry,
-        neutralGeometry, preparation) {
+        neutralGeometry, preparation, {visibility}) {
         const recipe = controller.recipe;
         const {hoverDuration, magnify, pressSteps} = preparation;
         const launchPivot = getLaunchPivot(
@@ -127,6 +132,7 @@ export class LaunchEngine {
             repeatSourceId: 0,
             startedAt: GLib.get_monotonic_time() / 1000,
             target,
+            visibility,
             wasLaunching: appIcon.app
                 ? appIcon.app.state !== Shell.AppState.RUNNING
                 : false,
@@ -289,6 +295,8 @@ export class LaunchEngine {
         session.target.opacity = session.originalOpacity;
         const retreat = shouldRetreatOnHandoff({
             targetMapped: session.target.mapped,
+            dockShown: session.visibility
+                ? session.visibility.state === DockState.SHOWN : true,
             overviewVisible: Main.overview.visible,
             overviewVisibleTarget: Main.overview.visibleTarget,
             dashContainsTarget: Main.overview.dash.contains(session.target),
@@ -343,4 +351,15 @@ export class LaunchEngine {
         session.repeatSourceId = 0;
     }
 
+}
+
+function placement(visibility, edge) {
+    if (!visibility)
+        return rect => rect;
+    return rect => launchIconRect(rect, {
+        dockState: visibility.state,
+        shownRect: visibility.shownRect,
+        slidRect: visibility.measure(),
+        edge,
+    });
 }

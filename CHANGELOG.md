@@ -9,6 +9,8 @@
   yet (#7). Thanks to @7system7 for the suggestion.
 - The focused app can be marked on the overview dash (#6). Thanks to
   @parthib-gaugewalker for the suggestion.
+- Fixed the launch animation playing off screen when a hidden dock launches
+  an app, as with the Super+number hotkeys.
 
 ## 1.1.0
 

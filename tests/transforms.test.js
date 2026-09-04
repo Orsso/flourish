@@ -27,6 +27,7 @@ import {
     neighborScaleAt,
     nextReminderDelay,
     projectHoverTransform,
+    launchIconRect,
     projectIconRect,
     resolveIconTransform,
     resolvePressTransform,
@@ -412,6 +413,16 @@ test('handoff retreats when the launch icon is gone', () => {
     }), true);
 });
 
+test('handoff retreats when the dock is not out', () => {
+    assertEqual(shouldRetreatOnHandoff({
+        targetMapped: true,
+        dockShown: false,
+        overviewVisible: false,
+        overviewVisibleTarget: false,
+        dashContainsTarget: false,
+    }), true);
+});
+
 test('handoff settles into a dock on the desktop', () => {
     assertEqual(shouldRetreatOnHandoff({
         targetMapped: true,
@@ -594,7 +605,44 @@ test('a hidden icon projects to where it sat while the dock was shown', () => {
     const shown = {x: 600, y: 1000, width: 720, height: 80};
     const slid = {x: 600, y: 1080, width: 720, height: 80};
     const icon = {x: 700, y: 1096, width: 48, height: 48};
-    assertDeepEqual(projectIconRect(shown, slid, icon), {x: 700, y: 1016, width: 48, height: 48});
+    assertDeepEqual(projectIconRect(shown, slid, icon, 'bottom'),
+        {x: 700, y: 1016, width: 48, height: 48});
+});
+
+test('a dock that recentred while hidden keeps the live tangent position', () => {
+    const shown = {x: 600, y: 1000, width: 720, height: 80};
+    const slid = {x: 636, y: 1080, width: 648, height: 80};
+    const icon = {x: 736, y: 1096, width: 48, height: 48};
+    assertDeepEqual(projectIconRect(shown, slid, icon, 'bottom'),
+        {x: 736, y: 1016, width: 48, height: 48});
+    const leftShown = {x: 0, y: 200, width: 80, height: 600};
+    const leftSlid = {x: -80, y: 230, width: 80, height: 540};
+    const leftIcon = {x: -64, y: 300, width: 48, height: 48};
+    assertDeepEqual(projectIconRect(leftShown, leftSlid, leftIcon, 'left'),
+        {x: 16, y: 300, width: 48, height: 48});
+});
+
+test('a launch from a hidden dock plays at the shown position', () => {
+    const shownRect = {x: 600, y: 1000, width: 720, height: 80};
+    const slidRect = {x: 600, y: 1080, width: 720, height: 80};
+    const icon = {x: 700, y: 1096, width: 48, height: 48};
+    const edge = 'bottom';
+    assertDeepEqual(
+        launchIconRect(icon, {dockState: DockState.HIDDEN, shownRect, slidRect, edge}),
+        {x: 700, y: 1016, width: 48, height: 48});
+    assertDeepEqual(
+        launchIconRect(icon, {dockState: DockState.MOVING, shownRect, slidRect, edge}),
+        {x: 700, y: 1016, width: 48, height: 48});
+});
+
+test('a launch from a shown or unmeasured dock plays in place', () => {
+    const slidRect = {x: 600, y: 1000, width: 720, height: 80};
+    const icon = {x: 700, y: 1016, width: 48, height: 48};
+    const edge = 'bottom';
+    assertEqual(launchIconRect(
+        icon, {dockState: DockState.SHOWN, shownRect: slidRect, slidRect, edge}), icon);
+    assertEqual(launchIconRect(
+        icon, {dockState: DockState.HIDDEN, shownRect: null, slidRect, edge}), icon);
 });
 
 test('wiggle segments rotate around zero and come back to rest', () => {
