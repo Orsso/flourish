@@ -5,7 +5,10 @@ import Gtk from 'gi://Gtk';
 
 import {Easing, PressMode, RecipePart, ScreenEdge} from '../motion/catalog.js';
 import {
+    ATTENTION_SLIDE_DURATION,
+    buildAttentionSegments,
     buildLaunchSegments,
+    getAttentionPivot,
     getLaunchPivot,
     interpolateTransform,
     launchDuration,
@@ -21,6 +24,7 @@ import {
     HOVER_HOLD_MS,
     NEUTRAL_HOLD_MS,
     PRE_LAUNCH_PAUSE_MS,
+    REMINDER_PAUSE_MS,
     SETTLE_MS,
     SWEEP_MS,
     SWEEP_SETTLE_MS,
@@ -76,6 +80,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._launchTransform = {...IDENTITY};
         this._motionAnimation = IDLE_ANIMATION;
         this._launchAnimation = IDLE_ANIMATION;
+        // Peek progress, 0 below the bottom edge and 1 in place.
+        this._attending = false;
+        this._peek = 0;
+        this._peekAnimation = IDLE_ANIMATION;
         // Generation of the running loop, 0 when idle.
         this._loop = 0;
         this._timeoutId = 0;
@@ -153,15 +161,12 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._held = false;
         this._pressGeneration++;
         this._motionAnimation.reset();
-        this._launchAnimation.reset();
         this._motionAnimation = IDLE_ANIMATION;
-        this._launchAnimation = IDLE_ANIMATION;
         this._hovered = false;
         this._hoverProgress = 0;
         this._pressed = false;
         this._launching = false;
         this._motionTransform = {...IDENTITY};
-        this._launchTransform = {...IDENTITY};
         this.queue_draw();
     }
 
@@ -170,6 +175,13 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._sweepAnimation.reset();
         this._sweepAnimation = IDLE_ANIMATION;
         this._sweepActive = false;
+        this._launchAnimation.reset();
+        this._launchAnimation = IDLE_ANIMATION;
+        this._launchTransform = {...IDENTITY};
+        this._peekAnimation.reset();
+        this._peekAnimation = IDLE_ANIMATION;
+        this._attending = false;
+        this._peek = 0;
         this._clearTimeout();
     }
 
@@ -251,8 +263,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         }
         this._cancelLoop();
         this._pressGeneration++;
-        this._launchAnimation.reset();
-        this._launchTransform = {...IDENTITY};
         this._pressed = false;
         this._launching = false;
         this._hovered = false;
@@ -330,6 +340,12 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 break;
             case DemoPhase.LAUNCH:
                 this._beginLaunch({onComplete: done});
+                break;
+            case DemoPhase.ATTENTION:
+                this._playAttention(generation, done);
+                break;
+            case DemoPhase.REMINDER_PAUSE:
+                this._wait(REMINDER_PAUSE_MS, generation, done);
                 break;
             default:
                 done();
@@ -435,6 +451,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     _playLaunch(onComplete = () => {}) {
         const segments = buildLaunchSegments(
             this._recipe.launch.effect, this._recipe.launch, ScreenEdge.BOTTOM);
+        this._playSegments(segments, () => this._finishLaunch(onComplete));
+    }
+
+    _playSegments(segments, onDone) {
         const duration = launchDuration(segments);
         this._launchAnimation.reset();
         const target = Adw.CallbackAnimationTarget.new(value => {
@@ -445,7 +465,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._launchAnimation.set_easing(Adw.Easing.LINEAR);
         this._launchAnimation.connect('done', () => {
             this._launchTransform = {...IDENTITY};
-            this._finishLaunch(onComplete);
+            this.queue_draw();
+            onDone();
         });
         this._launchAnimation.play();
     }
@@ -462,6 +483,68 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             return;
         }
         this._animateMotion(this._recipe.hover.duration, onComplete);
+    }
+
+    _playAttention(generation, done) {
+        const {attention} = this._recipe;
+        this._attending = true;
+        if (!attention.peekWhenHidden) {
+            this._playAttentionBurst(generation, () => {
+                this._attending = false;
+                done();
+            });
+            return;
+        }
+        this._animatePeek(0, 1, ATTENTION_SLIDE_DURATION, generation, () => {
+            this._playAttentionBurst(generation, () => {
+                this._animatePeek(1, 0, ATTENTION_SLIDE_DURATION, generation, () => {
+                    this._attending = false;
+                    done();
+                });
+            });
+        });
+    }
+
+    _playAttentionBurst(generation, done) {
+        let cyclesLeft = this._recipe.attention.cycles;
+        const cycle = () => this._playAttentionCycle(generation, () => {
+            if (generation !== this._loop)
+                return;
+            cyclesLeft -= 1;
+            if (cyclesLeft <= 0) {
+                done();
+                return;
+            }
+            this._wait(this._recipe.attention.cyclePause, generation, cycle);
+        });
+        cycle();
+    }
+
+    _playAttentionCycle(generation, done) {
+        const segments = buildAttentionSegments(this._recipe, ScreenEdge.BOTTOM);
+        this._playSegments(segments, () => {
+            if (generation === this._loop)
+                done();
+        });
+    }
+
+    _animatePeek(from, to, duration, generation, done) {
+        this._peekAnimation.reset();
+        const target = Adw.CallbackAnimationTarget.new(value => {
+            this._peek = from + (to - from) * value;
+            this.queue_draw();
+        });
+        this._peekAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
+        this._peekAnimation.set_easing(
+            to > from ? Adw.Easing.EASE_OUT_CUBIC : Adw.Easing.EASE_IN_CUBIC);
+        this._peekAnimation.connect('done', () => {
+            if (generation !== this._loop)
+                return;
+            this._peek = to;
+            this.queue_draw();
+            done();
+        });
+        this._peekAnimation.play();
     }
 
     _draw(cr, width, height) {
@@ -543,6 +626,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 motion: interpolateTransform(IDENTITY, hoverFull, intensity),
                 launch: IDENTITY,
                 launchPivot: BOTTOM_PIVOT,
+                peek: 1,
             };
         }
         const distance = Math.abs(index - middle);
@@ -550,9 +634,13 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             return {
                 motion: this._motionTransform,
                 launch: this._launchTransform,
-                launchPivot: this._launching
-                    ? getLaunchPivot(this._recipe.launch.effect, ScreenEdge.BOTTOM)
-                    : BOTTOM_PIVOT,
+                launchPivot: this._attending
+                    ? getAttentionPivot(this._recipe.attention.effect, ScreenEdge.BOTTOM)
+                    : this._launching
+                        ? getLaunchPivot(this._recipe.launch.effect, ScreenEdge.BOTTOM)
+                        : BOTTOM_PIVOT,
+                peek: this._attending && this._recipe.attention.peekWhenHidden
+                    ? this._peek : 1,
             };
         }
         return {
@@ -564,6 +652,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             }),
             launch: IDENTITY,
             launchPivot: BOTTOM_PIVOT,
+            peek: 1,
         };
     }
 });
@@ -578,7 +667,11 @@ const ICON_COLORS = [
     [0.66, 0.45, 0.86],
 ];
 
-const PART_COLOR_INDEX = {[RecipePart.PRESS]: 1, [RecipePart.LAUNCH]: 3};
+const PART_COLOR_INDEX = {
+    [RecipePart.PRESS]: 1,
+    [RecipePart.LAUNCH]: 3,
+    [RecipePart.ATTENTION]: 0,
+};
 
 function hoverIconCount(recipe) {
     return 2 * recipe.hover.neighborRadius + 1;
@@ -610,6 +703,7 @@ function drawIcon(cr, centerX, top, size, color, {
     motion,
     launch,
     launchPivot,
+    peek = 1,
 }) {
     const radius = size * 0.28;
     // Scale dock-sized travel to the preview icons.
@@ -625,23 +719,26 @@ function drawIcon(cr, centerX, top, size, color, {
     const translationY =
         (motion.translationY + launch.translationY) * translateScale +
         (motion.scaleY - 1) * (pivotY - basePivotY);
+    const peekLift = (1 - peek) * (size + 8);
+    const alpha = peek;
     cr.save();
     cr.translate(
         centerX - size / 2 + pivotX + translationX,
-        top + pivotY + translationY);
+        top + pivotY + translationY + peekLift);
     cr.scale(motion.scaleX * launch.scaleX, motion.scaleY * launch.scaleY);
+    cr.rotate((launch.rotation ?? 0) * Math.PI / 180);
     roundedRectangle(cr, -pivotX, -pivotY, size, size, radius);
-    cr.setSourceRGBA(...color, 1);
+    cr.setSourceRGBA(...color, alpha);
     cr.fill();
     roundedRectangle(
         cr, -pivotX + 0.5, -pivotY + 0.5, size - 1, size - 1, radius);
-    cr.setSourceRGBA(1, 1, 1, 0.10);
+    cr.setSourceRGBA(1, 1, 1, 0.10 * alpha);
     cr.setLineWidth(1);
     cr.stroke();
     const dim = motion.dim ?? 0;
     if (dim > 0) {
         roundedRectangle(cr, -pivotX, -pivotY, size, size, radius);
-        cr.setSourceRGBA(0, 0, 0, dim);
+        cr.setSourceRGBA(0, 0, 0, dim * alpha);
         cr.fill();
     }
     cr.restore();

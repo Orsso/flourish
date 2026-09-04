@@ -124,3 +124,10 @@ test('hover activity requires the toggle and a visible transform', () => {
     recipe.hover.enabled = false;
     assertEqual(hoverIsActive(recipe), false);
 });
+
+test('the attention sequence plays one cycle and pauses', () => {
+    assertDeepEqual(buildPartSequence('attention', getBuiltInRecipe(Preset.SUBTLE)), [
+        DemoPhase.ATTENTION,
+        DemoPhase.REMINDER_PAUSE,
+    ]);
+});

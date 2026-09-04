@@ -4,6 +4,11 @@ import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {
+    AttentionCyclePause,
+    AttentionCycles,
+    AttentionEffect,
+    AttentionInterval,
+    AttentionReminders,
     Easing,
     LaunchEffect,
     NeighborRadius,
@@ -138,6 +143,61 @@ export function buildAdvancedPage(page, controls, settings, state) {
         launch.group, _('Stretch elasticity'), 0, 1, 0.05,
         value => editCustomSetting(settings, 'custom-stretch-elasticity', value), state);
 
+    if (controls.dockPresent) {
+        const attention = createPartGroup(
+            page, controls, settings, _('Attention'), RecipePart.ATTENTION);
+        attention.group.description =
+            _('Plays when an app asks for attention, with Dash to Dock or Ubuntu Dock.');
+        controls.attentionEffect = createComboRow(
+            attention.group, _('Effect'),
+            [
+                [_('Pulse'), AttentionEffect.PULSE],
+                [_('Bounce'), AttentionEffect.BOUNCE],
+                [_('Stretch'), AttentionEffect.STRETCH],
+                [_('Wiggle'), AttentionEffect.WIGGLE],
+            ], value => editCustomSetting(settings, 'custom-attention-effect', value), state);
+        controls.attentionIntensity = createScaleRow(
+            attention.group, _('Intensity'), 0, 1, 0.05,
+            value => editCustomSetting(settings, 'custom-attention-intensity', value), state);
+        controls.attentionSpeed = createScaleRow(
+            attention.group, _('Speed'), 0.30, 1.00, 0.05,
+            value => editCustomSetting(settings, 'custom-attention-speed', value), state);
+        controls.attentionCycles = createSpinRow(
+            attention.group, _('Cycles'),
+            AttentionCycles.MIN, AttentionCycles.MAX, 1,
+            value => editCustomSetting(settings, 'custom-attention-cycles', Math.round(value)),
+            state, _('Cycles played at each reminder'));
+        controls.attentionCyclePause = createSpinRow(
+            attention.group, _('Cycle pause'),
+            AttentionCyclePause.MIN, AttentionCyclePause.MAX, 10,
+            value => editCustomSetting(
+                settings, 'custom-attention-cycle-pause', Math.round(value)),
+            state, _('ms'));
+        controls.attentionInterval = createSpinRow(
+            attention.group, _('Reminder interval'),
+            AttentionInterval.MIN, AttentionInterval.MAX, 1,
+            value => editCustomSetting(settings, 'custom-attention-interval', Math.round(value)),
+            state, _('Seconds between two reminders'));
+        controls.attentionReminders = createSpinRow(
+            attention.group, _('Reminders'),
+            AttentionReminders.MIN, AttentionReminders.MAX, 1,
+            value => editCustomSetting(settings, 'custom-attention-reminders', Math.round(value)),
+            state, _('Stop after this many reminders'));
+        controls.attentionPeek = createSwitchRow(
+            attention.group, _('Show when the dock is hidden'),
+            _('Slide the icon out from the dock edge'),
+            _('Useful with IntelliHide or auto-hide: the icon slides out of the ' +
+            'hidden dock on its own. For the best effect, turn off ' +
+            '"Show dock for urgent notifications" in the Dash to Dock hiding ' +
+            'settings, otherwise the whole dock comes out first. Nothing plays in ' +
+            'Do Not Disturb, and over a fullscreen window the icon shows only if ' +
+            'Dash to Dock may reveal the dock there.'));
+        connectSwitch(controls.attentionPeek, enabled =>
+            editCustomSetting(settings, 'custom-attention-peek', enabled), state);
+        holdWhileSliding(controls.attentionIntensity, attention);
+        holdWhileSliding(controls.attentionSpeed, attention);
+    }
+
     const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
     controls.advancedHoverBackground = createBackgroundRow(
         appearanceGroup, 'hover', settings, state);
@@ -201,6 +261,16 @@ export function syncAdvancedPage(settings, controls, recipe) {
     controls.pulseCount.visible = recipe.launch.effect === LaunchEffect.PULSE;
     controls.stretchElasticity.row.visible =
         recipe.launch.effect === LaunchEffect.STRETCH;
+    if (controls.attentionEffect) {
+        setComboValue(controls.attentionEffect, recipe.attention.effect);
+        controls.attentionIntensity.adjustment.value = recipe.attention.intensity;
+        controls.attentionSpeed.adjustment.value = recipe.attention.speed;
+        controls.attentionCycles.value = recipe.attention.cycles;
+        controls.attentionCyclePause.value = recipe.attention.cyclePause;
+        controls.attentionInterval.value = recipe.attention.interval;
+        controls.attentionReminders.value = recipe.attention.reminders;
+        controls.attentionPeek.toggle.active = recipe.attention.peekWhenHidden;
+    }
     controls.advancedHoverBackground.active =
         settings.get_boolean('show-hover-background');
     controls.advancedFocusedAppBackground.active =

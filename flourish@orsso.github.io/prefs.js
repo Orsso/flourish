@@ -30,6 +30,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         const settings = this.getSettings();
         const state = {syncing: false};
         const controls = {};
+        controls.dockPresent = dashToDockEnabled();
 
         const essentials = new Adw.PreferencesPage({
             name: 'essentials',
@@ -93,6 +94,13 @@ export default class FlourishPreferences extends ExtensionPreferences {
         controls.launchEnabled = createSwitchRow(
             featureGroup, _('Launch animation'),
             _('Animate cold starts and new windows'));
+        if (controls.dockPresent) {
+            controls.attentionEnabled = createSwitchRow(
+                featureGroup, _('Attention'),
+                _('Animate icons that ask for attention'));
+            connectSwitch(controls.attentionEnabled, enabled =>
+                editCustomSetting(settings, 'custom-attention-enabled', enabled), state);
+        }
         controls.hoverBackground = createBackgroundRow(
             featureGroup, 'hover', settings, state);
         controls.focusedAppBackground = createBackgroundRow(
@@ -121,8 +129,6 @@ export default class FlourishPreferences extends ExtensionPreferences {
 
         buildAdvancedPage(advanced, controls, settings, state);
 
-        controls.dockPresent = dashToDockEnabled();
-
         const sync = () => syncControls(settings, controls, state);
         const changedId = settings.connect('changed', sync);
         sync();
@@ -147,6 +153,8 @@ function syncControls(settings, controls, state) {
     controls.hoverEnabled.active = recipe.hover.enabled;
     controls.pressEnabled.active = recipe.press.enabled;
     controls.launchEnabled.active = recipe.launch.enabled;
+    if (controls.attentionEnabled)
+        controls.attentionEnabled.active = recipe.attention.enabled;
     controls.hoverBackground.active =
         settings.get_boolean('show-hover-background');
     controls.focusedAppBackground.active =

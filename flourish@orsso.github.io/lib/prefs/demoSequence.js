@@ -4,6 +4,7 @@ export const HOVER_HOLD_MS = 650;
 export const PRE_LAUNCH_PAUSE_MS = 520;
 export const SETTLE_MS = 850;
 export const NEUTRAL_HOLD_MS = 520;
+export const REMINDER_PAUSE_MS = 900;
 
 export const SWEEP_MS = 1500;
 export const SWEEP_SETTLE_MS = 480;
@@ -19,6 +20,8 @@ export const DemoPhase = {
     SETTLE: 'settle',
     RESET: 'reset',
     NEUTRAL_HOLD: 'neutral-hold',
+    ATTENTION: 'attention',
+    REMINDER_PAUSE: 'reminder-pause',
 };
 
 export function hoverIsActive(recipe) {
@@ -40,6 +43,8 @@ export function buildPartSequence(part, recipe) {
                 return [DemoPhase.LAUNCH, DemoPhase.REPEAT_PAUSE];
             return [DemoPhase.LAUNCH, DemoPhase.SETTLE,
                 DemoPhase.NEUTRAL_HOLD];
+        case RecipePart.ATTENTION:
+            return [DemoPhase.ATTENTION, DemoPhase.REMINDER_PAUSE];
         default:
             return [];
     }

@@ -7,16 +7,27 @@ import {setBooleanCommitted} from '../motion/settings.js';
 // xgettext reads N_; the lookup happens where the string is used.
 const N_ = s => s;
 
-export function createSwitchRow(group, title, subtitle = null) {
+export function createSwitchRow(group, title, subtitle = null, help = null) {
+    // A SwitchRow packs its switch first, so a help button can only follow it.
+    if (help) {
+        const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
+        const row = new Adw.ActionRow({title, subtitle, activatable_widget: toggle});
+        row.add_suffix(createHelpButton(help));
+        row.add_suffix(toggle);
+        row.toggle = toggle;
+        group.add(row);
+        return row;
+    }
     const row = new Adw.SwitchRow({title, subtitle});
     group.add(row);
     return row;
 }
 
 export function connectSwitch(row, callback, state) {
-    row.connect('notify::active', () => {
+    const toggle = row.toggle ?? row;
+    toggle.connect('notify::active', () => {
         if (!state.syncing)
-            callback(row.active);
+            callback(toggle.active);
     });
 }
 
@@ -124,7 +135,7 @@ export function createHelpButton(text) {
     const button = new Gtk.MenuButton({
         icon_name: 'help-about-symbolic',
         valign: Gtk.Align.CENTER,
-        tooltip_text: _('Why this limit?'),
+        tooltip_text: _('About this setting'),
         popover,
     });
     button.add_css_class('flat');
