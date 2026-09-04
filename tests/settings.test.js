@@ -244,3 +244,52 @@ test('reset restores the default custom values after an edit', () => {
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
     assertEqual(readActiveRecipe(settings).hover.scale, 1.10);
 });
+
+test('attention settings round-trip through custom', () => {
+    const settings = new ImmediateSettings(Preset.BALANCED);
+    editCustomSetting(settings, 'custom-attention-effect', 'wiggle');
+    assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
+    assertEqual(settings.values['custom-attention-effect'], 'wiggle');
+    assertEqual(settings.values['custom-attention-interval'], 5);
+    assertEqual(settings.values['custom-attention-peek'], true);
+    const recipe = readActiveRecipe(settings);
+    assertEqual(recipe.attention.effect, 'wiggle');
+    assertEqual(recipe.attention.speed, 0.70);
+    assertEqual(recipe.attention.cycles, 3);
+    assertEqual(recipe.attention.cyclePause, 120);
+    assertEqual(recipe.attention.interval, 5);
+    assertEqual(recipe.attention.reminders, 10);
+    assertEqual(recipe.attention.peekWhenHidden, true);
+});
+
+test('switching to a preset writes the attention part too', () => {
+    const settings = new ImmediateSettings(Preset.CUSTOM);
+    settings.values['custom-attention-interval'] = 30;
+    settings.values['custom-attention-cycles'] = 9;
+    settings.values['custom-attention-cycle-pause'] = 500;
+    switchToPresetFromCustom(settings, Preset.SUBTLE);
+    assertEqual(settings.values['custom-attention-interval'], 5);
+    assertEqual(settings.values['custom-attention-cycles'], 3);
+    assertEqual(settings.values['custom-attention-cycle-pause'], 120);
+    assertEqual(settings.values['custom-attention-effect'], 'wiggle');
+});
+
+test('every attention key round-trips through custom', () => {
+    const pairs = [
+        ['custom-attention-cycles', 'cycles', 7],
+        ['custom-attention-cycle-pause', 'cyclePause', 300],
+        ['custom-attention-interval', 'interval', 33],
+        ['custom-attention-reminders', 'reminders', 4],
+        ['custom-attention-speed', 'speed', 0.45],
+        ['custom-attention-intensity', 'intensity', 0.9],
+        ['custom-attention-effect', 'effect', 'stretch'],
+        ['custom-attention-peek', 'peekWhenHidden', false],
+        ['custom-attention-enabled', 'enabled', false],
+    ];
+    const settings = new ImmediateSettings(Preset.BALANCED);
+    for (const [key, property, value] of pairs) {
+        editCustomSetting(settings, key, value);
+        assertEqual(settings.values[key], value);
+        assertEqual(readActiveRecipe(settings).attention[property], value);
+    }
+});

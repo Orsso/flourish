@@ -1,26 +1,40 @@
 import {
+    AttentionEffect,
+    AttentionPlay,
+    DockState,
     LaunchEffect,
+    Preset,
     PressEffect,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
+    ATTENTION_CYCLE_MS,
+    attentionPeriod,
+    buildAttentionSegments,
     buildLaunchSegments,
     composeIconTransform,
     dimOpacity,
+    dockVisibilityState,
     fitHoverToBudget,
+    getAttentionPivot,
     getLaunchPivot,
     getOrientation,
     hoverIntroLift,
     hoverIntroScale,
     hoverNeedsBudget,
+    interpolateTransform,
     launchDuration,
     neighborScaleAt,
+    nextReminderDelay,
     projectHoverTransform,
+    projectIconRect,
     resolveIconTransform,
     resolvePressTransform,
     sampleLaunchSegments,
+    shouldPlayAttention,
     shouldRepeatLaunch,
     shouldRetreatOnHandoff,
+    wiggleSegments,
 } from '../flourish@orsso.github.io/lib/motion/transforms.js';
 
 test('bottom orientation grows upward', () => {
@@ -438,12 +452,14 @@ test('launch segment sampling uses the shared timeline', () => {
         scaleY: 1,
         translationX: 0,
         translationY: 0,
+        rotation: 0,
     });
     assertDeepEqual(sampleLaunchSegments(segments, total), {
         scaleX: 1,
         scaleY: 1,
         translationX: 0,
         translationY: 0,
+        rotation: 0,
     });
     assertEqual(sampleLaunchSegments(segments, segments[0].duration).scaleX > 1, true);
 });
@@ -544,4 +560,184 @@ test('a lift alone still needs the budget', () => {
     assertEqual(hoverNeedsBudget({recipe, hovered: true}), true);
     recipe.hover.lift = 0;
     assertEqual(hoverNeedsBudget({recipe, hovered: true}), false);
+});
+
+const MONITOR = {x: 0, y: 0, width: 1920, height: 1080};
+
+test('a bottom dock is shown inside the monitor and hidden past its edge', () => {
+    assertEqual(dockVisibilityState({x: 600, y: 1000, width: 720, height: 80}, MONITOR, 'bottom'),
+        DockState.SHOWN);
+    assertEqual(dockVisibilityState({x: 600, y: 1080, width: 720, height: 80}, MONITOR, 'bottom'),
+        DockState.HIDDEN);
+    assertEqual(dockVisibilityState({x: 600, y: 1040, width: 720, height: 80}, MONITOR, 'bottom'),
+        DockState.MOVING);
+});
+
+test('every edge resolves shown, hidden, and moving', () => {
+    assertEqual(dockVisibilityState({x: 600, y: 0, width: 720, height: 80}, MONITOR, 'top'), DockState.SHOWN);
+    assertEqual(dockVisibilityState({x: 600, y: -80, width: 720, height: 80}, MONITOR, 'top'), DockState.HIDDEN);
+    assertEqual(dockVisibilityState({x: 600, y: -30, width: 720, height: 80}, MONITOR, 'top'), DockState.MOVING);
+    assertEqual(dockVisibilityState({x: 0, y: 200, width: 80, height: 600}, MONITOR, 'left'), DockState.SHOWN);
+    assertEqual(dockVisibilityState({x: -80, y: 200, width: 80, height: 600}, MONITOR, 'left'), DockState.HIDDEN);
+    assertEqual(dockVisibilityState({x: -20, y: 200, width: 80, height: 600}, MONITOR, 'left'), DockState.MOVING);
+    assertEqual(dockVisibilityState({x: 1840, y: 200, width: 80, height: 600}, MONITOR, 'right'), DockState.SHOWN);
+    assertEqual(dockVisibilityState({x: 1920, y: 200, width: 80, height: 600}, MONITOR, 'right'), DockState.HIDDEN);
+    assertEqual(dockVisibilityState({x: 1880, y: 200, width: 80, height: 600}, MONITOR, 'right'), DockState.MOVING);
+});
+
+test('sub-pixel overflow still counts as shown', () => {
+    assertEqual(dockVisibilityState({x: 0, y: 1000.3, width: 720, height: 80}, MONITOR, 'bottom'),
+        DockState.SHOWN);
+});
+
+test('a hidden icon projects to where it sat while the dock was shown', () => {
+    const shown = {x: 600, y: 1000, width: 720, height: 80};
+    const slid = {x: 600, y: 1080, width: 720, height: 80};
+    const icon = {x: 700, y: 1096, width: 48, height: 48};
+    assertDeepEqual(projectIconRect(shown, slid, icon), {x: 700, y: 1016, width: 48, height: 48});
+});
+
+test('wiggle segments rotate around zero and come back to rest', () => {
+    const segments = wiggleSegments(0.5, 1);
+    assertEqual(segments.length, 5);
+    assertClose(segments[0].rotation, 15);
+    assertClose(segments[1].rotation, -15);
+    assertEqual(segments[segments.length - 1].rotation, 0);
+    for (const item of segments) {
+        assertEqual(item.scaleX, 1);
+        assertEqual(item.translationY, 0);
+    }
+    assertEqual(launchDuration(wiggleSegments(0.5, 0.5)), 2 * launchDuration(segments));
+});
+
+test('attention effects keep a fixed shape', () => {
+    const recipe = getBuiltInRecipe(Preset.BALANCED);
+    recipe.attention.effect = AttentionEffect.PULSE;
+    recipe.launch.pulseCount = 4;
+    assertEqual(buildAttentionSegments(recipe, 'bottom').length, 2);
+    recipe.attention.effect = AttentionEffect.BOUNCE;
+    recipe.launch.bounceDecay = 0.9;
+    assertEqual(buildAttentionSegments(recipe, 'bottom').length, 2);
+    recipe.attention.effect = AttentionEffect.WIGGLE;
+    assertEqual(buildAttentionSegments(recipe, 'left').some(item => item.rotation !== 0), true);
+});
+
+test('attention paces every effect to the same cycle length', () => {
+    const recipe = getBuiltInRecipe(Preset.BALANCED);
+    recipe.attention.speed = 1;
+    for (const effect of [AttentionEffect.PULSE, AttentionEffect.BOUNCE,
+        AttentionEffect.STRETCH, AttentionEffect.WIGGLE]) {
+        recipe.attention.effect = effect;
+        assertClose(
+            launchDuration(buildAttentionSegments(recipe, 'bottom')),
+            ATTENTION_CYCLE_MS, 3);
+    }
+    recipe.attention.effect = AttentionEffect.WIGGLE;
+    recipe.attention.speed = 0.5;
+    assertClose(
+        launchDuration(buildAttentionSegments(recipe, 'bottom')),
+        2 * ATTENTION_CYCLE_MS, 3);
+});
+
+test('the attention period covers the burst, its slides and the pause', () => {
+    const segments = wiggleSegments(0.5, 1);
+    assertEqual(
+        attentionPeriod({segments, cycles: 2, cyclePause: 120, interval: 3}),
+        2 * 800 + 120 + 560 + 3000);
+    assertEqual(
+        attentionPeriod({segments, cycles: 3, cyclePause: 0, interval: 3}),
+        3 * 800 + 560 + 3000);
+});
+
+test('attention pivots center the pulse and the wiggle', () => {
+    assertDeepEqual(getAttentionPivot(AttentionEffect.PULSE, 'bottom'), [0.5, 0.5]);
+    assertDeepEqual(getAttentionPivot(AttentionEffect.WIGGLE, 'left'), [0.5, 0.5]);
+    assertDeepEqual(getAttentionPivot(AttentionEffect.BOUNCE, 'bottom'), [0.5, 1]);
+    assertDeepEqual(getAttentionPivot(AttentionEffect.STRETCH, 'right'), [1, 0.5]);
+});
+
+test('sampling carries the rotation through segments', () => {
+    const segments = wiggleSegments(0.5, 1);
+    const sample = sampleLaunchSegments(segments, segments[0].duration);
+    assertClose(sample.rotation, 15);
+    assertEqual(interpolateTransform(
+        {scaleX: 1, scaleY: 1, translationX: 0, translationY: 0},
+        {scaleX: 1, scaleY: 1, translationX: 0, translationY: 0, rotation: 10}, 0.5).rotation, 5);
+});
+
+const PLAY_BASE = {
+    enabled: true,
+    urgent: true,
+    focused: false,
+    dnd: false,
+    animationsEnabled: true,
+    iconAtRest: true,
+    dockState: DockState.SHOWN,
+    shownRectKnown: true,
+    peekWhenHidden: true,
+    fullscreen: false,
+    peekInFullscreen: false,
+    reminder: 0,
+    reminders: 12,
+};
+
+test('attention stops when the part is off, the flag drops, the app is focused, or the reminders are spent', () => {
+    assertEqual(shouldPlayAttention({...PLAY_BASE, enabled: false}), AttentionPlay.STOP);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, urgent: false}), AttentionPlay.STOP);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, focused: true}), AttentionPlay.STOP);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, reminder: 12}), AttentionPlay.STOP);
+    assertEqual(
+        shouldPlayAttention({...PLAY_BASE, reminder: 11}) !== AttentionPlay.STOP, true);
+});
+
+test('attention waits through do not disturb and disabled animations', () => {
+    assertEqual(shouldPlayAttention({...PLAY_BASE, dnd: true}), AttentionPlay.WAIT);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, animationsEnabled: false}), AttentionPlay.WAIT);
+});
+
+test('a shown dock plays in place only on an icon at rest', () => {
+    assertEqual(shouldPlayAttention(PLAY_BASE), AttentionPlay.IN_PLACE);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, iconAtRest: false}), AttentionPlay.WAIT);
+});
+
+test('a moving dock settles before anything plays', () => {
+    assertEqual(shouldPlayAttention({...PLAY_BASE, dockState: DockState.MOVING}), AttentionPlay.SETTLE);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, dockState: null}), AttentionPlay.SETTLE);
+});
+
+test('a hidden dock peeks only when allowed', () => {
+    const hidden = {...PLAY_BASE, dockState: DockState.HIDDEN};
+    assertEqual(shouldPlayAttention(hidden), AttentionPlay.PEEK);
+    assertEqual(shouldPlayAttention({...hidden, iconAtRest: false}), AttentionPlay.WAIT);
+    assertEqual(shouldPlayAttention({...hidden, peekWhenHidden: false}), AttentionPlay.WAIT);
+    assertEqual(shouldPlayAttention({...hidden, shownRectKnown: false}), AttentionPlay.WAIT);
+    assertEqual(shouldPlayAttention({...hidden, fullscreen: true}), AttentionPlay.WAIT);
+    assertEqual(shouldPlayAttention({...hidden, fullscreen: true, peekInFullscreen: true}),
+        AttentionPlay.PEEK);
+});
+
+test('stopping wins over waiting', () => {
+    assertEqual(shouldPlayAttention({...PLAY_BASE, urgent: false, dnd: true}),
+        AttentionPlay.STOP);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, enabled: false, animationsEnabled: false}),
+        AttentionPlay.STOP);
+    assertEqual(shouldPlayAttention({...PLAY_BASE, reminder: 99, dockState: DockState.MOVING}),
+        AttentionPlay.STOP);
+});
+
+test('attention speed is clamped before pacing', () => {
+    const recipe = getBuiltInRecipe(Preset.BALANCED);
+    const durationAt = speed => {
+        recipe.attention.speed = speed;
+        return launchDuration(buildAttentionSegments(recipe, 'bottom'));
+    };
+    assertEqual(durationAt(5), durationAt(1));
+    assertEqual(durationAt(0), durationAt(0.3));
+});
+
+test('reminders fall on multiples of the period from the anchor', () => {
+    assertEqual(nextReminderDelay({now: 1000, anchor: 0, period: 4000}), 3000);
+    assertEqual(nextReminderDelay({now: 4000, anchor: 0, period: 4000}), 4000);
+    assertEqual(nextReminderDelay({now: 9000, anchor: 1000, period: 4000}), 4000);
+    assertEqual(nextReminderDelay({now: 0, anchor: 500, period: 4000}), 4000);
 });

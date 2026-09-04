@@ -5,6 +5,7 @@ import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {ScreenEdge} from '../motion/catalog.js';
+import {DockVisibility} from './dockVisibility.js';
 import {MotionSurface} from './motionSurface.js';
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.
@@ -24,6 +25,7 @@ export class DockIntegration {
     #scheduler;
     #settings;
     #surface = null;
+    #visibilities = [];
 
     constructor({scheduler, settings, onUrgentChanged = () => {}}) {
         this.#scheduler = scheduler;
@@ -43,6 +45,9 @@ export class DockIntegration {
             (_manager, extension) => {
                 if (!DASH_TO_DOCK_BUILDS.includes(extension.uuid))
                     return;
+                // An update notice keeps the docks; a reload destroys the manager.
+                if (this.#manager && extension.state === ExtensionState.ACTIVE)
+                    return;
                 this.#detachManager();
                 this.#scheduleAttach();
             }, this);
@@ -53,7 +58,7 @@ export class DockIntegration {
         this.#generation++;
         Main.extensionManager.disconnectObject(this);
         this.#cancelScheduledAttach();
-        this.#restoreWiggle();
+        this.#handBackWiggles();
         this.#detachManager();
         this.#cancelBudgetMeasure();
         this.#surface.dispose();
@@ -70,6 +75,10 @@ export class DockIntegration {
 
     getController(appIcon) {
         return this.#surface.getController(appIcon);
+    }
+
+    getDockContext(appIcon) {
+        return this.#surface?.getContext(appIcon) ?? null;
     }
 
     // Ubuntu Dock recreates its manager from the same signal; read it after.
@@ -122,12 +131,21 @@ export class DockIntegration {
     }
 
     #detachManager() {
+        // A reloaded Dash to Dock has a new prototype.
+        this.#restoreWiggle();
+        this.#disposeVisibilities();
         if (!this.#manager)
             return;
         for (const id of this.#managerSignals)
             this.#manager.disconnect(id);
         this.#managerSignals = [];
         this.#manager = null;
+    }
+
+    #disposeVisibilities() {
+        for (const visibility of this.#visibilities)
+            visibility.dispose();
+        this.#visibilities = [];
     }
 
     #scanDocks() {
@@ -146,13 +164,40 @@ export class DockIntegration {
                 console.warn('[flourish] a Dash to Dock instance has no icon box');
                 continue;
             }
-            this.#surface.addBox(box, edgeFromSide(dock.position));
+            // The dash's parent is the actor the slider moves.
+            const slid = dock.dash.get_parent();
+            if (!slid) {
+                console.warn('[flourish] a Dash to Dock instance has no slid actor');
+                continue;
+            }
+            const edge = edgeFromSide(dock.position);
+            const getMonitor = () =>
+                Main.layoutManager.monitors[dock.monitorIndex] ?? null;
+            const visibility = new DockVisibility({
+                actor: slid,
+                root: dock,
+                edge,
+                getMonitor,
+                scheduler: this.#scheduler,
+            });
+            const context = {
+                visibility,
+                edge,
+                getMonitor,
+                dockSettings: this.#manager.settings ?? null,
+            };
+            if (!this.#surface.addBox(box, edge, context)) {
+                visibility.dispose();
+                continue;
+            }
+            this.#visibilities.push(visibility);
+            this.#stopWiggles(dock);
         }
         this.#scheduleBudgetMeasure();
         this.refreshStyles();
     }
 
-    // Flourish owns the attention motion; the stock wiggle would double it.
+    // The stock wiggle would play on top of the attention motion.
     #overrideWiggle(animator) {
         if (this.#injections || !animator)
             return;
@@ -173,6 +218,31 @@ export class DockIntegration {
     #restoreWiggle() {
         this.#injections?.clear();
         this.#injections = null;
+    }
+
+    // Dash to Dock keeps a wiggle registered for the whole urgency.
+    #stopWiggles(dock) {
+        const animator = dock.dash.iconAnimator;
+        if (!this.#injections || !animator)
+            return;
+        for (const icon of urgentIcons(dock)) {
+            const bin = icon.icon?._iconBin;
+            if (!bin)
+                continue;
+            animator.removeAnimation(bin, 'wiggle');
+            bin.rotation_angle_z = 0;
+        }
+    }
+
+    // Its urgent handler re-adds the wiggle; the swallowed calls never reached it.
+    #handBackWiggles() {
+        if (!this.#injections)
+            return;
+        this.#restoreWiggle();
+        for (const dock of this.#manager?._allDocks ?? []) {
+            for (const icon of urgentIcons(dock))
+                icon.notify('urgent');
+        }
     }
 
     // Populate the prefs readout before the first hover.
@@ -220,6 +290,12 @@ function lookupDashToDock() {
     return DASH_TO_DOCK_BUILDS
         .map(uuid => Main.extensionManager.lookup(uuid))
         .find(extension => extension?.state === ExtensionState.ACTIVE) ?? null;
+}
+
+function urgentIcons(dock) {
+    return dock.dash?._box?.get_children()
+        .map(container => container.child)
+        .filter(icon => icon?.urgent) ?? [];
 }
 
 function edgeFromSide(side) {

@@ -1,4 +1,7 @@
 import {
+    AttentionEffect,
+    AttentionPlay,
+    DockState,
     Easing,
     LaunchEffect,
     PressEffect,
@@ -262,6 +265,117 @@ export function buildLaunchSegments(effect, launch, edge, cycleIndex = 0) {
     }
 }
 
+// Same amplitude as the Dash to Dock wiggle at intensity 0.5.
+const WIGGLE_BASE_DEGREES = 6;
+const WIGGLE_RANGE_DEGREES = 18;
+
+export function wiggleSegments(intensity, speed) {
+    const amplitude = WIGGLE_BASE_DEGREES + WIGGLE_RANGE_DEGREES * clamp(intensity, 0, 1);
+    const swing = (rotation, base) => segment({
+        duration: duration(base, speed),
+        easing: Easing.EASE_OUT_QUAD,
+        rotation,
+    });
+    return [
+        swing(amplitude, 100),
+        swing(-amplitude, 200),
+        swing(amplitude, 200),
+        swing(-amplitude, 200),
+        swing(0, 100),
+    ];
+}
+
+// The attention effects keep a fixed shape. Repetition comes from cycles.
+export const ATTENTION_SHAPE = {pulseCount: 1, bounceDecay: 0, stretchElasticity: 0.70};
+
+// One cycle lasts ATTENTION_CYCLE_MS at full speed whatever the effect. The
+// base table holds the natural length of each effect with ATTENTION_SHAPE.
+export const ATTENTION_CYCLE_MS = 360;
+const ATTENTION_BASE_CYCLE_MS = {
+    [AttentionEffect.PULSE]: 380,
+    [AttentionEffect.BOUNCE]: 360,
+    [AttentionEffect.STRETCH]: 720,
+    [AttentionEffect.WIGGLE]: 800,
+};
+
+export const ATTENTION_SLIDE_DURATION = 280;
+
+export function attentionPeriod({segments, cycles, cyclePause, interval}) {
+    return cycles * launchDuration(segments) +
+        (cycles - 1) * cyclePause +
+        2 * ATTENTION_SLIDE_DURATION +
+        interval * 1000;
+}
+
+export function buildAttentionSegments(recipe, edge) {
+    const {attention} = recipe;
+    const orientation = getOrientation(edge);
+    const intensity = clamp(attention.intensity, 0, 1);
+    const effect = ATTENTION_BASE_CYCLE_MS[attention.effect] === undefined
+        ? AttentionEffect.BOUNCE
+        : attention.effect;
+    const speed = clamp(attention.speed, 0.3, 1) *
+        ATTENTION_BASE_CYCLE_MS[effect] / ATTENTION_CYCLE_MS;
+
+    switch (effect) {
+        case AttentionEffect.PULSE:
+            return pulseSegments(ATTENTION_SHAPE, intensity, speed);
+        case AttentionEffect.STRETCH:
+            return stretchSegments(ATTENTION_SHAPE, orientation, intensity, speed);
+        case AttentionEffect.WIGGLE:
+            return wiggleSegments(intensity, speed);
+        case AttentionEffect.BOUNCE:
+        default:
+            return bounceSegments(ATTENTION_SHAPE, orientation, intensity, speed);
+    }
+}
+
+export function getAttentionPivot(effect, edge) {
+    return effect === AttentionEffect.PULSE || effect === AttentionEffect.WIGGLE
+        ? [0.5, 0.5]
+        : getOrientation(edge).pivot;
+}
+
+export function shouldPlayAttention({
+    enabled,
+    urgent,
+    focused,
+    dnd,
+    animationsEnabled,
+    iconAtRest,
+    dockState,
+    shownRectKnown,
+    peekWhenHidden,
+    fullscreen,
+    peekInFullscreen,
+    reminder,
+    reminders,
+}) {
+    if (!enabled || !urgent || focused || reminder >= reminders)
+        return AttentionPlay.STOP;
+    if (dnd || !animationsEnabled)
+        return AttentionPlay.WAIT;
+    if (dockState !== DockState.SHOWN && dockState !== DockState.HIDDEN)
+        return AttentionPlay.SETTLE;
+    if (dockState === DockState.SHOWN)
+        return iconAtRest ? AttentionPlay.IN_PLACE : AttentionPlay.WAIT;
+    if (!iconAtRest)
+        return AttentionPlay.WAIT;
+    if (!peekWhenHidden || !shownRectKnown)
+        return AttentionPlay.WAIT;
+    if (fullscreen && !peekInFullscreen)
+        return AttentionPlay.WAIT;
+    return AttentionPlay.PEEK;
+}
+
+// Reminders fall on multiples of the period from the anchor. Sessions of one
+// app share the anchor and stay in step.
+export function nextReminderDelay({now, anchor, period}) {
+    const elapsed = Math.max(0, now - anchor);
+    const remainder = elapsed % period;
+    return remainder === 0 ? period : period - remainder;
+}
+
 export function shouldRepeatLaunch({
     wasLaunching,
     appRunning,
@@ -284,6 +398,50 @@ export function shouldRetreatOnHandoff({
     return overviewVisible && !overviewVisibleTarget && dashContainsTarget;
 }
 
+// Half a pixel absorbs the rounding of transformed positions.
+const EDGE_TOLERANCE = 0.5;
+
+export function dockVisibilityState(rect, monitor, edge) {
+    switch (edge) {
+        case ScreenEdge.TOP: {
+            if (rect.y + rect.height <= monitor.y + EDGE_TOLERANCE)
+                return DockState.HIDDEN;
+            return rect.y >= monitor.y - EDGE_TOLERANCE
+                ? DockState.SHOWN : DockState.MOVING;
+        }
+        case ScreenEdge.LEFT: {
+            if (rect.x + rect.width <= monitor.x + EDGE_TOLERANCE)
+                return DockState.HIDDEN;
+            return rect.x >= monitor.x - EDGE_TOLERANCE
+                ? DockState.SHOWN : DockState.MOVING;
+        }
+        case ScreenEdge.RIGHT: {
+            const right = monitor.x + monitor.width;
+            if (rect.x >= right - EDGE_TOLERANCE)
+                return DockState.HIDDEN;
+            return rect.x + rect.width <= right + EDGE_TOLERANCE
+                ? DockState.SHOWN : DockState.MOVING;
+        }
+        case ScreenEdge.BOTTOM:
+        default: {
+            const bottom = monitor.y + monitor.height;
+            if (rect.y >= bottom - EDGE_TOLERANCE)
+                return DockState.HIDDEN;
+            return rect.y + rect.height <= bottom + EDGE_TOLERANCE
+                ? DockState.SHOWN : DockState.MOVING;
+        }
+    }
+}
+
+export function projectIconRect(shownRect, slidRect, iconRect) {
+    return {
+        x: shownRect.x + (iconRect.x - slidRect.x),
+        y: shownRect.y + (iconRect.y - slidRect.y),
+        width: iconRect.width,
+        height: iconRect.height,
+    };
+}
+
 export function launchDuration(segments) {
     return segments.reduce((total, item) => total + item.duration, 0);
 }
@@ -294,6 +452,7 @@ export function sampleLaunchSegments(segments, elapsed) {
         scaleY: 1,
         translationX: 0,
         translationY: 0,
+        rotation: 0,
     };
     let previous = identity;
     let remaining = Math.max(0, elapsed);
@@ -309,8 +468,8 @@ export function sampleLaunchSegments(segments, elapsed) {
     return previous;
 }
 
-function pulseSegments(launch, intensity, speed) {
-    const count = Math.round(clamp(launch.pulseCount, 1, 4));
+function pulseSegments(part, intensity, speed) {
+    const count = Math.round(clamp(part.pulseCount, 1, 4));
     const scale = 1 + 0.14 * intensity;
     const segments = [];
     for (let index = 0; index < count; index++) {
@@ -328,9 +487,9 @@ function pulseSegments(launch, intensity, speed) {
     return segments;
 }
 
-function bounceSegments(launch, orientation, intensity, speed) {
+function bounceSegments(part, orientation, intensity, speed) {
     const height = (12 + 36 * intensity);
-    const decay = clamp(launch.bounceDecay, 0, 1);
+    const decay = clamp(part.bounceDecay, 0, 1);
     const segments = [];
     for (let index = 0; index < 3; index++) {
         const distance = height * decay ** index;
@@ -350,8 +509,8 @@ function bounceSegments(launch, orientation, intensity, speed) {
     return segments;
 }
 
-function stretchSegments(launch, orientation, intensity, speed) {
-    const elasticity = clamp(launch.stretchElasticity, 0, 1);
+function stretchSegments(part, orientation, intensity, speed) {
+    const elasticity = clamp(part.stretchElasticity, 0, 1);
     const tangentScale = 1 + 0.18 * intensity;
     const compressedScale = 1 - 0.25 * intensity;
     const extendedScale = 1 + (0.18 + 0.18 * elasticity) * intensity;
@@ -408,6 +567,7 @@ function segment({
     scaleY = 1,
     translationX = 0,
     translationY = 0,
+    rotation = 0,
 }) {
     return {
         duration: segmentDuration,
@@ -416,6 +576,7 @@ function segment({
         scaleY,
         translationX,
         translationY,
+        rotation,
     };
 }
 
@@ -429,6 +590,7 @@ function transformFromSegment(item) {
         scaleY: item.scaleY,
         translationX: item.translationX,
         translationY: item.translationY,
+        rotation: item.rotation ?? 0,
     };
 }
 
@@ -438,6 +600,7 @@ export function interpolateTransform(from, to, progress) {
         scaleY: interpolate(from.scaleY, to.scaleY, progress),
         translationX: interpolate(from.translationX, to.translationX, progress),
         translationY: interpolate(from.translationY, to.translationY, progress),
+        rotation: interpolate(from.rotation ?? 0, to.rotation ?? 0, progress),
     };
 }
 

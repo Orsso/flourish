@@ -16,10 +16,12 @@ required=(
     lib/prefs/demoSequence.js
     lib/prefs/motionPreview.js
     lib/prefs/rows.js
+    lib/runtime/attentionEngine.js
     lib/runtime/backgroundStyle.js
     lib/runtime/dashIntegration.js
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
+    lib/runtime/dockVisibility.js
     lib/runtime/focusHighlight.js
     lib/runtime/geometry.js
     lib/runtime/iconClone.js

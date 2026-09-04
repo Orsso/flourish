@@ -23,5 +23,6 @@ test('shared transform interpolation covers scale and translation', () => {
         scaleY: 0.75,
         translationX: 4,
         translationY: -2,
+        rotation: 0,
     });
 });

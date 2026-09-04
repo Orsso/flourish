@@ -25,6 +25,15 @@ const DEFINITIONS = [
     definition('custom-bounce-decay', 'double', RecipePart.LAUNCH, 'bounceDecay'),
     definition('custom-pulse-count', 'int', RecipePart.LAUNCH, 'pulseCount'),
     definition('custom-stretch-elasticity', 'double', RecipePart.LAUNCH, 'stretchElasticity'),
+    definition('custom-attention-enabled', 'boolean', RecipePart.ATTENTION, 'enabled'),
+    definition('custom-attention-effect', 'string', RecipePart.ATTENTION, 'effect'),
+    definition('custom-attention-intensity', 'double', RecipePart.ATTENTION, 'intensity'),
+    definition('custom-attention-speed', 'double', RecipePart.ATTENTION, 'speed'),
+    definition('custom-attention-cycles', 'int', RecipePart.ATTENTION, 'cycles'),
+    definition('custom-attention-cycle-pause', 'int', RecipePart.ATTENTION, 'cyclePause'),
+    definition('custom-attention-interval', 'int', RecipePart.ATTENTION, 'interval'),
+    definition('custom-attention-reminders', 'int', RecipePart.ATTENTION, 'reminders'),
+    definition('custom-attention-peek', 'boolean', RecipePart.ATTENTION, 'peekWhenHidden'),
 ];
 
 const DEFINITION_BY_KEY = new Map(DEFINITIONS.map(item => [item.key, item]));
@@ -39,7 +48,7 @@ export function readActiveRecipe(settings) {
 }
 
 function readCustomValues(settings) {
-    const values = {hover: {}, press: {}, launch: {}};
+    const values = {hover: {}, press: {}, launch: {}, attention: {}};
     for (const item of DEFINITIONS)
         values[item.part][item.property] = read(settings, item);
     return values;

@@ -8,6 +8,7 @@ export default [{
         globals: {
             console: 'readonly',
             global: 'readonly',
+            TextDecoder: 'readonly',
             assertClose: 'readonly',
             assertDeepEqual: 'readonly',
             assertEqual: 'readonly',

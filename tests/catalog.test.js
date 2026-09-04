@@ -1,10 +1,12 @@
 import {
+    AttentionEffect,
     DEFAULT_PRESET,
     Easing,
     LaunchEffect,
     PressEffect,
     PressMode,
     Preset,
+    RecipePart,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
 
@@ -50,4 +52,34 @@ test('presets carry the neighbor radius', () => {
     assertEqual(getBuiltInRecipe(Preset.SUBTLE).hover.neighborRadius, 1);
     assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.neighborRadius, 1);
     assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).hover.neighborRadius, 2);
+});
+
+test('presets carry an attention part', () => {
+    const subtle = getBuiltInRecipe(Preset.SUBTLE);
+    const balanced = getBuiltInRecipe(Preset.BALANCED);
+    const expressive = getBuiltInRecipe(Preset.EXPRESSIVE);
+    assertEqual(RecipePart.ATTENTION, 'attention');
+    assertDeepEqual(subtle.attention, {
+        enabled: true,
+        peekWhenHidden: true,
+        effect: AttentionEffect.WIGGLE,
+        intensity: 0.5,
+        speed: 0.60,
+        cycles: 3,
+        cyclePause: 120,
+        interval: 5,
+        reminders: 5,
+    });
+    assertEqual(balanced.attention.effect, AttentionEffect.PULSE);
+    assertEqual(balanced.attention.speed, 0.70);
+    assertEqual(balanced.attention.cycles, 3);
+    assertEqual(balanced.attention.interval, 5);
+    assertEqual(balanced.attention.reminders, 10);
+    assertEqual(expressive.attention.effect, AttentionEffect.BOUNCE);
+    assertEqual(expressive.attention.intensity, 0.45);
+    assertEqual(expressive.attention.speed, 0.60);
+    assertEqual(expressive.attention.cycles, 3);
+    assertEqual(expressive.attention.cyclePause, 120);
+    assertEqual(expressive.attention.interval, 3);
+    assertEqual(expressive.attention.reminders, 15);
 });

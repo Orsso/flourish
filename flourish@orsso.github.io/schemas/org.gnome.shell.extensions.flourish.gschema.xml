@@ -31,6 +31,13 @@
     <value nick="stock" value="3"/>
   </enum>
 
+  <enum id="org.gnome.shell.extensions.flourish.attention-effect">
+    <value nick="pulse" value="0"/>
+    <value nick="bounce" value="1"/>
+    <value nick="stretch" value="2"/>
+    <value nick="wiggle" value="3"/>
+  </enum>
+
   <schema id="org.gnome.shell.extensions.flourish"
           path="/org/gnome/shell/extensions/flourish/">
     <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
@@ -145,6 +152,48 @@
       <default>0.70</default>
       <range min="0.0" max="1.0"/>
       <summary>Stretch effect elasticity</summary>
+    </key>
+    <key name="custom-attention-enabled" type="b">
+      <default>true</default>
+      <summary>Use the attention animation in Custom</summary>
+    </key>
+    <key name="custom-attention-effect" enum="org.gnome.shell.extensions.flourish.attention-effect">
+      <default>"wiggle"</default>
+      <summary>Attention effect</summary>
+    </key>
+    <key name="custom-attention-intensity" type="d">
+      <default>0.5</default>
+      <range min="0.0" max="1.0"/>
+      <summary>Attention effect intensity</summary>
+    </key>
+    <key name="custom-attention-speed" type="d">
+      <default>0.60</default>
+      <range min="0.30" max="1.0"/>
+      <summary>Attention speed</summary>
+    </key>
+    <key name="custom-attention-cycles" type="i">
+      <default>3</default>
+      <range min="1" max="10"/>
+      <summary>Cycles played at each attention reminder</summary>
+    </key>
+    <key name="custom-attention-cycle-pause" type="i">
+      <default>120</default>
+      <range min="0" max="1000"/>
+      <summary>Pause between attention cycles in milliseconds</summary>
+    </key>
+    <key name="custom-attention-interval" type="i">
+      <default>5</default>
+      <range min="2" max="60"/>
+      <summary>Seconds between two attention reminders</summary>
+    </key>
+    <key name="custom-attention-reminders" type="i">
+      <default>5</default>
+      <range min="1" max="30"/>
+      <summary>Reminders before the attention animation stops</summary>
+    </key>
+    <key name="custom-attention-peek" type="b">
+      <default>true</default>
+      <summary>Show the attention animation while the dock is hidden</summary>
     </key>
 
     <key name="show-hover-background" type="b">

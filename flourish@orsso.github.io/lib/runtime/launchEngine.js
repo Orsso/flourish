@@ -24,13 +24,15 @@ import {OPAQUE, createIconClone, retreatClone, runSegments} from './iconClone.js
 const HANDOFF_DURATION = 80;
 
 export class LaunchEngine {
+    #beforeLaunch;
     #deferredEnds;
     #getController;
     #injections = null;
     #sessions = new Map();
 
-    constructor({getController}) {
+    constructor({getController, beforeLaunch = () => {}}) {
         this.#getController = getController;
+        this.#beforeLaunch = beforeLaunch;
         this.#deferredEnds = new DeferredLaunchEnds({
             schedule: callback =>
                 GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, callback),
@@ -61,6 +63,8 @@ export class LaunchEngine {
     }
 
     #play(appIcon, controller, playStock) {
+        this.#beforeLaunch(appIcon);
+
         const {launch} = controller.recipe;
         if (launch.enabled && launch.effect === LaunchEffect.STOCK)
             return playStock();

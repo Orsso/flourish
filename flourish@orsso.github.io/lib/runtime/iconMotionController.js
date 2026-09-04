@@ -137,7 +137,7 @@ export class IconMotionController {
     }
 
     beginOverlay() {
-        if (this.#overlaid)
+        if (this.#overlaid || !this.#bin)
             return false;
         this.#overlaid = true;
         this.#apply(0);
@@ -212,6 +212,7 @@ export class IconMotionController {
         this.#restore();
         this.#restoreTexture();
         this.#onDestroyed(this);
+        this.#overlaid = false;
         this.#bin = null;
         this.#icon = null;
     }

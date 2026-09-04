@@ -48,6 +48,7 @@ export function runSegments(clone, segments, {
         scale_y: magnify * segment.scaleY,
         translation_x: segment.translationX + liftX,
         translation_y: segment.translationY + liftY,
+        rotation_angle_z: segment.rotation ?? 0,
         duration: segment.duration,
         mode: resolveAnimationMode(segment.easing, Clutter.AnimationMode),
         onComplete: () => runSegments(

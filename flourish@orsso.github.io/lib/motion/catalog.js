@@ -12,6 +12,13 @@ export const LaunchEffect = {
     STOCK: 'stock',
 };
 
+export const AttentionEffect = {
+    PULSE: 'pulse',
+    BOUNCE: 'bounce',
+    STRETCH: 'stretch',
+    WIGGLE: 'wiggle',
+};
+
 export const PressMode = {
     LAUNCHES_ONLY: 'launches-only',
     ALL_PRIMARY_CLICKS: 'all-primary-clicks',
@@ -51,15 +58,34 @@ export const ScreenEdge = {
     RIGHT: 'right',
 };
 
-// The three parts of a recipe; the values index a recipe object.
+export const DockState = {
+    SHOWN: 'shown',
+    HIDDEN: 'hidden',
+    MOVING: 'moving',
+};
+
+export const AttentionPlay = {
+    STOP: 'stop',
+    WAIT: 'wait',       // try again at the next reminder
+    SETTLE: 'settle',   // wait for the dock to stop moving
+    IN_PLACE: 'in-place',
+    PEEK: 'peek',
+};
+
+// The four parts of a recipe; the values index a recipe object.
 export const RecipePart = {
     HOVER: 'hover',
     PRESS: 'press',
     LAUNCH: 'launch',
+    ATTENTION: 'attention',
 };
 
-// The gschema range mirrors these bounds; keep them in sync.
+// The gschema ranges mirror these bounds; keep them in sync.
 export const NeighborRadius = {MIN: 1, MAX: 3};
+export const AttentionCycles = {MIN: 1, MAX: 10};
+export const AttentionCyclePause = {MIN: 0, MAX: 1000};
+export const AttentionInterval = {MIN: 2, MAX: 60};
+export const AttentionReminders = {MIN: 1, MAX: 30};
 
 export const DEFAULT_PRESET = Preset.SUBTLE;
 
@@ -71,6 +97,11 @@ const COMMON_LAUNCH = {
     bounceDecay: 0,
     pulseCount: 2,
     stretchElasticity: 0.70,
+};
+
+const COMMON_ATTENTION = {
+    enabled: true,
+    peekWhenHidden: true,
 };
 
 const BUILTIN_RECIPES = {
@@ -100,6 +131,16 @@ const BUILTIN_RECIPES = {
             repeatPause: 400,
             maxDuration: 8000,
         },
+        attention: {
+            ...COMMON_ATTENTION,
+            effect: AttentionEffect.WIGGLE,
+            intensity: 0.5,
+            speed: 0.60,
+            cycles: 3,
+            cyclePause: 120,
+            interval: 5,
+            reminders: 5,
+        },
     },
     [Preset.BALANCED]: {
         id: Preset.BALANCED,
@@ -126,6 +167,16 @@ const BUILTIN_RECIPES = {
             speed: 0.65,
             maxDuration: 8000,
         },
+        attention: {
+            ...COMMON_ATTENTION,
+            effect: AttentionEffect.PULSE,
+            intensity: 0.5,
+            speed: 0.70,
+            cycles: 3,
+            cyclePause: 120,
+            interval: 5,
+            reminders: 10,
+        },
     },
     [Preset.EXPRESSIVE]: {
         id: Preset.EXPRESSIVE,
@@ -151,6 +202,16 @@ const BUILTIN_RECIPES = {
             intensity: 0.85,
             speed: 0.60,
             maxDuration: 10000,
+        },
+        attention: {
+            ...COMMON_ATTENTION,
+            effect: AttentionEffect.BOUNCE,
+            intensity: 0.45,
+            speed: 0.60,
+            cycles: 3,
+            cyclePause: 120,
+            interval: 3,
+            reminders: 15,
         },
     },
 };

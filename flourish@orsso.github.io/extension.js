@@ -4,6 +4,7 @@ import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {readActiveRecipe} from './lib/motion/settings.js';
+import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
 import {DockIntegration} from './lib/runtime/dockIntegration.js';
 import {LaunchEngine} from './lib/runtime/launchEngine.js';
@@ -26,6 +27,8 @@ export default class FlourishExtension extends Extension {
         this._dockIntegration = new DockIntegration({
             scheduler: this._frameScheduler,
             settings: this._settings,
+            onUrgentChanged: (controller, urgent) =>
+                this._attentionEngine?.onUrgentChanged(controller, urgent),
         });
         this._dashIntegration = new DashIntegration({
             scheduler: this._frameScheduler,
@@ -41,6 +44,11 @@ export default class FlourishExtension extends Extension {
             extension: this, cssFileName: 'dash-focused-app-background.css'});
         this._syncStyles();
 
+        this._attentionEngine = new AttentionEngine({
+            getDockContext: icon => this._dockIntegration.getDockContext(icon),
+        });
+        this._attentionEngine.enable();
+
         this._dockIntegration.enable(this._recipe);
         this._dashIntegration.enable(this._recipe);
 
@@ -48,6 +56,7 @@ export default class FlourishExtension extends Extension {
             getController: icon =>
                 this._dockIntegration.getController(icon) ??
                 this._dashIntegration.getController(icon),
+            beforeLaunch: icon => this._attentionEngine.interrupt(icon),
         });
         this._launchEngine.enable();
 
@@ -81,6 +90,8 @@ export default class FlourishExtension extends Extension {
 
         this._launchEngine.disable();
         this._launchEngine = null;
+        this._attentionEngine.disable();
+        this._attentionEngine = null;
         this._hoverStyle.disable();
         this._hoverStyle = null;
         this._focusedAppStyle.disable();

@@ -3,6 +3,7 @@ import {IconMotionController} from './iconMotionController.js';
 import {LiveRegistry} from './liveRegistry.js';
 
 export class MotionSurface {
+    #contexts = new Map();
     #onMeasured;
     #onUrgentChanged;
     #recipe;
@@ -24,6 +25,11 @@ export class MotionSurface {
         return this.#registry.getController(appIcon);
     }
 
+    getContext(appIcon) {
+        const controller = this.getController(appIcon);
+        return controller ? this.#contexts.get(controller) ?? null : null;
+    }
+
     setRecipe(recipe) {
         this.#recipe = recipe;
         for (const controller of this.controllers)
@@ -35,26 +41,28 @@ export class MotionSurface {
             controller.refreshStyle();
     }
 
-    addBox(box, edge) {
+    addBox(box, edge, context = null) {
         const group = new NeighborGroup(this.#scheduler);
         const added = this.#registry.addBox(box, () => {
             box.disconnectObject(this);
             group.dispose();
         }, () => group.dispose());
         if (!added)
-            return;
+            return false;
         for (const container of box.get_children())
-            this.#registerContainer(container, edge, group);
+            this.#registerContainer(container, edge, group, context);
         box.connectObject('child-added', (_box, container) => {
-            this.#registerContainer(container, edge, group);
+            this.#registerContainer(container, edge, group, context);
         }, this);
+        return true;
     }
 
     dispose() {
         this.#registry.disable();
+        this.#contexts.clear();
     }
 
-    #registerContainer(container, edge, group) {
+    #registerContainer(container, edge, group, context) {
         // Separators and drag placeholders are not app icons.
         const icon = container.child ?? container;
         const bin = icon.icon?._iconBin;
@@ -67,11 +75,16 @@ export class MotionSurface {
             edge,
             recipe: this.#recipe,
             onHoverChanged: (changed, hovered) => group.setHovered(changed, hovered),
-            onDestroyed: destroyed => group.remove(destroyed),
+            onDestroyed: destroyed => {
+                this.#contexts.delete(destroyed);
+                group.remove(destroyed);
+            },
             onMeasured: measurement => this.#onMeasured(measurement),
             onUrgentChanged: (changed, urgent) => this.#onUrgentChanged(changed, urgent),
         });
         group.add(controller, container, boxChildren(container));
+        if (context)
+            this.#contexts.set(controller, context);
         this.#registry.addController(icon, controller);
         // An icon can be urgent before Flourish finds it.
         if (controller.urgent)

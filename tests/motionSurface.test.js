@@ -278,6 +278,21 @@ test('leaving the dock returns every icon to rest', () => {
     }
 });
 
+test('a box context is served through its icons and dropped with them', () => {
+    const scheduler = makeScheduler();
+    const surface = new MotionSurface({recipe: EXPRESSIVE, scheduler});
+    const box = new FakeBox(2);
+    const context = {edge: 'bottom'};
+    assertEqual(surface.addBox(box, 'bottom', context), true);
+    assertEqual(surface.addBox(box, 'bottom', context), false);
+    const [first, second] = box.icons;
+    assertEqual(surface.getContext(first), context);
+    assertEqual(surface.getContext(second), context);
+    assertEqual(surface.getContext(new FakeIcon()), null);
+    first.destroy();
+    assertEqual(surface.getContext(first), null);
+});
+
 test('the surface reports urgent icons, including ones already urgent when found', () => {
     const scheduler = makeScheduler();
     const seen = [];
