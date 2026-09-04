@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.0
+
+- Added an attention animation for Dash to Dock and Ubuntu Dock: an icon
+  whose app asks for attention pulses, bounces, stretches, or wiggles, and
+  slides out of the edge when the dock is hidden. It replaces the dock's
+  own wiggle while Flourish is enabled. The overview dash is not covered
+  yet (#7). Thanks to @7system7 for the suggestion.
+- The focused app can be marked on the overview dash (#6). Thanks to
+  @parthib-gaugewalker for the suggestion.
+
 ## 1.1.0
 
 - Icons stay sharp while magnified: each dash icon now renders at twice

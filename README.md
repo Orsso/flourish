@@ -29,6 +29,10 @@ icons at twice their resolution so they stay sharp when magnified.
 It reaches into four private members to do so. `_box` is the icon row of
 the dash, `_iconBin` and `_createIconTexture` belong to each icon, and
 `_allDocks` is the list of docks Dash to Dock keeps.
+With Dash to Dock it also reads a few public but undocumented members:
+the `urgent` and `focused` flags of each icon, the dock's `monitorIndex`,
+the dock manager's settings, and the dash's `iconAnimator`, whose urgent
+wiggle Flourish replaces with its own attention animation.
 Everything is restored when the extension is disabled.
 
 ## Compatibility
