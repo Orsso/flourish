@@ -61,6 +61,10 @@ gnome-extensions install --force flourish@orsso.github.io.shell-extension.zip
 
 Log out and back in, then enable Flourish from the Extensions application.
 
+To try the development version instead, clone the repository and run
+`make install` before logging out. Copying the source folder by hand leaves
+the settings schema uncompiled.
+
 With Dash to Dock or Ubuntu Dock enabled, the motion goes to the dock; without them, to the
 overview dash.
 
@@ -73,7 +77,7 @@ make pack
 ```
 
 `make check` runs lint, tests, package checks, and schema checks. `make pack`
-builds the installable archive.
+runs them and builds the installable archive.
 
 Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) has a short map
 of the code.

@@ -3,7 +3,7 @@ SCHEMA_DIR := $(UUID)/schemas
 DIST_DIR := dist
 INSTALL_DIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 
-.PHONY: check lint test schema pack pot install clean
+.PHONY: check lint test schema build pack pot install clean
 
 check: lint test schema
 
@@ -28,7 +28,8 @@ pot:
 		--output=$(UUID)/po/flourish.pot \
 		$(UUID)/prefs.js $(UUID)/lib/prefs/*.js
 
-pack: check
+# build needs only gnome-extensions; pack runs the checks first.
+build:
 	mkdir -p $(DIST_DIR)
 	gnome-extensions pack --force --out-dir=$(DIST_DIR) \
 		--extra-source=lib \
@@ -41,7 +42,9 @@ pack: check
 		$(UUID)
 	bash scripts/verify-package.sh $(DIST_DIR)/$(UUID).shell-extension.zip
 
-install: pack
+pack: check build
+
+install: build
 	gnome-extensions install --force $(DIST_DIR)/$(UUID).shell-extension.zip
 	glib-compile-schemas $(INSTALL_DIR)/schemas
 
