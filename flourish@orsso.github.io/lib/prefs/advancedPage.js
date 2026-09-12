@@ -10,13 +10,14 @@ import {
     AttentionInterval,
     AttentionReminders,
     Easing,
+    HoverMode,
     LaunchEffect,
     NeighborRadius,
     PressEffect,
     PressMode,
     RecipePart,
 } from '../motion/catalog.js';
-import {editCustomSetting, readActiveRecipe, resetCustom} from '../motion/settings.js';
+import {editCustomSetting, readActiveRecipe, resetCustom, selectHoverMode} from '../motion/settings.js';
 import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../motion/transforms.js';
 import {MotionPreview} from './motionPreview.js';
 import {
@@ -49,6 +50,12 @@ export function buildAdvancedPage(page, controls, settings, state) {
     page.add(budgetGroup);
 
     const hover = createPartGroup(page, controls, settings, _('Hover'), RecipePart.HOVER);
+    controls.hoverMode = createComboRow(
+        hover.group, _('Hover behavior'),
+        [
+            [_('Classic'), HoverMode.CLASSIC],
+            [_('Continuous wave'), HoverMode.WAVE],
+        ], value => selectHoverMode(settings, value), state);
     controls.hoverScale = createScaleRow(
         hover.group, _('Magnification'), 1, 1.30, 0.01,
         value => editCustomSetting(settings, 'custom-hover-scale', value), state);
@@ -219,6 +226,20 @@ export function buildAdvancedPage(page, controls, settings, state) {
 }
 
 export function syncAdvancedPage(settings, controls, recipe) {
+    // The wave reinterprets the hover values; the labels must say so.
+    const wave = settings.get_string('hover-mode') === HoverMode.WAVE;
+    setComboValue(controls.hoverMode, settings.get_string('hover-mode'));
+    controls.hoverScale.row.title = wave ? _('Peak magnification') : _('Magnification');
+    controls.hoverLift.title = wave ? _('Peak outward lift') : _('Outward lift');
+    controls.hoverDuration.subtitle = wave
+        ? _('Entry and exit transition (ms)')
+        : _('ms');
+    controls.hoverEasing.row.subtitle = wave ? _('Entry and exit easing') : '';
+    controls.neighborScale.row.visible = !wave;
+    controls.neighborRadius.title = wave ? _('Wave radius') : _('Neighbor radius');
+    controls.neighborRadius.subtitle = wave
+        ? _('Icon pitches the wave reaches on each side')
+        : _('Icons on each side that follow the hover');
     controls.hoverScale.adjustment.value = recipe.hover.scale;
     controls.hoverLift.value = recipe.hover.lift;
     // The measurement outlives the dock.
@@ -276,12 +297,14 @@ export function syncAdvancedPage(settings, controls, recipe) {
     controls.advancedFocusedAppBackground.active =
         settings.get_boolean('show-focused-app-background');
     for (const preview of Object.values(controls.partPreviews))
-        preview.updateRecipe(recipe);
+        preview.updateRecipe(recipe, wave && preview._part === RecipePart.HOVER);
 }
 
 function createPartGroup(page, controls, settings, title, part) {
     const group = new Adw.PreferencesGroup({title});
-    const preview = new MotionPreview({recipe: readActiveRecipe(settings), part});
+    const wave = part === RecipePart.HOVER &&
+        settings.get_string('hover-mode') === HoverMode.WAVE;
+    const preview = new MotionPreview({recipe: readActiveRecipe(settings), part, wave});
     const pointer = new Gtk.EventControllerMotion();
     pointer.connect('enter', () => preview.playLoop());
     pointer.connect('leave', () => preview.stopLoop());

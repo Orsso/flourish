@@ -76,6 +76,11 @@ export function selectPreset(settings, preset) {
     settings.apply();
 }
 
+export function selectHoverMode(settings, mode) {
+    settings.set_string('hover-mode', mode);
+    settings.apply();
+}
+
 export function setBooleanCommitted(settings, key, value) {
     settings.set_boolean(key, value);
     settings.apply();

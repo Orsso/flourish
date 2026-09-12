@@ -5,6 +5,12 @@ export const Preset = {
     CUSTOM: 'custom',
 };
 
+// The gschema hover-mode enum nicks; independent of the preset choice.
+export const HoverMode = {
+    CLASSIC: 'classic',
+    WAVE: 'wave',
+};
+
 export const LaunchEffect = {
     PULSE: 'pulse',
     BOUNCE: 'bounce',
@@ -49,6 +55,26 @@ const ANIMATION_MODE_NAMES = {
 // modes is Clutter.AnimationMode; the prefs process has no Clutter.
 export function resolveAnimationMode(easing, modes) {
     return modes[ANIMATION_MODE_NAMES[easing]];
+}
+
+// Pure version of the same curves, for consumers that sample progress:
+// the wave envelope and anything without Clutter.
+export function easingProgress(easing, t) {
+    const u = t < 0 ? 0 : t > 1 ? 1 : t;
+    switch (easing) {
+        case Easing.EASE_OUT_QUAD:
+            return 1 - (1 - u) * (1 - u);
+        case Easing.EASE_OUT_CUBIC:
+            return 1 - (1 - u) * (1 - u) * (1 - u);
+        case Easing.EASE_OUT_BACK: {
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            const v = u - 1;
+            return 1 + c3 * v * v * v + c1 * v * v;
+        }
+        default:
+            return u;
+    }
 }
 
 export const ScreenEdge = {

@@ -9,6 +9,7 @@ required=(
     README.md
     extension.js
     lib/motion/catalog.js
+    lib/motion/continuum.js
     lib/motion/pressInteraction.js
     lib/motion/settings.js
     lib/motion/transforms.js
@@ -19,6 +20,7 @@ required=(
     lib/runtime/attentionEngine.js
     lib/runtime/backgroundStyle.js
     lib/runtime/dashIntegration.js
+    lib/runtime/debugCounters.js
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
     lib/runtime/dockVisibility.js

@@ -1,4 +1,5 @@
 import GLib from 'gi://GLib';
+import Graphene from 'gi://Graphene';
 import St from 'gi://St';
 import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
@@ -16,19 +17,27 @@ const DASH_TO_DOCK_BUILDS = [
 
 export class DockIntegration {
     #attachIdleId = 0;
+    #continuous = false;
     #generation = 0;
     #injections = null;
     #manager = null;
     #managerSignals = [];
     #measureId = 0;
     #onUrgentChanged;
+    #point = null;
     #scheduler;
     #settings;
     #surface = null;
     #visibilities = [];
 
-    constructor({scheduler, settings, onUrgentChanged = () => {}}) {
+    constructor({
+        scheduler,
+        settings,
+        continuous = false,
+        onUrgentChanged = () => {},
+    }) {
         this.#scheduler = scheduler;
+        this.#continuous = continuous;
         this.#settings = settings;
         this.#onUrgentChanged = onUrgentChanged;
     }
@@ -36,10 +45,14 @@ export class DockIntegration {
     enable(recipe) {
         this.#surface = new MotionSurface({
             recipe,
+            continuous: this.#continuous,
             onMeasured: measurement => this.#publishBudget(measurement),
             onUrgentChanged: this.#onUrgentChanged,
             scheduler: this.#scheduler,
         });
+        // Spike: the stage sees every pointer motion, gaps included.
+        if (this.#continuous)
+            this.#hookMotion();
         this.#generation++;
         Main.extensionManager.connectObject('extension-state-changed',
             (_manager, extension) => {
@@ -57,6 +70,7 @@ export class DockIntegration {
     disable() {
         this.#generation++;
         Main.extensionManager.disconnectObject(this);
+        this.#unhookMotion();
         this.#cancelScheduledAttach();
         this.#handBackWiggles();
         this.#detachManager();
@@ -69,8 +83,50 @@ export class DockIntegration {
         this.#surface?.setRecipe(recipe);
     }
 
+    // The hover-mode key flips mid session; classic pays no stage cost.
+    setContinuous(on) {
+        if (on === this.#continuous)
+            return;
+        this.#continuous = on;
+        if (this.#surface)
+            this.#surface.setContinuous(on);
+        if (on)
+            this.#hookMotion();
+        else
+            this.#unhookMotion();
+    }
+
+    // The stage sees every pointer motion, gaps included. This gjs binding
+    // fills a GraphenePoint out arg instead of returning [x, y].
+    #hookMotion() {
+        if (!this.#surface)
+            return;
+        this.#point = new Graphene.Point();
+        global.get_stage().connectObject('motion-event',
+            (_stage, event) => {
+                event.get_position(this.#point);
+                this.#surface.onPointerMotion(this.#point.x, this.#point.y);
+            }, this);
+    }
+
+    #unhookMotion() {
+        if (!this.#point)
+            return;
+        global.get_stage().disconnectObject(this);
+        this.#point = null;
+    }
+
     refreshStyles() {
         this.#surface?.refreshStyles();
+    }
+
+    // Spike: synthetic pointer injection for the headless probe.
+    injectPointerMotion(x, y) {
+        this.#surface?.onPointerMotion(x, y);
+    }
+
+    get surfaceCounters() {
+        return this.#surface?.counters ?? null;
     }
 
     getController(appIcon) {

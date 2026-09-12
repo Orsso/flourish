@@ -3,6 +3,7 @@ import Meta from 'gi://Meta';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
+import {HoverMode} from './lib/motion/catalog.js';
 import {readActiveRecipe} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
@@ -14,6 +15,8 @@ export default class FlourishExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._recipe = readActiveRecipe(this._settings);
+        this._hoverMode = this._settings.get_string('hover-mode');
+        const continuous = this._hoverMode === HoverMode.WAVE;
 
         const laters = global.compositor.get_laters();
         this._frameScheduler = {
@@ -27,11 +30,13 @@ export default class FlourishExtension extends Extension {
         this._dockIntegration = new DockIntegration({
             scheduler: this._frameScheduler,
             settings: this._settings,
+            continuous,
             onUrgentChanged: (controller, urgent) =>
                 this._attentionEngine?.onUrgentChanged(controller, urgent),
         });
         this._dashIntegration = new DashIntegration({
             scheduler: this._frameScheduler,
+            continuous,
         });
 
         this._hoverStyle = new BackgroundStyle({
@@ -52,6 +57,24 @@ export default class FlourishExtension extends Extension {
 
         this._dockIntegration.enable(this._recipe);
         this._dashIntegration.enable(this._recipe);
+
+        // Spike: per-surface work counters + direct injection for the headless
+        // probe. Closures, not getters: an object-literal getter's `this` is
+        // the literal itself, not the extension.
+        const dashIntegration = this._dashIntegration;
+        const dockIntegration = this._dockIntegration;
+        this._debug = {
+            get dash() {
+                return dashIntegration.surfaceCounters;
+            },
+            get dock() {
+                return dockIntegration.surfaceCounters;
+            },
+            inject(x, y) {
+                dashIntegration.injectPointerMotion(x, y);
+                dockIntegration.injectPointerMotion(x, y);
+            },
+        };
 
         this._launchEngine = new LaunchEngine({
             getController: icon =>
@@ -116,6 +139,9 @@ export default class FlourishExtension extends Extension {
 
     _syncSettings() {
         this._recipe = readActiveRecipe(this._settings);
+        this._hoverMode = this._settings.get_string('hover-mode');
+        this._dockIntegration.setContinuous(this._hoverMode === HoverMode.WAVE);
+        this._dashIntegration.setContinuous(this._hoverMode === HoverMode.WAVE);
         this._dockIntegration.setRecipe(this._recipe);
         this._dashIntegration.setRecipe(this._recipe);
         if (this._syncStyles())

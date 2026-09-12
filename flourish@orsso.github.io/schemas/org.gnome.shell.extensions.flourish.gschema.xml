@@ -7,6 +7,11 @@
     <value nick="custom" value="3"/>
   </enum>
 
+  <enum id="org.gnome.shell.extensions.flourish.hover-mode">
+    <value nick="classic" value="0"/>
+    <value nick="wave" value="1"/>
+  </enum>
+
   <enum id="org.gnome.shell.extensions.flourish.easing">
     <value nick="linear" value="0"/>
     <value nick="ease-out-quad" value="1"/>
@@ -194,6 +199,12 @@
     <key name="custom-attention-peek" type="b">
       <default>true</default>
       <summary>Show the attention animation while the dock is hidden</summary>
+    </key>
+
+    <key name="hover-mode" enum="org.gnome.shell.extensions.flourish.hover-mode">
+      <default>"classic"</default>
+      <summary>Hover behavior</summary>
+      <description>Classic magnifies the hovered icon and its fixed neighbors. Wave scales the whole row with a smooth falloff around the pointer.</description>
     </key>
 
     <key name="show-hover-background" type="b">

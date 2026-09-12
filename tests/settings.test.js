@@ -3,6 +3,7 @@ import {
     editCustomSetting,
     readActiveRecipe,
     resetCustom,
+    selectHoverMode,
     selectPreset,
     setBooleanCommitted,
     switchToPresetFromCustom,
@@ -292,4 +293,12 @@ test('every attention key round-trips through custom', () => {
         assertEqual(settings.values[key], value);
         assertEqual(readActiveRecipe(settings).attention[property], value);
     }
+});
+
+test('selectHoverMode commits without touching the preset values', () => {
+    const settings = new ImmediateSettings(Preset.EXPRESSIVE);
+    selectHoverMode(settings, 'wave');
+    assertEqual(settings.values['hover-mode'], 'wave');
+    assertEqual(settings.values['motion-profile'], 'expressive');
+    assertEqual(readActiveRecipe(settings).hover.scale, 1.22);
 });

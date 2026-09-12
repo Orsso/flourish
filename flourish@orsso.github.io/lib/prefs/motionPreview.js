@@ -4,6 +4,7 @@ import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 
 import {Easing, PressMode, RecipePart, ScreenEdge} from '../motion/catalog.js';
+import {waveScaleAt} from '../motion/continuum.js';
 import {
     ATTENTION_SLIDE_DURATION,
     buildAttentionSegments,
@@ -54,7 +55,7 @@ const EASINGS = {
 };
 
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
-    _init({recipe, part = null, ...params}) {
+    _init({recipe, part = null, wave = false, ...params}) {
         const inline = Boolean(part);
         const iconCount = part === RecipePart.HOVER ? hoverIconCount(recipe) : 1;
         super._init({
@@ -66,6 +67,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         });
         this._selected = false;
         this._part = part;
+        this._wave = wave;
         this._iconCount = iconCount;
         this._visibleCount = iconCount;
         this._countAnimation = IDLE_ANIMATION;
@@ -116,7 +118,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         });
     }
 
-    updateRecipe(recipe) {
+    updateRecipe(recipe, wave = this._wave) {
+        this._wave = wave;
         this._recipe = this._adoptRecipe(recipe);
         this._syncIconCount();
         if (this._motionAnimation.state !== Adw.AnimationState.PLAYING)
@@ -624,6 +627,24 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             });
             return {
                 motion: interpolateTransform(IDENTITY, hoverFull, intensity),
+                launch: IDENTITY,
+                launchPivot: BOTTOM_PIVOT,
+                peek: 1,
+            };
+        }
+        if (this._wave && this._part === RecipePart.HOVER) {
+            // Same math as the runtime: sequence progress is the amplitude.
+            const hover = this._recipe.hover;
+            const scale = 1 + (waveScaleAt(
+                Math.abs(index - middle), hover.neighborRadius, hover.scale) - 1)
+                * this._hoverProgress;
+            return {
+                motion: resolveIconTransform({
+                    edge: ScreenEdge.BOTTOM,
+                    recipe: this._recipe,
+                    hovered: false,
+                    continuousScale: scale,
+                }),
                 launch: IDENTITY,
                 launchPivot: BOTTOM_PIVOT,
                 peek: 1,

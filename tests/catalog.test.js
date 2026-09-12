@@ -2,11 +2,13 @@ import {
     AttentionEffect,
     DEFAULT_PRESET,
     Easing,
+    HoverMode,
     LaunchEffect,
     PressEffect,
     PressMode,
     Preset,
     RecipePart,
+    easingProgress,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
 
@@ -82,4 +84,24 @@ test('presets carry an attention part', () => {
     assertEqual(expressive.attention.cyclePause, 120);
     assertEqual(expressive.attention.interval, 3);
     assertEqual(expressive.attention.reminders, 15);
+});
+
+test('hover-mode values match the gschema nicks', () => {
+    assertEqual(HoverMode.CLASSIC, 'classic');
+    assertEqual(HoverMode.WAVE, 'wave');
+});
+
+test('easingProgress samples the recipe curves', () => {
+    assertEqual(easingProgress(Easing.LINEAR, 0.5), 0.5);
+    assertEqual(easingProgress(Easing.EASE_OUT_QUAD, 0.5), 0.75);
+    assertEqual(easingProgress(Easing.EASE_OUT_CUBIC, 0.5), 0.875);
+    for (const easing of [Easing.LINEAR, Easing.EASE_OUT_QUAD,
+        Easing.EASE_OUT_CUBIC, Easing.EASE_OUT_BACK]) {
+        assertClose(easingProgress(easing, 0), 0);
+        assertEqual(easingProgress(easing, 1), 1);
+        assertEqual(easingProgress(easing, 2), 1);
+        assertClose(easingProgress(easing, -1), 0);
+    }
+    // Back overshoots past 1 before settling, like Clutter's curve.
+    assertEqual(easingProgress(Easing.EASE_OUT_BACK, 0.6) > 1, true);
 });

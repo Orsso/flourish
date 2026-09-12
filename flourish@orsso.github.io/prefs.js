@@ -3,7 +3,7 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {HoverMode, Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
@@ -49,6 +49,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
             title: _('Presets'),
             description: _('Hover to preview. Click to apply.'),
         });
+        controls.presetGroup = presetGroup;
         const customBadge = new Gtk.Label({label: _('Custom')});
         customBadge.add_css_class('accent');
         customBadge.add_css_class('caption-heading');
@@ -143,6 +144,10 @@ function syncControls(settings, controls, state) {
     state.syncing = true;
     const preset = settings.get_string('motion-profile');
     const recipe = readActiveRecipe(settings);
+    const wave = settings.get_string('hover-mode') === HoverMode.WAVE;
+    controls.presetGroup.description = wave
+        ? _('The preview shows the classic hover; the wave uses the preset peak, lift and timing.')
+        : _('Hover to preview. Click to apply.');
 
     for (const [id, card] of controls.presets) {
         card.preview.setSelected(id === preset);
@@ -150,6 +155,9 @@ function syncControls(settings, controls, state) {
     }
     controls.customBadge.visible = preset === Preset.CUSTOM;
 
+    controls.hoverEnabled.subtitle = wave
+        ? _('Wave the icons around the pointer')
+        : _('Scale and lift the pointed icon');
     controls.hoverEnabled.active = recipe.hover.enabled;
     controls.pressEnabled.active = recipe.press.enabled;
     controls.launchEnabled.active = recipe.launch.enabled;

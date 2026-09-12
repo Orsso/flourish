@@ -20,6 +20,7 @@ globalThis.assertClose = (actual, expected, epsilon = 0.0001) => {
 
 const modules = [
     './catalog.test.js',
+    './continuum.test.js',
     './deferredLaunchEnds.test.js',
     './focusHighlight.test.js',
     './iconFollower.test.js',
@@ -33,6 +34,7 @@ const modules = [
     './pressInteraction.test.js',
     './schemaBounds.test.js',
     './settings.test.js',
+    './surfaceWave.test.js',
     './transforms.test.js',
 ];
 for (const module of modules)

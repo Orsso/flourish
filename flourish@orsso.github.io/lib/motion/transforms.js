@@ -145,10 +145,13 @@ export function hoverNeedsBudget({
     hovered = false,
     overlaid = false,
     neighborDistance = Infinity,
+    continuousScale = null,
 }) {
     const {hover} = recipe;
     if (!hover.enabled || overlaid)
         return false;
+    if (continuousScale !== null)
+        return continuousScale !== 1;
     if (hovered)
         return hover.scale !== 1 || hover.lift !== 0;
     return neighborScaleAt(hover, neighborDistance) !== 1;
@@ -159,6 +162,7 @@ export function resolveIconTransform({
     recipe,
     hovered = false,
     neighborDistance = Infinity,
+    continuousScale = null,
     pressed = false,
     overlaid = false,
     animationsEnabled = true,
@@ -178,12 +182,24 @@ export function resolveIconTransform({
     }
 
     const hoverEnabled = recipe.hover.enabled && !overlaid;
-    const hoverScale = hoverEnabled && hovered
-        ? recipe.hover.scale
-        : hoverEnabled
-            ? neighborScaleAt(recipe.hover, neighborDistance)
-            : 1;
-    const lift = hoverEnabled && hovered ? recipe.hover.lift : 0;
+    // The wave scale wins when present; it covers the hovered icon too.
+    const hoverScale = hoverEnabled && continuousScale !== null
+        ? continuousScale
+        : hoverEnabled && hovered
+            ? recipe.hover.scale
+            : hoverEnabled
+                ? neighborScaleAt(recipe.hover, neighborDistance)
+                : 1;
+    // The lift follows the same falloff as the wave scale; a binary hover
+    // lift reads as a mechanical step against the continuous scale.
+    let lift = 0;
+    if (hoverEnabled) {
+        if (continuousScale !== null && recipe.hover.scale > 1)
+            lift = recipe.hover.lift *
+                (continuousScale - 1) / (recipe.hover.scale - 1);
+        else if (hovered)
+            lift = recipe.hover.lift;
+    }
     const pressIntensity = recipe.press.enabled && pressed
         ? recipe.press.intensity
         : 0;

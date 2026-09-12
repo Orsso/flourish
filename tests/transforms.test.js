@@ -274,6 +274,24 @@ test('neighbor response uses only the configured neighbor scale', () => {
     assertEqual(transform.translationY, 0);
 });
 
+test('wave lift follows the same falloff as the wave scale', () => {
+    const recipe = getBuiltInRecipe('expressive');
+    const atHalf = resolveIconTransform({
+        edge: 'bottom',
+        recipe,
+        continuousScale: 1 + (recipe.hover.scale - 1) / 2,
+    });
+    assertClose(atHalf.translationY, -recipe.hover.lift / 2);
+    const atPeak = resolveIconTransform({
+        edge: 'bottom',
+        recipe,
+        hovered: true,
+        continuousScale: recipe.hover.scale,
+    });
+    assertClose(atPeak.translationY, -recipe.hover.lift);
+    assertEqual(resolveIconTransform({edge: 'bottom', recipe}).translationY, 0);
+});
+
 test('preview neighbor hover follows one shared progress', () => {
     const recipe = getBuiltInRecipe('expressive');
     const start = projectHoverTransform({
