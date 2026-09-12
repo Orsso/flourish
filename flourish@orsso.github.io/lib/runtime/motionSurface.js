@@ -342,6 +342,9 @@ class NeighborGroup {
     #waveShape() {
         if (this.#pointer === null)
             return null;
+        // Login rebuilds the dash under a scheduled flush.
+        if (this.#box.get_stage() === null)
+            return null;
         const {hover} = this.recipe;
         const horizontal =
             this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
@@ -356,7 +359,8 @@ class NeighborGroup {
         // The dash box itself does not report a usable allocation box, so the
         // row's cross band comes from the first container.
         const first = this.#entries[0];
-        if (!first)
+        // Dead containers mean the row was rebuilt under us.
+        if (!first || first.container.get_stage() === null)
             return null;
         this.#counters.boxGeom++;
         const band = first.container.get_allocation_box();

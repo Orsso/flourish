@@ -15,6 +15,10 @@ class WaveContainer {
         return this.parent;
     }
 
+    get_stage() {
+        return 'stage';
+    }
+
     get_transformed_position() {
         return this.horizontal ? [this.index * 50, 0] : [0, this.index * 50];
     }
@@ -53,6 +57,10 @@ class WaveBox extends FakeEmitter {
 
     get icons() {
         return this.children.map(container => container.child);
+    }
+
+    get_stage() {
+        return 'stage';
     }
 
     get_transformed_position() {
