@@ -1,34 +1,6 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
-import {FakeBin, FakeIcon} from './fakes.js';
-
-// A bin with a clipped grandparent, enough for measure() to succeed.
-class MeasurableBin extends FakeBin {
-    constructor() {
-        super();
-        this.measures = 0;
-        this._clip = {
-            has_clip: true,
-            get_clip: () => [0, 0, 1000, 200],
-            get_transformed_position: () => [0, 800],
-            get_parent: () => null,
-        };
-        this._parent = {
-            has_clip: false,
-            get_transformed_position: () => [0, 900],
-            get_parent: () => this._clip,
-        };
-    }
-
-    get_parent() {
-        return this._parent;
-    }
-
-    get_allocation_box() {
-        this.measures++;
-        return {x1: 10, y1: 20, x2: 58, y2: 68};
-    }
-}
+import {FakeBin, FakeIcon, MeasurableBin} from './fakes.js';
 
 function makeMeasuredController(preset = 'expressive') {
     const measured = [];

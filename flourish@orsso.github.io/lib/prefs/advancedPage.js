@@ -17,7 +17,12 @@ import {
     PressMode,
     RecipePart,
 } from '../motion/catalog.js';
-import {editCustomSetting, readActiveRecipe, resetCustom, selectHoverMode} from '../motion/settings.js';
+import {
+    editCustomSetting,
+    readActiveRecipe,
+    resetCustom,
+    selectHoverMode,
+} from '../motion/settings.js';
 import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../motion/transforms.js';
 import {MotionPreview} from './motionPreview.js';
 import {

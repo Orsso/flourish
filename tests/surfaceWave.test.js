@@ -1,90 +1,24 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../flourish@orsso.github.io/lib/motion/transforms.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
-import {FakeEmitter, FakeIcon, makeScheduler} from './fakes.js';
+import {FakeRow, MeasurableBin, makeScheduler} from './fakes.js';
 
-// Containers and box with neutral geometry: 50px pitch, 42px icons.
-class WaveContainer {
-    constructor(index, horizontal) {
-        this.child = new FakeIcon();
-        this.index = index;
-        this.horizontal = horizontal;
-        this.parent = null;
-    }
+const DURATION = getBuiltInRecipe('expressive').hover.duration;
 
-    get_parent() {
-        return this.parent;
-    }
-
-    get_stage() {
-        return 'stage';
-    }
-
-    get_transformed_position() {
-        return this.horizontal ? [this.index * 50, 0] : [0, this.index * 50];
-    }
-
-    get_allocation_box() {
-        // Parent-relative, like the real dash containers: the box is the
-        // region of the parent row this container was assigned.
-        return this.horizontal
-            ? {x1: this.index * 50, y1: 4, x2: (this.index + 1) * 50, y2: 46}
-            : {x1: 4, y1: this.index * 50, x2: 46, y2: (this.index + 1) * 50};
-    }
-}
-
-class WaveBox extends FakeEmitter {
-    constructor(count, horizontal, position = [0, 0]) {
-        super();
-        this.position = position;
-        this.children = [];
-        for (let index = 0; index < count; index++)
-            this.append(new WaveContainer(index, horizontal));
-    }
-
-    append(container) {
-        container.parent = this;
-        this.children.push(container);
-    }
-
-    get_children() {
-        return this.children;
-    }
-
-    add_child(container) {
-        this.append(container);
-        this.emit('child-added', container);
-    }
-
-    get icons() {
-        return this.children.map(container => container.child);
-    }
-
-    get_stage() {
-        return 'stage';
-    }
-
-    get_transformed_position() {
-        return this.position;
-    }
-
-    get_allocation_box() {
-        // The live dash box reports an empty allocation box, so the wave
-        // never reads this one; it stays for completeness.
-        return this.children[0].horizontal
-            ? {x1: 0, y1: 0, x2: 50 * this.children.length, y2: 50}
-            : {x1: 0, y1: 0, x2: 50, y2: 50 * this.children.length};
-    }
-}
-
-function makeSurface(
+function makeSurface({
     preset = 'expressive',
     edge = 'bottom',
     position = [0, 0],
     animationsEnabled = () => true,
-) {
+    room = 120,
+} = {}) {
     const horizontal = edge === 'bottom' || edge === 'top';
     const scheduler = makeScheduler();
-    const box = new WaveBox(5, horizontal, position);
+    // Room between the icons and the clip, outward along the edge.
+    const parent = horizontal ? {parentY: 780 + room} : {parentX: room - 10};
+    const box = new FakeRow(5, {
+        horizontal, position, makeBin: () => new MeasurableBin(parent),
+    });
     let now = 0;
     const surface = new MotionSurface({
         recipe: getBuiltInRecipe(preset),
@@ -102,9 +36,8 @@ function makeSurface(
     };
     // Advance past the hover duration until the envelope settles.
     const settle = () => {
-        const duration = Math.max(1, surface.recipe.hover.duration);
         for (let i = 0; i < 8 && scheduler.pending.size > 0; i++)
-            frame(duration / 2);
+            frame(DURATION / 2);
     };
     return {surface, scheduler, box, bins, icons: box.icons, frame, settle};
 }
@@ -149,8 +82,7 @@ test('the hovered icon follows the wave and its lift tracks the falloff', () => 
     const {surface, bins, icons, frame, settle} = makeSurface();
     icons[2].setHover(true);
     frame(0);
-    // 10px right of center: inside the peak, below it. Entering over a
-    // hovered icon seeds the envelope full, so no dip below the classic.
+    // 10px right of center: inside the peak, below it.
     surface.onPointerMotion(135, 25);
     frame(0);
     settle();
@@ -162,16 +94,17 @@ test('the hovered icon follows the wave and its lift tracks the falloff', () => 
     assertEqual(bins[1].translation_y < 0, true);
 });
 
-test('entry over an icon starts the wave at full amplitude', () => {
+test('entry over an icon ramps from rest', () => {
     const {surface, bins, icons, frame, settle} = makeSurface();
+    // The enter and motion events land in the same frame; the icon is at
+    // rest when the wave first flushes.
     icons[2].setHover(true);
-    frame(0);
-    assertClose(bins[2].scale_x, 1.22);
-    // The pointer lands on the hovered icon: the wave must not dip to 1
-    // first, the icon already shows the classic peak.
     surface.onPointerMotion(125, 25);
     frame(0);
-    assertClose(bins[2].scale_x, 1.22);
+    assertClose(bins[2].scale_x, 1);
+    frame(40);
+    assertEqual(bins[2].scale_x > 1, true);
+    assertEqual(bins[2].scale_x < 1.22, true);
     settle();
     assertClose(bins[2].scale_x, 1.22);
 });
@@ -190,7 +123,6 @@ test('the entry ramp completes with a stationary pointer', () => {
 
 test('exit decays the last wave shape and releases ownership', () => {
     const {surface, scheduler, bins, frame, settle} = makeSurface();
-    const duration = Math.max(1, surface.recipe.hover.duration);
     surface.onPointerMotion(125, 25);
     frame(0);
     settle();
@@ -203,7 +135,7 @@ test('exit decays the last wave shape and releases ownership', () => {
     assertEqual(bins[2].scale_x > 1, true);
     assertEqual(scheduler.pending.size, 1);
     // The back-eased dip below zero is clamped: no icon shrinks.
-    frame(duration * 0.45);
+    frame(DURATION * 0.45);
     for (const bin of bins)
         assertEqual(bin.scale_x >= 1, true);
     settle();
@@ -218,14 +150,13 @@ test('exit decays the last wave shape and releases ownership', () => {
 
 test('re-entering during the exit decay resumes from the decayed amplitude', () => {
     const {surface, bins, frame, settle} = makeSurface();
-    const duration = Math.max(1, surface.recipe.hover.duration);
     surface.onPointerMotion(125, 25);
     frame(0);
     settle();
     surface.onPointerMotion(125, 1000);
     frame(0);
     // A back-eased decay crosses zero fast; catch it early instead.
-    frame(duration * 0.15);
+    frame(DURATION * 0.15);
     const decayed = bins[2].scale_x;
     assertEqual(decayed > 1 && decayed < 1.22, true);
     surface.onPointerMotion(125, 25);
@@ -305,10 +236,8 @@ test('a recipe change is picked up by the next transition', () => {
     frame(0);
     settle();
     // Short-recipe: the exit transition finishes almost at once.
-    const recipe = {
-        ...surface.recipe,
-        hover: {...surface.recipe.hover, duration: 1},
-    };
+    const recipe = getBuiltInRecipe('expressive');
+    recipe.hover.duration = 1;
     surface.setRecipe(recipe);
     surface.onPointerMotion(125, 1000);
     frame(0);
@@ -318,8 +247,7 @@ test('a recipe change is picked up by the next transition', () => {
 });
 
 test('disabled animations snap the envelope instead of easing it', () => {
-    const {surface, bins, frame} = makeSurface(
-        'expressive', 'bottom', [0, 0], () => false);
+    const {surface, bins, frame} = makeSurface({animationsEnabled: () => false});
     surface.onPointerMotion(125, 25);
     frame(0);
     assertClose(bins[2].scale_x, 1.22);
@@ -339,7 +267,7 @@ test('disposing mid-transition cancels the scheduled frames', () => {
 });
 
 test('a disabled hover profile keeps the wave inert', () => {
-    const {surface, scheduler, bins, frame} = makeSurface('subtle');
+    const {surface, scheduler, bins, frame} = makeSurface({preset: 'subtle'});
     surface.onPointerMotion(125, 25);
     frame(0);
     for (const bin of bins)
@@ -348,7 +276,7 @@ test('a disabled hover profile keeps the wave inert', () => {
 });
 
 test('the wave runs along the axis of a vertical dock', () => {
-    const {surface, bins, frame, settle} = makeSurface('expressive', 'left');
+    const {surface, bins, frame, settle} = makeSurface({edge: 'left'});
     surface.onPointerMotion(25, 125);
     frame(0);
     settle();
@@ -358,18 +286,29 @@ test('the wave runs along the axis of a vertical dock', () => {
     assertEqual(bins[0].scale_x, 1);
 });
 
-test('a pointer off the cross band of a vertical dock costs no icon geometry', () => {
-    const {surface, scheduler, frame} = makeSurface('expressive', 'left');
-    // 70px right of the row: the pre-gate must reject it.
+test('a pointer off the cross band of a vertical dock does not wave', () => {
+    const {surface, scheduler, bins, frame} = makeSurface({edge: 'left'});
+    // 70px right of the row.
     surface.onPointerMotion(120, 25);
     frame(0);
-    assertEqual(surface.counters.contGeom, 0);
+    for (const bin of bins)
+        assertEqual(bin.scale_x, 1);
     assertEqual(scheduler.pending.size, 0);
 });
 
+test('a pointer past the reach reads only the row ends', () => {
+    // Another monitor's dock shares the band: 2000px past the last icon.
+    const {surface, scheduler, box, bins, frame} = makeSurface();
+    surface.onPointerMotion(2225, 25);
+    frame(0);
+    for (const bin of bins)
+        assertEqual(bin.scale_x, 1);
+    assertEqual(scheduler.pending.size, 0);
+    assertDeepEqual(box.children.map(container => container.reads), [1, 0, 0, 0, 1]);
+});
+
 test('the wave tracks a translated box', () => {
-    const {surface, bins, frame, settle} = makeSurface(
-        'expressive', 'bottom', [100, 50]);
+    const {surface, bins, frame, settle} = makeSurface({position: [100, 50]});
     // Stage coordinates: box origin (100, 50) plus the row-local pointer.
     surface.onPointerMotion(225, 75);
     frame(0);
@@ -390,6 +329,40 @@ test('removing an icon mid-wave keeps the row consistent', () => {
     assertEqual(scheduler.pending.size, 0);
     assertEqual(bins[1].scale_x > 1, true);
     assertEqual(bins[3].scale_x > 1, true);
+});
+
+test('a destroyed box takes its row out of the pointer path', () => {
+    const {surface, scheduler, box} = makeSurface();
+    box.destroy();
+    surface.onPointerMotion(125, 25);
+    assertEqual(scheduler.pending.size, 0);
+});
+
+test('an unmapped row ignores the pointer', () => {
+    const {surface, scheduler, box, bins, frame} = makeSurface();
+    box.mapped = false;
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    for (const bin of bins)
+        assertEqual(bin.scale_x, 1);
+    assertEqual(scheduler.pending.size, 0);
+});
+
+test('the wave fits its peak to the row budget once per sweep', () => {
+    // 10 px of room: the expressive peak and lift do not fit.
+    const {surface, bins, frame, settle} = makeSurface({room: 10});
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    const fitted = fitHoverToBudget(1.22, 5, 48, 10, OVERSHOOT_RESERVE);
+    assertClose(bins[2].scale_x, fitted.hoverScale);
+    assertClose(bins[2].translation_y, -fitted.lift);
+    // One measure for the row, none per icon per frame.
+    assertEqual(bins[0].measures, 1);
+    assertEqual(bins[2].measures, 0);
+    surface.onPointerMotion(130, 25);
+    frame(16);
+    assertEqual(bins[0].measures, 1);
 });
 
 test('disposing the surface restores every bin', () => {

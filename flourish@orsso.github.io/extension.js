@@ -1,3 +1,4 @@
+import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
@@ -15,8 +16,7 @@ export default class FlourishExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._recipe = readActiveRecipe(this._settings);
-        this._hoverMode = this._settings.get_string('hover-mode');
-        const continuous = this._hoverMode === HoverMode.WAVE;
+        const continuous = this._settings.get_string('hover-mode') === HoverMode.WAVE;
 
         const laters = global.compositor.get_laters();
         this._frameScheduler = {
@@ -57,24 +57,7 @@ export default class FlourishExtension extends Extension {
 
         this._dockIntegration.enable(this._recipe);
         this._dashIntegration.enable(this._recipe);
-
-        // Spike: per-surface work counters + direct injection for the headless
-        // probe. Closures, not getters: an object-literal getter's `this` is
-        // the literal itself, not the extension.
-        const dashIntegration = this._dashIntegration;
-        const dockIntegration = this._dockIntegration;
-        this._debug = {
-            get dash() {
-                return dashIntegration.surfaceCounters;
-            },
-            get dock() {
-                return dockIntegration.surfaceCounters;
-            },
-            inject(x, y) {
-                dashIntegration.injectPointerMotion(x, y);
-                dockIntegration.injectPointerMotion(x, y);
-            },
-        };
+        this._syncPointerHook(continuous);
 
         this._launchEngine = new LaunchEngine({
             getController: icon =>
@@ -116,6 +99,7 @@ export default class FlourishExtension extends Extension {
 
         this._launchEngine.disable();
         this._launchEngine = null;
+        global.stage.disconnectObject(this);
         this._attentionEngine.disable();
         this._attentionEngine = null;
         this._hoverStyle.disable();
@@ -139,13 +123,27 @@ export default class FlourishExtension extends Extension {
 
     _syncSettings() {
         this._recipe = readActiveRecipe(this._settings);
-        this._hoverMode = this._settings.get_string('hover-mode');
-        this._dockIntegration.setContinuous(this._hoverMode === HoverMode.WAVE);
-        this._dashIntegration.setContinuous(this._hoverMode === HoverMode.WAVE);
+        const continuous = this._settings.get_string('hover-mode') === HoverMode.WAVE;
+        this._dockIntegration.setContinuous(continuous);
+        this._dashIntegration.setContinuous(continuous);
+        this._syncPointerHook(continuous);
         this._dockIntegration.setRecipe(this._recipe);
         this._dashIntegration.setRecipe(this._recipe);
         if (this._syncStyles())
             this._refreshStyles();
+    }
+
+    // Nothing reactive covers the gaps of the dash; the stage sees every motion.
+    _syncPointerHook(continuous) {
+        global.stage.disconnectObject(this);
+        if (!continuous)
+            return;
+        global.stage.connectObject('motion-event', (_stage, event) => {
+            const [x, y] = event.get_coords();
+            this._dockIntegration.onPointerMotion(x, y);
+            this._dashIntegration.onPointerMotion(x, y);
+            return Clutter.EVENT_PROPAGATE;
+        }, this);
     }
 
     _syncStyles() {

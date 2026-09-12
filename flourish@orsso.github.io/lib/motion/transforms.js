@@ -150,8 +150,9 @@ export function hoverNeedsBudget({
     const {hover} = recipe;
     if (!hover.enabled || overlaid)
         return false;
+    // The wave fits its peak once per row.
     if (continuousScale !== null)
-        return continuousScale !== 1;
+        return false;
     if (hovered)
         return hover.scale !== 1 || hover.lift !== 0;
     return neighborScaleAt(hover, neighborDistance) !== 1;
@@ -163,7 +164,7 @@ export function resolveIconTransform({
     hovered = false,
     neighborDistance = Infinity,
     continuousScale = null,
-    pressed = false,
+    pressLevel = 0,
     overlaid = false,
     animationsEnabled = true,
     budgetPx = Infinity,
@@ -190,8 +191,7 @@ export function resolveIconTransform({
             : hoverEnabled
                 ? neighborScaleAt(recipe.hover, neighborDistance)
                 : 1;
-    // The lift follows the same falloff as the wave scale; a binary hover
-    // lift reads as a mechanical step against the continuous scale.
+    // The lift follows the wave falloff; a binary lift would step.
     let lift = 0;
     if (hoverEnabled) {
         if (continuousScale !== null && recipe.hover.scale > 1)
@@ -200,8 +200,8 @@ export function resolveIconTransform({
         else if (hovered)
             lift = recipe.hover.lift;
     }
-    const pressIntensity = recipe.press.enabled && pressed
-        ? recipe.press.intensity
+    const pressIntensity = recipe.press.enabled
+        ? recipe.press.intensity * pressLevel
         : 0;
 
     const overshoot =

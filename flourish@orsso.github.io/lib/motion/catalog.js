@@ -5,7 +5,6 @@ export const Preset = {
     CUSTOM: 'custom',
 };
 
-// The gschema hover-mode enum nicks; independent of the preset choice.
 export const HoverMode = {
     CLASSIC: 'classic',
     WAVE: 'wave',
@@ -57,8 +56,7 @@ export function resolveAnimationMode(easing, modes) {
     return modes[ANIMATION_MODE_NAMES[easing]];
 }
 
-// Pure version of the same curves, for consumers that sample progress:
-// the wave envelope and anything without Clutter.
+// The same curves sampled by hand; the wave envelope has no Clutter transition.
 export function easingProgress(easing, t) {
     const u = t < 0 ? 0 : t > 1 ? 1 : t;
     switch (easing) {
@@ -75,6 +73,17 @@ export function easingProgress(easing, t) {
         default:
             return u;
     }
+}
+
+// A value eased over time by hand; a back-eased fall never dips below its target.
+export function sampleRamp({start, from, to, duration, easing}, now) {
+    if (duration <= 0 || from === to)
+        return to;
+    const t = (now - start) / duration;
+    if (t >= 1)
+        return to;
+    const value = from + (to - from) * easingProgress(easing, t);
+    return to < from ? Math.max(to, value) : value;
 }
 
 export const ScreenEdge = {

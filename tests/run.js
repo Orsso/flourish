@@ -35,6 +35,7 @@ const modules = [
     './schemaBounds.test.js',
     './settings.test.js',
     './surfaceWave.test.js',
+    './waveContinuity.test.js',
     './transforms.test.js',
 ];
 for (const module of modules)

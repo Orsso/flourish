@@ -1,24 +1,25 @@
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
-import {NeighborRadius, ScreenEdge, easingProgress} from '../motion/catalog.js';
-import {medianPitch, waveScales} from '../motion/continuum.js';
+import {Easing, NeighborRadius, ScreenEdge, sampleRamp} from '../motion/catalog.js';
+import {waveScales} from '../motion/continuum.js';
+import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../motion/transforms.js';
 import {IconMotionController} from './iconMotionController.js';
-import {makeCounters} from './debugCounters.js';
 import {LiveRegistry} from './liveRegistry.js';
 
+const IDLE_RAMP = {start: 0, from: 0, to: 0, duration: 0, easing: Easing.LINEAR};
+
 export class MotionSurface {
+    #animationsEnabled;
+    #clock;
     #contexts = new Map();
-    #continuous = false;
+    #continuous;
     #groups = new Set();
     #onMeasured;
     #onUrgentChanged;
     #recipe;
     #registry = new LiveRegistry();
     #scheduler;
-    #counters = makeCounters();
-    #clock;
-    #animationsEnabled;
 
     constructor({
         recipe,
@@ -38,36 +39,6 @@ export class MotionSurface {
         this.#scheduler = scheduler;
     }
 
-    get recipe() {
-        return this.#recipe;
-    }
-
-    get continuous() {
-        return this.#continuous;
-    }
-
-    get clock() {
-        return this.#clock;
-    }
-
-    get animationsEnabled() {
-        return this.#animationsEnabled;
-    }
-
-    // The preferences key can flip the mode mid session; the integrations
-    // own the stage listener, this releases or readies the rows.
-    setContinuous(on) {
-        if (this.#continuous === on)
-            return;
-        this.#continuous = on;
-        for (const group of this.#groups)
-            group.setContinuous(on);
-    }
-
-    get counters() {
-        return this.#counters;
-    }
-
     get controllers() {
         return this.#registry.controllers;
     }
@@ -83,8 +54,19 @@ export class MotionSurface {
 
     setRecipe(recipe) {
         this.#recipe = recipe;
+        for (const group of this.#groups)
+            group.setRecipe(recipe);
         for (const controller of this.controllers)
             controller.setRecipe(recipe);
+    }
+
+    // The hover-mode key flips mid session.
+    setContinuous(on) {
+        if (on === this.#continuous)
+            return;
+        this.#continuous = on;
+        for (const group of this.#groups)
+            group.setContinuous(on);
     }
 
     refreshStyles() {
@@ -92,27 +74,30 @@ export class MotionSurface {
             controller.refreshStyle();
     }
 
-    // Spike: a pointer position in stage space; the wave runs at the next
-    // flush, at most once per frame.
     onPointerMotion(x, y) {
-        const start = GLib.get_monotonic_time();
-        this.#counters.events++;
         for (const group of this.#groups)
             group.onPointerMotion(x, y);
-        const us = GLib.get_monotonic_time() - start;
-        this.#counters.eventUs += us;
-        if (us > this.#counters.eventMaxUs)
-            this.#counters.eventMaxUs = us;
     }
 
     addBox(box, edge, context = null) {
-        const group = new NeighborGroup(this.#scheduler, box, edge, this);
+        const group = new NeighborGroup({
+            scheduler: this.#scheduler,
+            box,
+            edge,
+            recipe: this.#recipe,
+            continuous: this.#continuous,
+            clock: this.#clock,
+            animationsEnabled: this.#animationsEnabled,
+        });
         this.#groups.add(group);
-        const added = this.#registry.addBox(box, () => {
-            box.disconnectObject(this);
+        const release = () => {
             this.#groups.delete(group);
             group.dispose();
-        }, () => group.dispose());
+        };
+        const added = this.#registry.addBox(box, () => {
+            box.disconnectObject(this);
+            release();
+        }, release);
         if (!added)
             return false;
         for (const container of box.get_children())
@@ -140,6 +125,8 @@ export class MotionSurface {
             bin,
             edge,
             recipe: this.#recipe,
+            clock: this.#clock,
+            onAnimate: () => group.touch(controller),
             onHoverChanged: (changed, hovered) => group.setHovered(changed, hovered),
             onDestroyed: destroyed => {
                 this.#contexts.delete(destroyed);
@@ -147,7 +134,6 @@ export class MotionSurface {
             },
             onMeasured: measurement => this.#onMeasured(measurement),
             onUrgentChanged: (changed, urgent) => this.#onUrgentChanged(changed, urgent),
-            counters: this.#counters,
         });
         group.add(controller, container, boxChildren(container));
         if (context)
@@ -160,39 +146,34 @@ export class MotionSurface {
 }
 
 class NeighborGroup {
+    #animationsEnabled;
     #box;
+    #clock;
+    #continuous;
     #dirty = new Set();
     #edge;
     #entries = [];
+    // Wave amplitude, 0 at rest to 1 in full, eased over the hover duration.
+    #envRamp = IDLE_RAMP;
     #flushId = 0;
     #hovered = null;
-    #counters;
+    #peak = null;
     #pointer = null;
+    #recipe;
     #scheduler;
-    #surface;
-    #clock;
-    #animationsEnabled;
-    // Amplitude envelope of the wave, 0 idle to 1 full, eased over the
-    // hover duration on entry and exit.
-    #env = 0;
-    #transition = {start: 0, from: 0, target: 0, duration: 0, easing: 'linear'};
 
-    constructor(scheduler, box, edge, surface) {
+    constructor({scheduler, box, edge, recipe, continuous, clock, animationsEnabled}) {
         this.#scheduler = scheduler;
         this.#box = box;
         this.#edge = edge;
-        this.#surface = surface;
-        this.#counters = surface.counters;
-        this.#clock = surface.clock;
-        this.#animationsEnabled = surface.animationsEnabled;
-    }
-
-    get recipe() {
-        return this.#surface.recipe;
+        this.#recipe = recipe;
+        this.#continuous = continuous;
+        this.#clock = clock;
+        this.#animationsEnabled = animationsEnabled;
     }
 
     add(controller, container, orderedContainers) {
-        this.#entries.push({controller, container, lastWave: null, waveScale: null});
+        this.#entries.push({controller, container, waveScale: null});
         this.#entries.sort((first, second) =>
             orderedContainers.indexOf(first.container) -
             orderedContainers.indexOf(second.container));
@@ -211,28 +192,28 @@ class NeighborGroup {
 
     setHovered(controller, hovered) {
         this.#hovered = hovered ? controller : this.#hovered === controller ? null : this.#hovered;
+        this.touch(controller);
+    }
+
+    touch(controller) {
         this.#dirty.add(controller);
         this.#scheduleFlush();
     }
 
-    // The preferences key can flip the mode mid session.
+    setRecipe(recipe) {
+        this.#recipe = recipe;
+        this.#peak = null;
+    }
+
     setContinuous(on) {
+        this.#continuous = on;
         if (on)
             return;
-        this.#cancelFlush();
-        this.#pointer = null;
-        this.#transition = {start: 0, from: 0, target: 0, duration: 0, easing: 'linear'};
-        this.#env = 0;
-        for (const entry of this.#entries) {
-            entry.waveScale = null;
-            entry.lastWave = null;
-            if (entry.controller.setContinuousScale(null))
-                this.#dirty.add(entry.controller);
-        }
+        this.#releaseWave();
         this.#scheduleFlush();
     }
 
-    // Record only; the cost is paid at most once per frame in #flush.
+    // Record only; the row runs at most once per frame, in #flush.
     onPointerMotion(x, y) {
         if (!this.#waveOn())
             return;
@@ -263,67 +244,55 @@ class NeighborGroup {
     // Swap before applying: an apply can schedule the next flush.
     #flush() {
         this.#flushId = 0;
-        this.#counters.flushes++;
-        const start = GLib.get_monotonic_time();
         if (this.#waveOn())
             this.#syncWave();
         else
             this.#syncClassic();
         const dirty = this.#dirty;
         this.#dirty = new Set();
+        const now = this.#clock();
         for (const {controller} of this.#entries) {
-            if (!dirty.has(controller))
-                continue;
-            this.#counters.touches++;
-            controller.applyHoverState();
+            if (dirty.has(controller) && controller.applyHoverState(now))
+                this.touch(controller);
         }
-        const us = GLib.get_monotonic_time() - start;
-        this.#counters.flushUs += us;
-        if (us > this.#counters.flushMaxUs)
-            this.#counters.flushMaxUs = us;
-        this.#counters.flushSamples.push(us);
-        if (this.#counters.flushSamples.length > 128)
-            this.#counters.flushSamples.shift();
     }
 
     #waveOn() {
-        const {hover} = this.recipe;
-        return this.#surface.continuous && hover.enabled && hover.scale > 1;
+        const {hover} = this.#recipe;
+        return this.#continuous && hover.enabled && hover.scale > 1;
     }
 
-    #startTransition(from, target) {
-        this.#transition = {
+    // One measure per sweep: the row shares one clip and one icon size.
+    #wavePeak() {
+        if (this.#peak !== null)
+            return this.#peak;
+        const {hover} = this.#recipe;
+        const room = this.#entries[0].controller.measure();
+        const overshoot = hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
+        this.#peak = room
+            ? fitHoverToBudget(hover.scale, hover.lift,
+                room.iconNormalSize, room.budgetPx, overshoot).hoverScale
+            : hover.scale;
+        return this.#peak;
+    }
+
+    #startEnv(from, to) {
+        const {hover} = this.#recipe;
+        this.#envRamp = {
             start: this.#clock(),
             from,
-            target,
-            duration: this.#animationsEnabled()
-                ? Math.max(1, this.recipe.hover.duration)
-                : 0,
-            easing: this.recipe.hover.easing,
+            to,
+            duration: this.#animationsEnabled() ? hover.duration : 0,
+            easing: hover.easing,
         };
-        this.#env = this.#sampleEnv();
-        if (this.#env !== this.#transition.target)
+        if (this.#sampleEnv() !== to)
             this.#scheduleFlush();
     }
 
     #sampleEnv() {
-        const transition = this.#transition;
-        if (transition.duration <= 0 || transition.from === transition.target)
-            return transition.target;
-        const t = (this.#clock() - transition.start) / transition.duration;
-        if (t >= 1)
-            return transition.target;
-        const value = transition.from +
-            (transition.target - transition.from) *
-            easingProgress(transition.easing, t);
-        // A back-eased decay would sink below the natural size; the entry
-        // overshoot stays, the exit one does not.
-        if (transition.target < transition.from)
-            return Math.max(transition.target, value);
-        return value;
+        return sampleRamp(this.#envRamp, this.#clock());
     }
 
-    // Classic hover and fixed neighbors; the wave release path lands here too.
     #syncClassic() {
         const hoveredIndex = this.#entries.findIndex(
             entry => entry.controller === this.#hovered);
@@ -338,17 +307,16 @@ class NeighborGroup {
         }
     }
 
-    // The row's geometry when the current pointer waves; null otherwise.
+    // Row geometry under the pointer, or null.
     #waveShape() {
-        if (this.#pointer === null)
+        // The overview dash keeps its allocation while hidden.
+        if (this.#pointer === null || !this.#box.mapped)
             return null;
-        // Login rebuilds the dash under a scheduled flush.
-        if (this.#box.get_stage() === null)
+        const count = this.#entries.length;
+        if (count === 0)
             return null;
-        const {hover} = this.recipe;
         const horizontal =
             this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
-        this.#counters.boxGeom++;
         const [boxX, boxY] = this.#box.get_transformed_position();
         const pointer = horizontal
             ? this.#pointer[0] - boxX
@@ -356,100 +324,82 @@ class NeighborGroup {
         const cross = horizontal
             ? this.#pointer[1] - boxY
             : this.#pointer[0] - boxX;
-        // The dash box itself does not report a usable allocation box, so the
-        // row's cross band comes from the first container.
-        const first = this.#entries[0];
-        // Dead containers mean the row was rebuilt under us.
-        if (!first || first.container.get_stage() === null)
-            return null;
-        this.#counters.boxGeom++;
-        const band = first.container.get_allocation_box();
+        // Allocation boxes are parent-relative, like the pointer above.
+        const center = index => {
+            const box = this.#entries[index].container.get_allocation_box();
+            return horizontal ? (box.x1 + box.x2) / 2 : (box.y1 + box.y2) / 2;
+        };
+        // The row has no allocation box; the first icon gives its band.
+        const band = this.#entries[0].container.get_allocation_box();
         const crossStart = horizontal ? band.y1 : band.x1;
         const crossEnd = horizontal ? band.y2 : band.x2;
-        // Cheap pre-gate: a pointer off the row's cross band never waves, so
-        // paying the per-icon geometry reads for it first was pure waste.
         if (cross < crossStart || cross > crossEnd)
             return null;
-        // Allocation boxes are parent-relative; their centers are row-local.
-        const centers = new Array(this.#entries.length);
-        for (let index = 0; index < this.#entries.length; index++) {
-            this.#counters.contGeom++;
-            const box = this.#entries[index].container.get_allocation_box();
-            centers[index] = horizontal
-                ? (box.x1 + box.x2) / 2
-                : (box.y1 + box.y2) / 2;
-        }
-        const pitch = medianPitch(centers);
+        // Another monitor's dock can share the band, so check the reach first.
+        const first = horizontal ? (band.x1 + band.x2) / 2 : (band.y1 + band.y2) / 2;
+        const last = count > 1 ? center(count - 1) : first;
+        const pitch = count > 1
+            ? (last - first) / (count - 1)
+            : horizontal ? band.x2 - band.x1 : band.y2 - band.y1;
         // The wave dies one radius past the row.
-        if (!(pitch > 0) ||
-            pointer < centers[0] - hover.neighborRadius * pitch ||
-            pointer >
-                centers[this.#entries.length - 1] + hover.neighborRadius * pitch)
+        const reach = this.#recipe.hover.neighborRadius * pitch;
+        if (!(pitch > 0) || pointer < first - reach || pointer > last + reach)
             return null;
+        const centers = new Array(count);
+        for (let index = 0; index < count; index++)
+            centers[index] = center(index);
         return {pointer, centers, pitch};
     }
 
     #syncWave() {
         const shape = this.#waveShape();
         if (shape) {
-            const {hover} = this.recipe;
+            const {hover} = this.#recipe;
             const scales = waveScales(
                 shape.pointer, shape.centers, hover.neighborRadius,
-                shape.pitch, hover.scale);
-            if (this.#transition.target !== 1) {
-                // Entering over an icon: it already shows the classic peak,
-                // so the wave starts full instead of popping it to 1 first.
-                const hoveredIndex = this.#entries.findIndex(
-                    entry => entry.controller === this.#hovered);
-                const seed = hoveredIndex !== -1 && scales[hoveredIndex] > 1;
-                this.#startTransition(seed ? 1 : this.#env, 1);
-            } else {
-                this.#env = this.#sampleEnv();
-            }
-            for (let index = 0; index < scales.length; index++) {
+                shape.pitch, this.#wavePeak());
+            if (this.#envRamp.to !== 1)
+                this.#startEnv(this.#sampleEnv(), 1);
+            const env = this.#sampleEnv();
+            for (let index = 0; index < this.#entries.length; index++) {
                 const entry = this.#entries[index];
                 entry.waveScale = scales[index];
-                // An explicit 1 keeps the wave in ownership; null would
-                // restore the classic scale and pop.
-                const target = 1 + (scales[index] - 1) * this.#env;
-                if (entry.lastWave === target && this.#env === 1)
-                    continue;
-                entry.lastWave = target;
-                if (entry.controller.setContinuousScale(target))
-                    this.#dirty.add(entry.controller);
+                this.#setWave(entry, 1 + (scales[index] - 1) * env, scales[index]);
             }
         } else {
-            if (this.#transition.target !== 0)
-                this.#startTransition(this.#env, 0);
-            else
-                this.#env = this.#sampleEnv();
-            if (this.#env > 0) {
-                // Decay the last wave shape; never re-multiply faded values.
+            if (this.#envRamp.to !== 0)
+                this.#startEnv(this.#sampleEnv(), 0);
+            const env = this.#sampleEnv();
+            if (env > 0) {
+                // Fade the last shape, never the faded values.
                 for (const entry of this.#entries) {
-                    if (entry.waveScale === null)
-                        continue;
-                    const target = 1 + (entry.waveScale - 1) * this.#env;
-                    if (entry.lastWave === target)
-                        continue;
-                    entry.lastWave = target;
-                    if (entry.controller.setContinuousScale(target))
-                        this.#dirty.add(entry.controller);
+                    if (entry.waveScale !== null)
+                        this.#setWave(entry, 1 + (entry.waveScale - 1) * env);
                 }
             } else {
-                for (const entry of this.#entries) {
-                    if (entry.waveScale === null)
-                        continue;
-                    entry.waveScale = null;
-                    entry.lastWave = null;
-                    if (entry.controller.setContinuousScale(null))
-                        this.#dirty.add(entry.controller);
-                }
+                this.#releaseWave();
             }
             this.#syncClassic();
         }
-        // A running transition needs further frames; a settled wave is idle.
-        if (this.#env !== this.#transition.target)
+        // A running ramp needs further frames; a settled wave is idle.
+        if (this.#sampleEnv() !== this.#envRamp.to)
             this.#scheduleFlush();
+    }
+
+    // An explicit 1 keeps the wave in charge; null hands the icon back to the hover path.
+    #setWave(entry, scale, target = scale) {
+        if (entry.controller.setContinuousScale(scale, target))
+            this.#dirty.add(entry.controller);
+    }
+
+    #releaseWave() {
+        this.#pointer = null;
+        this.#envRamp = IDLE_RAMP;
+        this.#peak = null;
+        for (const entry of this.#entries) {
+            entry.waveScale = null;
+            this.#setWave(entry, null);
+        }
     }
 }
 

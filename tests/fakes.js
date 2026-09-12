@@ -108,6 +108,8 @@ export class FakeBin {
         this.lastEase = null;
         this.parentProbes = 0;
         this.removedTransitions = 0;
+        // In-flight eases by property name; tests advance `elapsed`.
+        this.transitions = {};
     }
 
     get eases() {
@@ -132,8 +134,13 @@ export class FakeBin {
         return null;
     }
 
-    remove_transition() {
+    remove_transition(name) {
         this.removedTransitions++;
+        delete this.transitions[name];
+    }
+
+    get_transition(name) {
+        return this.transitions[name] ?? null;
     }
 
     add_style_class_name() {}
@@ -150,8 +157,16 @@ export class FakeBin {
         this.lastEase = props;
         this.easeTargets.push(props.scale_x ?? this.scale_x);
         for (const key of ['scale_x', 'scale_y', 'translation_x', 'translation_y']) {
-            if (props[key] !== undefined)
-                this[key] = props[key];
+            if (props[key] === undefined)
+                continue;
+            this[key] = props[key];
+            this.transitions[key.replace('_', '-')] = {
+                duration: props.duration,
+                elapsed: 0,
+                get_elapsed_time() {
+                    return this.elapsed;
+                },
+            };
         }
         this.onEase?.();
     }
@@ -229,6 +244,96 @@ export class FakeBox extends FakeEmitter {
 
     get icons() {
         return this.children.map(container => container.child);
+    }
+}
+
+// A bin with a clipped grandparent, enough for measure() to succeed: the
+// clip is 1000x200 at (0, 800), the parent at (parentX, parentY), the icon
+// 48 px at (10, 20) in its parent.
+export class MeasurableBin extends FakeBin {
+    constructor({parentX = 0, parentY = 900} = {}) {
+        super();
+        this.measures = 0;
+        this._clip = {
+            has_clip: true,
+            get_clip: () => [0, 0, 1000, 200],
+            get_transformed_position: () => [0, 800],
+            get_parent: () => null,
+        };
+        this._parent = {
+            has_clip: false,
+            get_transformed_position: () => [parentX, parentY],
+            get_parent: () => this._clip,
+        };
+    }
+
+    get_parent() {
+        return this._parent;
+    }
+
+    get_allocation_box() {
+        this.measures++;
+        return {x1: 10, y1: 20, x2: 58, y2: 68};
+    }
+}
+
+// A dash row: 50px pitch, 42px icons, allocation boxes parent-relative
+// like the real containers. `makeBin` builds each icon's bin.
+export class FakeRowContainer {
+    constructor(index, horizontal, bin) {
+        this.child = new FakeIcon(bin);
+        this.index = index;
+        this.horizontal = horizontal;
+        this.parent = null;
+        this.reads = 0;
+    }
+
+    get_parent() {
+        return this.parent;
+    }
+
+    get_allocation_box() {
+        this.reads++;
+        return this.horizontal
+            ? {x1: this.index * 50, y1: 4, x2: (this.index + 1) * 50, y2: 46}
+            : {x1: 4, y1: this.index * 50, x2: 46, y2: (this.index + 1) * 50};
+    }
+}
+
+export class FakeRow extends FakeEmitter {
+    constructor(count, {
+        horizontal = true,
+        position = [0, 0],
+        makeBin = () => new MeasurableBin(),
+    } = {}) {
+        super();
+        this.position = position;
+        this.mapped = true;
+        this.children = [];
+        for (let index = 0; index < count; index++)
+            this.append(new FakeRowContainer(index, horizontal, makeBin()));
+    }
+
+    append(container) {
+        container.parent = this;
+        this.children.push(container);
+    }
+
+    get_children() {
+        return this.children;
+    }
+
+    add_child(container) {
+        this.append(container);
+        this.emit('child-added', container);
+    }
+
+    get icons() {
+        return this.children.map(container => container.child);
+    }
+
+    get_transformed_position() {
+        return this.position;
     }
 }
 

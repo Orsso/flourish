@@ -1,4 +1,3 @@
-import Graphene from 'gi://Graphene';
 import Shell from 'gi://Shell';
 import {Dash} from 'resource:///org/gnome/shell/ui/dash.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
@@ -11,7 +10,6 @@ export class DashIntegration {
     #box = null;
     #continuous = false;
     #highlight = null;
-    #point = null;
     #savedClip = false;
     #scheduler;
     #surface = null;
@@ -43,8 +41,6 @@ export class DashIntegration {
             this.#box = null;
             this.#highlight = null;
         }, this);
-        if (this.#continuous)
-            this.#hookMotion();
         this.#highlight = new FocusHighlight({
             box,
             tracker: Shell.WindowTracker.get_default(),
@@ -57,37 +53,12 @@ export class DashIntegration {
         this.#surface.refreshStyles();
     }
 
-    // The stage sees every pointer motion, gaps included. This gjs binding
-    // fills a GraphenePoint out arg instead of returning [x, y].
-    #hookMotion() {
-        if (!this.#surface)
-            return;
-        this.#point = new Graphene.Point();
-        global.get_stage().connectObject('motion-event',
-            (_stage, event) => {
-                event.get_position(this.#point);
-                this.#surface.onPointerMotion(this.#point.x, this.#point.y);
-            }, this);
-    }
-
-    #unhookMotion() {
-        if (!this.#point)
-            return;
-        global.get_stage().disconnectObject(this);
-        this.#point = null;
-    }
-
-    // The hover-mode key flips mid session; classic pays no stage cost.
     setContinuous(on) {
-        if (on === this.#continuous)
-            return;
-        this.#continuous = on;
-        if (this.#surface)
-            this.#surface.setContinuous(on);
-        if (on)
-            this.#hookMotion();
-        else
-            this.#unhookMotion();
+        this.#surface?.setContinuous(on);
+    }
+
+    onPointerMotion(x, y) {
+        this.#surface?.onPointerMotion(x, y);
     }
 
     disable() {
@@ -95,7 +66,6 @@ export class DashIntegration {
             return;
         this.#surface.dispose();
         this.#surface = null;
-        this.#unhookMotion();
         if (this.#box) {
             this.#highlight.disable();
             this.#box.disconnectObject(this);
@@ -111,15 +81,6 @@ export class DashIntegration {
 
     refreshStyles() {
         this.#surface?.refreshStyles();
-    }
-
-    // Spike: synthetic pointer injection for the headless probe.
-    injectPointerMotion(x, y) {
-        this.#surface?.onPointerMotion(x, y);
-    }
-
-    get surfaceCounters() {
-        return this.#surface?.counters ?? null;
     }
 
     getController(appIcon) {

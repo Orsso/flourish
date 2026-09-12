@@ -113,7 +113,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             edge: ScreenEdge.BOTTOM,
             recipe: this._recipe,
             hovered: this._hovered,
-            pressed: this._pressed,
+            pressLevel: this._pressed ? 1 : 0,
             launching: this._launching,
         });
     }

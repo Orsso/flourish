@@ -2,7 +2,7 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
+import {ScreenEdge, resolveAnimationMode, sampleRamp} from '../motion/catalog.js';
 import {PressInteraction} from '../motion/pressInteraction.js';
 import {
     dimOpacity,
@@ -11,7 +11,6 @@ import {
     resolveIconTransform,
 } from '../motion/transforms.js';
 import {sharpenIconTexture} from './iconTexture.js';
-import {makeCounters} from './debugCounters.js';
 
 // Toggling any class name invalidates the widget's style context.
 const REFRESH_CLASS = 'flourish-style-refresh';
@@ -25,13 +24,15 @@ const OWNED_TRANSITIONS = [
 
 export class IconMotionController {
     #bin;
+    #clock;
     #continuousScale = null;
-    #counters;
+    #continuousTarget = null;
     #dimmed = false;
     #hovered = false;
     #icon;
     #lastApplied = null;
     #neighborDistance = Infinity;
+    #onAnimate;
     #onDestroyed;
     #onHoverChanged;
     #onMeasured;
@@ -41,8 +42,11 @@ export class IconMotionController {
     #pendingBudgetReport = false;
     #edge;
     #press = new PressInteraction();
+    // Sampled in place of Clutter eases while the wave writes the bin per frame.
+    #pressRamp = null;
     #recipe;
     #restoreTexture;
+    #returnRamp = null;
     #urgent = false;
 
     constructor({
@@ -50,21 +54,23 @@ export class IconMotionController {
         bin,
         edge,
         recipe,
+        clock = () => 0,
+        onAnimate = () => {},
         onHoverChanged = () => {},
         onDestroyed = () => {},
         onMeasured = () => {},
         onUrgentChanged = () => {},
-        counters = makeCounters(),
     }) {
         this.#icon = icon;
         this.#bin = bin;
         this.#edge = edge;
         this.#recipe = recipe;
+        this.#clock = clock;
+        this.#onAnimate = onAnimate;
         this.#onHoverChanged = onHoverChanged;
         this.#onDestroyed = onDestroyed;
         this.#onMeasured = onMeasured;
         this.#onUrgentChanged = onUrgentChanged;
-        this.#counters = counters;
         this.#urgent = icon.urgent;
         this.#restoreTexture = sharpenIconTexture(icon.icon);
 
@@ -98,17 +104,17 @@ export class IconMotionController {
             'button-press-event', (_actor, event) => {
                 if (event.get_button() === Clutter.BUTTON_PRIMARY &&
                     this.#press.beginPrimary(this.#recipe.press))
-                    this.#apply(this.#recipe.press.duration);
+                    this.#pressChanged();
                 return Clutter.EVENT_PROPAGATE;
             },
             'notify::pressed', () => {
                 if (this.#press.syncButtonPressed(
                     this.#icon.pressed, this.#recipe.press))
-                    this.#apply(this.#recipe.press.duration);
+                    this.#pressChanged();
             },
             'clicked', () => {
                 if (this.#press.finishClick())
-                    this.#apply(this.#recipe.press.duration);
+                    this.#pressChanged();
             }, GObject.ConnectFlags.AFTER, // after the stock click handler
             this);
         this.#syncHover();
@@ -141,7 +147,7 @@ export class IconMotionController {
             return false;
         if (!hover.enabled)
             return true;
-        // Spike: the wave is idle at identity, the discrete path at the radius.
+        // The wave rests at 1, the discrete path past the radius.
         if (this.#continuousScale !== null)
             return this.#continuousScale === 1;
         return neighborScaleAt(hover, this.#neighborDistance) === 1;
@@ -159,7 +165,14 @@ export class IconMotionController {
         if (!this.#overlaid)
             return;
         this.#overlaid = false;
-        this.#apply(this.#recipe.hover.duration);
+        const {hover} = this.#recipe;
+        this.#returnRamp = {
+            start: this.#clock(), from: 0, to: 1,
+            duration: hover.duration, easing: hover.easing,
+        };
+        this.#apply(hover.duration);
+        if (this.#continuousScale !== null)
+            this.#onAnimate();
     }
 
     setRecipe(recipe) {
@@ -180,8 +193,9 @@ export class IconMotionController {
         return visibleChange && !this.#hovered && !this.#overlaid;
     }
 
-    // Spike: the pointer wave owns this icon's scale; null restores the recipe path.
-    setContinuousScale(scale) {
+    // null hands the icon back to the hover path; the target is the scale at full amplitude.
+    setContinuousScale(scale, target = scale) {
+        this.#continuousTarget = target;
         if (this.#continuousScale === scale)
             return false;
         this.#continuousScale = scale;
@@ -206,8 +220,9 @@ export class IconMotionController {
         }
 
         this.#press.applyStep(false);
+        this.#pressRamp = null;
         const magnify = !this.#recipe.hover.enabled ? 1
-            : this.#continuousScale ??
+            : this.#continuousTarget ??
                 (this.#hovered ? this.#recipe.hover.scale
                     : neighborScaleAt(this.#recipe.hover, this.#neighborDistance));
         this.beginOverlay();
@@ -232,19 +247,18 @@ export class IconMotionController {
         this.#syncDim(0);
         this.#restore();
         this.#restoreTexture();
-        this.#continuousScale = null;
         this.#onDestroyed(this);
         this.#overlaid = false;
         this.#bin = null;
         this.#icon = null;
     }
 
-    // The overlay clone owns the bin until endOverlay.
-    applyHoverState() {
+    // The overlay clone owns the bin until endOverlay; true while a ramp needs frames.
+    applyHoverState(now = this.#clock()) {
         if (this.#overlaid)
-            return;
-        // Spike: the wave lands per frame; the recipe duration eases the restore.
-        this.#apply(this.#continuousScale !== null ? 0 : this.#recipe.hover.duration);
+            return false;
+        this.#apply(this.#recipe.hover.duration, now);
+        return this.#continuousScale !== null && this.#animating(now);
     }
 
     #syncHover() {
@@ -253,13 +267,42 @@ export class IconMotionController {
             return;
         this.#hovered = hovered;
         this.#pendingBudgetReport = hovered;
-        if (!hovered)
-            this.#press.reset();
+        if (!hovered && this.#press.reset())
+            this.#setPressLevel(0);
         this.#onHoverChanged(this, hovered);
     }
 
-    #apply(duration = this.#recipe.hover.duration) {
+    #pressChanged() {
+        this.#setPressLevel(this.#press.pressed ? 1 : 0);
+        this.#apply(this.#recipe.press.duration);
+        if (this.#continuousScale !== null)
+            this.#onAnimate();
+    }
+
+    #setPressLevel(to) {
+        const {hover, press} = this.#recipe;
+        const now = this.#clock();
+        this.#pressRamp = {
+            start: now, from: this.#pressLevel(now), to,
+            duration: press.duration, easing: hover.easing,
+        };
+    }
+
+    #pressLevel(now) {
+        return this.#pressRamp ? sampleRamp(this.#pressRamp, now) : 0;
+    }
+
+    #animating(now) {
+        return [this.#pressRamp, this.#returnRamp].some(
+            ramp => ramp && now - ramp.start < ramp.duration);
+    }
+
+    #apply(duration = this.#recipe.hover.duration, now = this.#clock()) {
         const animationsEnabled = St.Settings.get().enable_animations;
+        // The wave writes per frame; a transition here would be cut at the next one.
+        const waved = this.#continuousScale !== null;
+        if (waved)
+            duration = 0;
         // A pending report measures anyway; the prefs readout needs it.
         const budget = this.#pendingBudgetReport ||
             (animationsEnabled && hoverNeedsBudget({
@@ -269,7 +312,7 @@ export class IconMotionController {
                 neighborDistance: this.#neighborDistance,
                 continuousScale: this.#continuousScale,
             }))
-            ? this.#measured()
+            ? this.measure()
             : null;
         if (this.#pendingBudgetReport) {
             this.#pendingBudgetReport = false;
@@ -282,8 +325,13 @@ export class IconMotionController {
             hovered: this.#hovered,
             overlaid: this.#overlaid,
             neighborDistance: this.#neighborDistance,
-            continuousScale: this.#continuousScale,
-            pressed: this.#press.pressed,
+            continuousScale: waved
+                ? 1 + (this.#continuousScale - 1) *
+                    (this.#returnRamp ? sampleRamp(this.#returnRamp, now) : 1)
+                : null,
+            pressLevel: waved
+                ? this.#pressLevel(now)
+                : this.#press.pressed ? 1 : 0,
             animationsEnabled,
             budgetPx: budget ? budget.budgetPx : Infinity,
             iconNormalSize: budget ? budget.iconNormalSize : 0,
@@ -311,28 +359,16 @@ export class IconMotionController {
 
         this.#removeOwnedTransitions();
         if (duration === 0) {
-            this.#counters.writes++;
             Object.assign(this.#bin, properties);
             return;
         }
 
-        const noop = properties.scale_x === this.#bin.scale_x &&
-            properties.scale_y === this.#bin.scale_y &&
-            properties.translation_x === this.#bin.translation_x &&
-            properties.translation_y === this.#bin.translation_y;
-        this.#counters[noop ? 'noopEases' : 'eases']++;
         this.#bin.ease({
             ...properties,
             duration,
             mode: resolveAnimationMode(
                 this.#recipe.hover.easing, Clutter.AnimationMode),
         });
-    }
-
-    // measure() wrapped so the spike counts budget reads.
-    #measured() {
-        this.#counters.measures++;
-        return this.measure();
     }
 
     measure() {
@@ -403,7 +439,6 @@ export class IconMotionController {
     }
 
     #removeOwnedTransitions() {
-        this.#counters.rmTrans++;
         for (const transition of OWNED_TRANSITIONS)
             this.#bin.remove_transition(transition);
     }

@@ -1,5 +1,4 @@
 import {
-    medianPitch,
     waveFalloff,
     waveScaleAt,
     waveScales,
@@ -30,14 +29,6 @@ test('waveScaleAt maps the falloff onto a scale of one', () => {
     assertEqual(waveScaleAt(2, 2, 1.22), 1);
     assertEqual(waveScaleAt(9, 2, 1.22), 1);
     assertEqual(waveScaleAt(0, 2, 1), 1);
-});
-
-test('medianPitch picks the middle gap', () => {
-    assertEqual(medianPitch([0, 10, 30, 40, 45]), 10);
-    assertEqual(medianPitch([0, 10]), 10);
-    assertEqual(medianPitch([7]), 0);
-    assertEqual(medianPitch([]), 0);
-    assertEqual(medianPitch([7], 48), 48);
 });
 
 test('waveScales peaks at the pointer and is identity past the radius', () => {

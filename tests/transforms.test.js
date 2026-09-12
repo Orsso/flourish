@@ -255,7 +255,7 @@ test('hover and press compose into one controller target', () => {
         edge: 'bottom',
         recipe,
         hovered: true,
-        pressed: true,
+        pressLevel: 1,
     });
     assertClose(transform.scaleX, recipe.hover.scale); // tangent axis holds at hover, no bulge
     assertEqual(transform.scaleY < recipe.hover.scale, true);
@@ -355,7 +355,7 @@ test('disabled system animations return the identity transform', () => {
         edge: 'bottom',
         recipe: getBuiltInRecipe('expressive'),
         hovered: true,
-        pressed: true,
+        pressLevel: 1,
         animationsEnabled: false,
     });
     assertDeepEqual(transform, {
@@ -580,6 +580,8 @@ test('the budget is needed only when the hover reach can move', () => {
         {recipe: expressive, hovered: true, overlaid: true}), false);
     assertEqual(hoverNeedsBudget(
         {recipe: getBuiltInRecipe('subtle'), hovered: true}), false);
+    assertEqual(hoverNeedsBudget(
+        {recipe: expressive, hovered: true, continuousScale: 1.1}), false);
 });
 
 test('a lift alone still needs the budget', () => {

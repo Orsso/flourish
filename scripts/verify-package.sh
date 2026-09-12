@@ -20,7 +20,6 @@ required=(
     lib/runtime/attentionEngine.js
     lib/runtime/backgroundStyle.js
     lib/runtime/dashIntegration.js
-    lib/runtime/debugCounters.js
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
     lib/runtime/dockVisibility.js
