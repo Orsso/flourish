@@ -115,60 +115,13 @@ export function composeIconTransform({
 export const OVERSHOOT_RESERVE = 0.1;
 const MIN_SECONDARY_BOUNCE_PX = 3;
 
-export function fitHoverToBudget(
-    hoverScale, lift, iconNormalSize, budgetPx, overshoot = 0) {
-    if (!(iconNormalSize > 0) || !Number.isFinite(budgetPx))
-        return {hoverScale, lift};
-    const budget = Math.max(0, budgetPx) / (1 + Math.max(0, overshoot));
-    const scaleGrowth = iconNormalSize * Math.max(0, hoverScale - 1);
-    const safeLift = Math.max(0, lift);
-    const reach = scaleGrowth + safeLift;
-    if (reach <= budget || reach === 0)
-        return {hoverScale, lift};
-    const factor = budget / reach;
-    return {
-        hoverScale: 1 + (scaleGrowth * factor) / iconNormalSize,
-        lift: safeLift * factor,
-    };
-}
-
-// Linear falloff from full neighbor scale to identity past the radius.
-export function neighborScaleAt(hover, distance) {
-    if (!(distance >= 1) || distance > hover.neighborRadius)
-        return 1;
-    const weight = (hover.neighborRadius - distance + 1) / hover.neighborRadius;
-    return 1 + (hover.neighborScale - 1) * weight;
-}
-
-export function hoverNeedsBudget({
-    recipe,
-    hovered = false,
-    overlaid = false,
-    neighborDistance = Infinity,
-    continuousScale = null,
-}) {
-    const {hover} = recipe;
-    if (!hover.enabled || overlaid)
-        return false;
-    // The wave fits its peak once per row.
-    if (continuousScale !== null)
-        return false;
-    if (hovered)
-        return hover.scale !== 1 || hover.lift !== 0;
-    return neighborScaleAt(hover, neighborDistance) !== 1;
-}
-
 export function resolveIconTransform({
     edge = ScreenEdge.BOTTOM,
     recipe,
-    hovered = false,
-    neighborDistance = Infinity,
-    continuousScale = null,
+    hoverLevel = 0,
     pressLevel = 0,
     overlaid = false,
     animationsEnabled = true,
-    budgetPx = Infinity,
-    iconNormalSize = 0,
 }) {
     const orientation = getOrientation(edge);
     if (!animationsEnabled) {
@@ -183,64 +136,18 @@ export function resolveIconTransform({
     }
 
     const hoverEnabled = recipe.hover.enabled && !overlaid;
-    // The wave scale wins when present; it covers the hovered icon too.
-    const hoverScale = hoverEnabled && continuousScale !== null
-        ? continuousScale
-        : hoverEnabled && hovered
-            ? recipe.hover.scale
-            : hoverEnabled
-                ? neighborScaleAt(recipe.hover, neighborDistance)
-                : 1;
-    // The lift follows the wave falloff; a binary lift would step.
-    let lift = 0;
-    if (hoverEnabled) {
-        if (continuousScale !== null && recipe.hover.scale > 1)
-            lift = recipe.hover.lift *
-                (continuousScale - 1) / (recipe.hover.scale - 1);
-        else if (hovered)
-            lift = recipe.hover.lift;
-    }
+    const level = hoverEnabled ? hoverLevel : 0;
     const pressIntensity = recipe.press.enabled
         ? recipe.press.intensity * pressLevel
         : 0;
 
-    const overshoot =
-        recipe.hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
-    const fitted = fitHoverToBudget(
-        hoverScale, lift, iconNormalSize, budgetPx, overshoot);
-
     return composeIconTransform({
         edge,
-        hoverScale: fitted.hoverScale,
-        lift: fitted.lift,
+        hoverScale: 1 + (recipe.hover.scale - 1) * level,
+        lift: recipe.hover.lift * level,
         pressIntensity,
         pressEffect: recipe.press.effect,
     });
-}
-
-export function projectHoverTransform({
-    edge = ScreenEdge.BOTTOM,
-    recipe,
-    hovered = false,
-    neighborDistance = Infinity,
-    progress = 1,
-}) {
-    const target = resolveIconTransform({
-        edge,
-        recipe,
-        hovered,
-        neighborDistance,
-    });
-    return {
-        ...interpolateTransform({
-            scaleX: 1,
-            scaleY: 1,
-            translationX: 0,
-            translationY: 0,
-        }, target, clamp(progress, 0, 1)),
-        dim: 0,
-        pivot: target.pivot,
-    };
 }
 
 export function hoverIntroScale(visible, neutral) {

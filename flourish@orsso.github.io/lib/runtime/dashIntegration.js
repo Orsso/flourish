@@ -4,19 +4,18 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {ScreenEdge} from '../motion/catalog.js';
 import {FocusHighlight} from './focusHighlight.js';
+import {dashSpacing, pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
 
 export class DashIntegration {
     #box = null;
-    #continuous = false;
     #highlight = null;
     #savedClip = false;
     #scheduler;
     #surface = null;
 
-    constructor({scheduler, continuous = false}) {
+    constructor({scheduler}) {
         this.#scheduler = scheduler;
-        this.#continuous = continuous;
     }
 
     enable(recipe) {
@@ -33,14 +32,13 @@ export class DashIntegration {
 
         this.#surface = new MotionSurface({
             recipe,
-            continuous: this.#continuous,
             scheduler: this.#scheduler,
         });
         this.#box = box;
         box.connectObject('destroy', () => {
             this.#box = null;
             this.#highlight = null;
-        }, this);
+        }, 'notify::allocation', () => this.#surface.invalidateGeometry(), this);
         this.#highlight = new FocusHighlight({
             box,
             tracker: Shell.WindowTracker.get_default(),
@@ -49,12 +47,14 @@ export class DashIntegration {
         // The dash clips its row; hover motion overflows it.
         this.#savedClip = box.clip_to_allocation;
         box.clip_to_allocation = false;
-        this.#surface.addBox(box, ScreenEdge.BOTTOM);
+        this.#surface.addBox(box, ScreenEdge.BOTTOM, {
+            pointerActor: dash,
+            isAvailable: () => Main.overview.visibleTarget,
+            containsPointer: (x, y) => pointerOnSurface(dash, x, y, Main.layoutManager.overviewGroup),
+            getSpacing: () => dashSpacing(box, Main.layoutManager.primaryMonitor),
+        });
+        Main.overview.connectObject('hiding', () => this.#surface.clearPointer(), this);
         this.#surface.refreshStyles();
-    }
-
-    setContinuous(on) {
-        this.#surface?.setContinuous(on);
     }
 
     onPointerMotion(x, y) {
@@ -64,6 +64,7 @@ export class DashIntegration {
     disable() {
         if (!this.#surface)
             return;
+        Main.overview.disconnectObject(this);
         this.#surface.dispose();
         this.#surface = null;
         if (this.#box) {

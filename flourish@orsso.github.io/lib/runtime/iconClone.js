@@ -28,9 +28,7 @@ export function createIconClone(source, geometry, parent, {
     return clone;
 }
 
-// blend mixes a fading magnification into every segment.
 export function runSegments(clone, segments, {
-    blend = () => ({magnify: 1, liftX: 0, liftY: 0}),
     isCancelled = () => false,
     onComplete = () => {},
 }, index = 0) {
@@ -42,17 +40,16 @@ export function runSegments(clone, segments, {
     }
 
     const segment = segments[index];
-    const {magnify, liftX, liftY} = blend();
     clone.ease({
-        scale_x: magnify * segment.scaleX,
-        scale_y: magnify * segment.scaleY,
-        translation_x: segment.translationX + liftX,
-        translation_y: segment.translationY + liftY,
+        scale_x: segment.scaleX,
+        scale_y: segment.scaleY,
+        translation_x: segment.translationX,
+        translation_y: segment.translationY,
         rotation_angle_z: segment.rotation ?? 0,
         duration: segment.duration,
         mode: resolveAnimationMode(segment.easing, Clutter.AnimationMode),
         onComplete: () => runSegments(
-            clone, segments, {blend, isCancelled, onComplete}, index + 1),
+            clone, segments, {isCancelled, onComplete}, index + 1),
     });
 }
 

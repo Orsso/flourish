@@ -10,7 +10,6 @@ import {
     AttentionInterval,
     AttentionReminders,
     Easing,
-    HoverMode,
     LaunchEffect,
     NeighborRadius,
     PressEffect,
@@ -21,15 +20,12 @@ import {
     editCustomSetting,
     readActiveRecipe,
     resetCustom,
-    selectHoverMode,
 } from '../motion/settings.js';
-import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../motion/transforms.js';
 import {MotionPreview} from './motionPreview.js';
 import {
     connectSwitch,
     createBackgroundRow,
     createComboRow,
-    createHelpButton,
     createScaleRow,
     createSpinRow,
     createSwitchRow,
@@ -39,56 +35,41 @@ import {
 export function buildAdvancedPage(page, controls, settings, state) {
     controls.partPreviews = {};
 
-    const budgetGroup = new Adw.PreferencesGroup();
-    const budgetRow = new Adw.ActionRow({
-        title: _('Hover room'),
-        subtitle: _('Measured from the dock'),
-    });
-    budgetRow.add_suffix(createHelpButton(
-        _('Dash to Dock cuts off anything that reaches past its edge. ' +
-        'This is the padding it leaves around the icons, in pixels. ' +
-        'Flourish keeps magnification and lift within it. The padding ' +
-        'comes from the theme, and the Shrink option of Dash to Dock ' +
-        'makes it smaller. The overview dash has no such limit.')));
-    controls.budgetRow = budgetRow;
-    budgetGroup.add(budgetRow);
-    page.add(budgetGroup);
-
     const hover = createPartGroup(page, controls, settings, _('Hover'), RecipePart.HOVER);
-    controls.hoverMode = createComboRow(
-        hover.group, _('Hover behavior'),
-        [
-            [_('Classic'), HoverMode.CLASSIC],
-            [_('Continuous wave'), HoverMode.WAVE],
-        ], value => selectHoverMode(settings, value), state);
+    hover.group.description = _('Motion adapts to the available space.');
     controls.hoverScale = createScaleRow(
-        hover.group, _('Magnification'), 1, 1.30, 0.01,
-        value => editCustomSetting(settings, 'custom-hover-scale', value), state);
+        hover.group, _('Magnification'), 100, 150, 1,
+        value => editCustomSetting(settings, 'custom-hover-scale', value / 100), state);
+    controls.hoverScale.scale.draw_value = true;
+    controls.hoverScale.scale.set_format_value_func((_scale, value) => `${Math.round(value)}%`);
     controls.hoverLift = createSpinRow(
-        hover.group, _('Outward lift'), 0, 12, 1,
+        hover.group, _('Elevation'), 0, 16, 1,
         value => editCustomSetting(settings, 'custom-hover-lift', Math.round(value)), state,
         _('px'));
     controls.hoverDuration = createSpinRow(
-        hover.group, _('Duration'), 100, 800, 10,
+        hover.group, _('Transition duration'), 80, 800, 10,
         value => editCustomSetting(settings, 'custom-hover-duration', Math.round(value)), state,
         _('ms'));
     controls.hoverEasing = createComboRow(
-        hover.group, _('Easing'),
+        hover.group, _('Transition curve'),
         [
             [_('Linear'), Easing.LINEAR],
             [_('Ease out (quad)'), Easing.EASE_OUT_QUAD],
             [_('Ease out (cubic)'), Easing.EASE_OUT_CUBIC],
             [_('Ease out (back)'), Easing.EASE_OUT_BACK],
         ], value => editCustomSetting(settings, 'custom-hover-easing', value), state);
-    controls.neighborScale = createScaleRow(
-        hover.group, _('Neighbor scale'), 1, 1.15, 0.01,
-        value => editCustomSetting(settings, 'custom-neighbor-scale', value), state);
     controls.neighborRadius = createSpinRow(
-        hover.group, _('Neighbor radius'), NeighborRadius.MIN, NeighborRadius.MAX, 1,
+        hover.group, _('Reach'), NeighborRadius.MIN, NeighborRadius.MAX, 1,
         value => editCustomSetting(settings, 'custom-neighbor-radius', Math.round(value)), state,
-        _('Icons on each side that follow the hover'));
+        _('Reach on each side of the pointer, in icon steps'));
     holdWhileSliding(controls.hoverScale, hover);
-    holdWhileSliding(controls.neighborScale, hover);
+    controls.dynamicSpacing = createSwitchRow(
+        hover.group, _('Dynamic spacing'),
+        _('Move neighboring icons apart as they grow'),
+        _('When off, icons keep their positions and may overlap at high magnification. ' +
+        'Motion still adapts to the available space.'));
+    connectSwitch(controls.dynamicSpacing, enabled =>
+        editCustomSetting(settings, 'custom-hover-dynamic-spacing', enabled), state);
 
     const press = createPartGroup(page, controls, settings, _('Press'), RecipePart.PRESS);
     controls.pressMode = createComboRow(
@@ -231,30 +212,11 @@ export function buildAdvancedPage(page, controls, settings, state) {
 }
 
 export function syncAdvancedPage(settings, controls, recipe) {
-    // The wave reinterprets the hover values; the labels must say so.
-    const wave = settings.get_string('hover-mode') === HoverMode.WAVE;
-    setComboValue(controls.hoverMode, settings.get_string('hover-mode'));
-    controls.hoverScale.row.title = wave ? _('Peak magnification') : _('Magnification');
-    controls.hoverLift.title = wave ? _('Peak outward lift') : _('Outward lift');
-    controls.hoverDuration.subtitle = wave
-        ? _('Entry and exit transition (ms)')
-        : _('ms');
-    controls.hoverEasing.row.subtitle = wave ? _('Entry and exit easing') : '';
-    controls.neighborScale.row.visible = !wave;
-    controls.neighborRadius.title = wave ? _('Wave radius') : _('Neighbor radius');
-    controls.neighborRadius.subtitle = wave
-        ? _('Icon pitches the wave reaches on each side')
-        : _('Icons on each side that follow the hover');
-    controls.hoverScale.adjustment.value = recipe.hover.scale;
+    controls.dynamicSpacing.toggle.active = recipe.hover.dynamicSpacing;
+    controls.hoverScale.adjustment.value = recipe.hover.scale * 100;
     controls.hoverLift.value = recipe.hover.lift;
-    // The measurement outlives the dock.
-    applyHoverBudget(
-        controls, recipe,
-        controls.dockPresent ? settings.get_double('measured-hover-budget') : 0,
-        controls.dockPresent ? settings.get_double('measured-icon-size') : 0);
     controls.hoverDuration.value = recipe.hover.duration;
     setComboValue(controls.hoverEasing, recipe.hover.easing);
-    controls.neighborScale.adjustment.value = recipe.hover.neighborScale;
     controls.neighborRadius.value = recipe.hover.neighborRadius;
     setComboValue(controls.pressMode, recipe.press.mode);
     setComboValue(controls.pressEffect, recipe.press.effect);
@@ -302,14 +264,12 @@ export function syncAdvancedPage(settings, controls, recipe) {
     controls.advancedFocusedAppBackground.active =
         settings.get_boolean('show-focused-app-background');
     for (const preview of Object.values(controls.partPreviews))
-        preview.updateRecipe(recipe, wave && preview._part === RecipePart.HOVER);
+        preview.updateRecipe(recipe);
 }
 
 function createPartGroup(page, controls, settings, title, part) {
     const group = new Adw.PreferencesGroup({title});
-    const wave = part === RecipePart.HOVER &&
-        settings.get_string('hover-mode') === HoverMode.WAVE;
-    const preview = new MotionPreview({recipe: readActiveRecipe(settings), part, wave});
+    const preview = new MotionPreview({recipe: readActiveRecipe(settings), part});
     const pointer = new Gtk.EventControllerMotion();
     pointer.connect('enter', () => preview.playLoop());
     pointer.connect('leave', () => preview.stopLoop());
@@ -338,39 +298,4 @@ function holdWhileSliding(control, {preview, pointer}) {
         return false;
     });
     control.scale.add_controller(events);
-}
-
-function applyHoverBudget(controls, recipe, budgetPx, iconSize) {
-    const budgetRow = controls.budgetRow;
-    const scaleRow = controls.hoverScale.row;
-    const liftRow = controls.hoverLift;
-
-    if (!(budgetPx > 0) || !(iconSize > 0)) {
-        budgetRow.subtitle = _('No dock to measure (full motion applies)');
-        scaleRow.subtitle = _('Outward magnification on hover');
-        liftRow.subtitle = _('Outward rise on hover, in pixels');
-        return;
-    }
-
-    const overshoot =
-        recipe.hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
-    const fit = fitHoverToBudget(
-        recipe.hover.scale, recipe.hover.lift, iconSize, budgetPx, overshoot);
-    const room = Math.round(budgetPx);
-    const scaleUse = Math.max(0, iconSize * (fit.hoverScale - 1));
-    const liftUse = Math.max(0, fit.lift);
-    const reach = iconSize * Math.max(0, recipe.hover.scale - 1) +
-        Math.max(0, recipe.hover.lift);
-    const reduced = reach > budgetPx / (1 + overshoot) + 0.01;
-
-    budgetRow.subtitle = _('About %s px of room per icon, updates with your dock')
-        .replace('%s', room);
-    scaleRow.subtitle = (reduced
-        ? _('Reduced to fit the dock: ~%s of %s px')
-        : _('Uses ~%s of %s px'))
-        .replace('%s', scaleUse.toFixed(1)).replace('%s', room);
-    liftRow.subtitle = (reduced
-        ? _('Reduced to fit the dock: ~%s of %s px')
-        : _('Uses ~%s of %s px'))
-        .replace('%s', liftUse.toFixed(1)).replace('%s', room);
 }

@@ -13,7 +13,8 @@ export class FocusHighlight {
 
     enable() {
         this.#tracker.connectObject('notify::focus-app', () => this.#sync(), this);
-        this.#box.connectObject('child-added', () => this.#sync(), this);
+        this.#box.connectObject('child-added', () => this.#sync(),
+            'destroy', () => this.disable(), this);
         this.#sync();
     }
 

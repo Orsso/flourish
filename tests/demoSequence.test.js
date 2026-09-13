@@ -7,7 +7,9 @@ import {
 } from '../flourish@orsso.github.io/lib/prefs/demoSequence.js';
 
 test('all-primary preset shows a plain click before the launch click', () => {
-    const sequence = buildDemoSequence(getBuiltInRecipe(Preset.EXPRESSIVE));
+    const recipe = getBuiltInRecipe(Preset.EXPRESSIVE);
+    recipe.press.mode = PressMode.ALL_PRIMARY_CLICKS;
+    const sequence = buildDemoSequence(recipe);
     assertDeepEqual(sequence, [
         DemoPhase.HOVER_IN,
         DemoPhase.HOLD,
@@ -35,7 +37,9 @@ test('launches-only preset skips the plain click but keeps the launch click', ()
 });
 
 test('inert hover drops the hover phases entirely', () => {
-    const sequence = buildDemoSequence(getBuiltInRecipe(Preset.SUBTLE));
+    const recipe = getBuiltInRecipe(Preset.SUBTLE);
+    recipe.hover.enabled = false;
+    const sequence = buildDemoSequence(recipe);
     assertDeepEqual(sequence, [
         DemoPhase.CLICK,
         DemoPhase.PRE_LAUNCH_PAUSE,
@@ -48,6 +52,7 @@ test('inert hover drops the hover phases entirely', () => {
 test('disabling launch drops the launch click', () => {
     const recipe = getBuiltInRecipe(Preset.EXPRESSIVE);
     recipe.launch.enabled = false;
+    recipe.press.mode = PressMode.ALL_PRIMARY_CLICKS;
     const sequence = buildDemoSequence(recipe);
     assertDeepEqual(sequence, [
         DemoPhase.HOVER_IN,

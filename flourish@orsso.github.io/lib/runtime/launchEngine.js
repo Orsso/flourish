@@ -21,7 +21,7 @@ import {
 import {DeferredLaunchEnds} from './deferredLaunchEnds.js';
 import {actorGeometry} from './geometry.js';
 import {OPAQUE, createIconClone, retreatClone, runSegments} from './iconClone.js';
-import {followIcon} from './iconFollower.js';
+import {anchoredPlacement, followIcon} from './iconFollower.js';
 
 const HANDOFF_DURATION = 80;
 
@@ -83,15 +83,18 @@ export class LaunchEngine {
             !St.Settings.get().enable_animations)
             return;
 
-        // beginLaunch resets the hover, so the clone needs both geometries.
+        // Release the press while keeping the shared hover geometry.
         const visibility = this.#getDockContext(appIcon)?.visibility ?? null;
-        const place = placement(visibility, controller.edge);
-        const visibleGeometry = place(actorGeometry(target));
+        const place = placement(visibility, controller.edge,
+            getLaunchPivot(launch.effect, controller.edge));
+        const before = actorGeometry(target);
+        const visibleGeometry = place(before) ?? before;
         const preparation = controller.beginLaunch(
             controller.recipe.launch.enabled);
         if (!preparation.active)
             return;
-        const neutralGeometry = place(actorGeometry(target));
+        const after = actorGeometry(target);
+        const neutralGeometry = place(after) ?? after;
         this.#startLaunch(
             appIcon, controller, target, visibleGeometry,
             neutralGeometry, preparation, {place, visibility});
@@ -100,17 +103,27 @@ export class LaunchEngine {
     #startLaunch(appIcon, controller, target, visibleGeometry,
         neutralGeometry, preparation, {place, visibility}) {
         const recipe = controller.recipe;
-        const {hoverDuration, magnify, pressSteps} = preparation;
+        const {hoverDuration, pressSteps} = preparation;
         const launchPivot = getLaunchPivot(
             recipe.launch.effect, controller.edge);
         const introScale = hoverIntroScale(visibleGeometry, neutralGeometry);
         const introLift = hoverIntroLift(
             visibleGeometry, neutralGeometry, launchPivot);
-        const clone = createIconClone(target, neutralGeometry, Main.uiGroup, {
+        const frame = new Clutter.Actor({
+            ...neutralGeometry,
+            layout_manager: new Clutter.BinLayout(),
+            reactive: false,
+        });
+        Main.uiGroup.add_child(frame);
+        const clone = createIconClone(target, {
+            x: 0, y: 0, width: neutralGeometry.width, height: neutralGeometry.height,
+        }, frame, {
             pivot: launchPivot,
             scale: introScale,
             translation: introLift,
         });
+        clone.x_expand = true;
+        clone.y_expand = true;
 
         const pressTransform = composeIconTransform({
             edge: controller.edge,
@@ -124,12 +137,10 @@ export class LaunchEngine {
             clone,
             controller,
             cycle: 0,
-            effectStart: 0,
             // Ends first of: ease chain, repeat timer, target destroy.
             finished: false,
+            frame,
             hoverDuration,
-            introLift,
-            magnifyBase: magnify,
             originalOpacity: target.opacity,
             launchPivot,
             pressSteps,
@@ -138,7 +149,7 @@ export class LaunchEngine {
             startedAt: GLib.get_monotonic_time() / 1000,
             target,
             unfollow: followIcon({
-                target, clone, place, scheduler: this.#scheduler,
+                target, clone: frame, place, scheduler: this.#scheduler,
             }),
             visibility,
             wasLaunching: appIcon.app
@@ -174,7 +185,6 @@ export class LaunchEngine {
         }
 
         const recipe = session.controller.recipe;
-        const magnify = session.magnifyBase;
         const duration = Math.round(
             recipe.press.duration * session.pressSteps[index].durationFactor);
         const mode = resolveAnimationMode(
@@ -183,10 +193,10 @@ export class LaunchEngine {
         session.clone.opacity = dimOpacity(
             OPAQUE, session.pressTransform.dim);
         const geometry = {
-            scale_x: magnify * session.pressTransform.scaleX,
-            scale_y: magnify * session.pressTransform.scaleY,
-            translation_x: session.introLift.x,
-            translation_y: session.introLift.y,
+            scale_x: session.pressTransform.scaleX,
+            scale_y: session.pressTransform.scaleY,
+            translation_x: 0,
+            translation_y: 0,
             duration,
             mode,
         };
@@ -207,7 +217,6 @@ export class LaunchEngine {
         if (session.finished)
             return;
         session.clone.opacity = OPAQUE;
-        session.effectStart = GLib.get_monotonic_time() / 1000;
         if (session.controller.recipe.launch.enabled) {
             this.#runCycle(session);
             return;
@@ -223,19 +232,6 @@ export class LaunchEngine {
         });
     }
 
-    #magnifyState(session) {
-        if (session.magnifyBase === 1)
-            return {magnify: 1, liftX: 0, liftY: 0};
-        const elapsed = GLib.get_monotonic_time() / 1000 - session.effectStart;
-        const progress = Math.min(1, Math.max(0, elapsed / session.hoverDuration));
-        const remain = (1 - progress) ** 2;
-        return {
-            magnify: 1 + (session.magnifyBase - 1) * remain,
-            liftX: session.introLift.x * remain,
-            liftY: session.introLift.y * remain,
-        };
-    }
-
     #runCycle(session) {
         if (session.finished)
             return;
@@ -248,7 +244,6 @@ export class LaunchEngine {
             return;
         }
         runSegments(session.clone, segments, {
-            blend: () => this.#magnifyState(session),
             isCancelled: () => session.finished,
             onComplete: () => this.#finishCycle(session),
         });
@@ -299,9 +294,7 @@ export class LaunchEngine {
         if (session.finished)
             return;
         this.#clearRepeatTimer(session);
-        session.unfollow();
         session.clone.remove_all_transitions();
-        session.target.opacity = session.originalOpacity;
         const retreat = shouldRetreatOnHandoff({
             targetMapped: session.target.mapped,
             dockShown: session.visibility
@@ -311,19 +304,15 @@ export class LaunchEngine {
             dashContainsTarget: Main.overview.dash.contains(session.target),
         });
         if (retreat) {
+            session.unfollow();
+            session.target.opacity = session.originalOpacity;
             retreatClone(session.clone, session.controller.edge, {
                 momentum,
                 onComplete: () => this.#finish(session),
             });
             return;
         }
-        const [x, y] = session.target.get_transformed_position();
-        const [width, height] = session.target.get_transformed_size();
         session.clone.ease({
-            x,
-            y,
-            width,
-            height,
             scale_x: 1,
             scale_y: 1,
             translation_x: 0,
@@ -343,7 +332,7 @@ export class LaunchEngine {
         session.unfollow();
         Shell.AppSystem.get_default().disconnectObject(session);
         session.clone.remove_all_transitions();
-        session.clone.destroy();
+        session.frame.destroy();
         this.#sessions.delete(session.target);
         if (targetDestroyed) {
             this.#deferredEnds.defer(session.controller);
@@ -363,9 +352,9 @@ export class LaunchEngine {
 
 }
 
-function placement(visibility, edge) {
+function placement(visibility, edge, pivot) {
     if (!visibility)
-        return rect => rect;
+        return anchoredPlacement(() => Main.overview.visibleTarget, pivot);
     return rect => launchIconRect(rect, {
         shownRect: visibility.shownRect,
         slidRect: visibility.measure(),

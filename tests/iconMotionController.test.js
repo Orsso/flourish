@@ -3,7 +3,6 @@ import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/icon
 import {FakeBin, FakeIcon, MeasurableBin} from './fakes.js';
 
 function makeMeasuredController(preset = 'expressive') {
-    const measured = [];
     const icon = new FakeIcon();
     const bin = new MeasurableBin();
     const controller = new IconMotionController({
@@ -11,9 +10,8 @@ function makeMeasuredController(preset = 'expressive') {
         bin,
         edge: 'bottom',
         recipe: getBuiltInRecipe(preset),
-        onMeasured: measurement => measured.push(measurement),
     });
-    return {controller, icon, bin, measured};
+    return {controller, icon, bin};
 }
 
 function makeController(preset = 'expressive') {
@@ -35,6 +33,41 @@ test('hover changes notify the neighbor group', () => {
     icon.setHover(true);
     icon.setHover(false);
     assertDeepEqual(hoverEvents, [true, false]);
+});
+
+test('only the shared hover level drives the icon transform', () => {
+    const {controller, icon, bin} = makeController();
+    icon.setHover(true);
+    controller.applyHoverState();
+    assertEqual(bin.scale_x, 1);
+    assertEqual(controller.setHoverLevel(0.5), true);
+    assertEqual(controller.setHoverLevel(0.5), false);
+    controller.applyHoverState();
+    assertClose(bin.scale_x, 1.16);
+    assertClose(bin.translation_y, -1.5);
+    assertEqual(bin.reactive, true);
+    controller.setHoverLevel(0);
+    controller.applyHoverState();
+    assertEqual(bin.scale_x, 1);
+    assertEqual(bin.reactive, false);
+    controller.dispose();
+});
+
+test('a recipe change clears an in-flight press level', () => {
+    let now = 0;
+    const icon = new FakeIcon();
+    const bin = new FakeBin();
+    const recipe = getBuiltInRecipe('expressive');
+    recipe.press.mode = 'all-primary-clicks';
+    const controller = new IconMotionController({icon, bin, recipe, edge: 'bottom', clock: () => now});
+    icon.emit('button-press-event', {get_button: () => 1});
+    now = 200;
+    controller.applyHoverState();
+    assertEqual(bin.scale_y < 1, true);
+    controller.setRecipe(getBuiltInRecipe('expressive'));
+    controller.applyHoverState();
+    assertEqual(bin.scale_y, 1);
+    controller.dispose();
 });
 
 test('beginLaunch leaves the neighbor group hover in place', () => {
@@ -78,7 +111,7 @@ test('a hover flip alone does not ease until applyHoverState', () => {
     icon.setHover(true);
     assertEqual(bin.eases, 0);
     controller.applyHoverState();
-    assertEqual(bin.eases, 1);
+    assertEqual(bin.eases, 0);
 });
 
 test('hover with an unchanged transform does not ease', () => {
@@ -92,14 +125,14 @@ test('hover with an unchanged transform does not ease', () => {
 test('press dim lands without easing an unchanged transform', () => {
     const {icon, bin} = makeController('subtle');
     icon.emit('button-press-event', {get_button: () => 1});
-    assertEqual(bin.opacity, 228);
+    assertEqual(bin.opacity, 244);
     assertEqual(bin.eases, 0);
 });
 
 test('setRecipe reapplies even when the transform is unchanged', () => {
     const {controller, bin} = makeController('subtle');
     controller.setRecipe(getBuiltInRecipe('subtle'));
-    assertEqual(bin.eases, 1);
+    assertEqual(bin.eases, 0);
 });
 
 test('beginLaunch snaps instantly even when the transform is unchanged', () => {
@@ -109,46 +142,10 @@ test('beginLaunch snaps instantly even when the transform is unchanged', () => {
     assertEqual(bin.removedTransitions, 4);
 });
 
-test('neighbor updates without a neighbor effect skip the transform work', () => {
-    const {controller, bin} = makeController('balanced');
-    controller.setNeighborDistance(1);
-    controller.setNeighborDistance(Infinity);
-    assertEqual(bin.parentProbes, 0);
-    assertEqual(bin.eases, 0);
-});
-
-test('setNeighborDistance reports a change without applying it', () => {
-    const {controller, bin} = makeController('expressive');
-    assertEqual(controller.setNeighborDistance(1), true);
-    assertEqual(bin.eases, 0);
-    assertEqual(controller.setNeighborDistance(1), false);
-});
-
-test('distance changes with an unchanged visible scale stay quiet', () => {
-    // Distance three is already identity for Expressive's radius of two.
-    const {controller} = makeController('expressive');
-    assertEqual(controller.setNeighborDistance(3), false);
-    assertEqual(controller.setNeighborDistance(2), true);
-    assertEqual(controller.setNeighborDistance(3), true);
-    assertEqual(controller.setNeighborDistance(3), false);
-    assertEqual(controller.setNeighborDistance(Infinity), false);
-});
-
-test('distance changes cannot affect a hovered or overlaid icon', () => {
-    const {controller, icon} = makeController('expressive');
-    icon.setHover(true);
-    assertEqual(controller.setNeighborDistance(1), false);
-    icon.setHover(false);
-    controller.beginLaunch(true);
-    assertEqual(controller.setNeighborDistance(2), false);
-    controller.endOverlay();
-    assertEqual(controller.setNeighborDistance(3), true);
-});
-
-test('applyHoverState is inert during a launch', () => {
+test('applyHoverState is inert during detached attention', () => {
     const {controller, icon, bin} = makeController('expressive');
     icon.setHover(true);
-    controller.beginLaunch(true);
+    controller.beginOverlay();
     const probes = bin.parentProbes;
     const eases = bin.eases;
     icon.setHover(false);
@@ -157,32 +154,11 @@ test('applyHoverState is inert during a launch', () => {
     assertEqual(bin.eases, eases);
 });
 
-test('the hover budget is published once by the next apply', () => {
-    const {controller, icon, bin, measured} = makeMeasuredController();
-    icon.setHover(true);
-    assertEqual(measured.length, 0);
-    assertEqual(bin.measures, 0);
-    controller.applyHoverState();
-    assertEqual(measured.length, 1);
-    assertEqual(bin.measures, 1);
-    assertEqual(measured[0].budgetPx, 120);
-    controller.applyHoverState();
-    assertEqual(measured.length, 1);
-});
-
-test('a hover that leaves before the apply publishes nothing', () => {
-    const {controller, icon, measured} = makeMeasuredController();
-    icon.setHover(true);
-    icon.setHover(false);
-    controller.applyHoverState();
-    assertEqual(measured.length, 0);
-});
-
 test('a press stays immediate while a hover flush is pending', () => {
     const {icon, bin} = makeController('subtle');
     icon.setHover(true);
     icon.emit('button-press-event', {get_button: () => 1});
-    assertEqual(bin.opacity, 228);
+    assertEqual(bin.opacity, 244);
 });
 
 test('beginLaunch snaps immediately while a hover flush is pending', () => {
@@ -191,17 +167,6 @@ test('beginLaunch snaps immediately while a hover flush is pending', () => {
     const result = controller.beginLaunch(true);
     assertEqual(result.active, true);
     assertEqual(bin.removedTransitions, 4);
-});
-
-test('setRecipe with a pending hover flush lands on the final state', () => {
-    const {controller, icon, bin} = makeController('expressive');
-    icon.setHover(true);
-    controller.setRecipe(getBuiltInRecipe('expressive'));
-    assertEqual(bin.eases, 1);
-    assertClose(bin.lastEase.scale_x, 1.22);
-    // The late flush recomputes the same target and keeps the transition.
-    controller.applyHoverState();
-    assertEqual(bin.eases, 1);
 });
 
 test('applies toward identity skip the geometry measure', () => {
@@ -218,15 +183,7 @@ test('a press without hover reach skips the geometry measure', () => {
     const {icon, bin} = makeMeasuredController('subtle');
     icon.emit('button-press-event', {get_button: () => 1});
     assertEqual(bin.measures, 0);
-    assertEqual(bin.opacity, 228);
-});
-
-test('a subtle hover still measures once to publish the budget', () => {
-    const {controller, icon, bin, measured} = makeMeasuredController('subtle');
-    icon.setHover(true);
-    controller.applyHoverState();
-    assertEqual(measured.length, 1);
-    assertEqual(bin.measures, 1);
+    assertEqual(bin.opacity, 244);
 });
 
 test('endOverlay does not replay the hover notification', () => {
@@ -275,27 +232,6 @@ test('refreshStyle invalidates and redraws the icon', () => {
     ]);
 });
 
-test('an overlay holds the bin at rest until it ends', () => {
-    const icon = new FakeIcon();
-    const bin = icon.icon._iconBin;
-    const controller = new IconMotionController({
-        icon, bin, edge: 'bottom', recipe: getBuiltInRecipe('expressive'),
-    });
-    assertEqual(controller.overlaid, false);
-    assertEqual(controller.atRest, true);
-    assertEqual(controller.beginOverlay(), true);
-    assertEqual(controller.overlaid, true);
-    assertEqual(controller.atRest, false);
-    assertEqual(controller.beginOverlay(), false);
-    icon.setHover(true);
-    controller.applyHoverState();
-    assertEqual(bin.scale_x, 1);
-    controller.endOverlay();
-    assertEqual(controller.overlaid, false);
-    controller.applyHoverState();
-    assertEqual(bin.scale_x > 1, true);
-});
-
 test('a hovered or scaled neighbor icon is not at rest', () => {
     const icon = new FakeIcon();
     const controller = new IconMotionController({
@@ -304,9 +240,9 @@ test('a hovered or scaled neighbor icon is not at rest', () => {
     icon.setHover(true);
     assertEqual(controller.atRest, false);
     icon.setHover(false);
-    controller.setNeighborDistance(1);
+    controller.setHoverLevel(0.5);
     assertEqual(controller.atRest, false);
-    controller.setNeighborDistance(Infinity);
+    controller.setHoverLevel(0);
     assertEqual(controller.atRest, true);
 });
 

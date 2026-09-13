@@ -3,7 +3,6 @@ import {
     editCustomSetting,
     readActiveRecipe,
     resetCustom,
-    selectHoverMode,
     selectPreset,
     setBooleanCommitted,
     switchToPresetFromCustom,
@@ -134,7 +133,7 @@ test('switching from custom to a preset writes recipe and preset', () => {
     editCustomSetting(settings, 'custom-hover-scale', 1.18);
     switchToPresetFromCustom(settings, Preset.SUBTLE);
     assertEqual(settings.committed['motion-profile'], Preset.SUBTLE);
-    assertEqual(settings.committed['custom-hover-scale'], 1.10);
+    assertEqual(settings.committed['custom-hover-scale'], 1.04);
     assertEqual(settings.committed['custom-launch-repeat-pause'], 400);
 });
 
@@ -154,7 +153,7 @@ test('editing a preset copies it to custom before applying the edit', () => {
     editCustomSetting(settings, 'custom-hover-scale', 1.18);
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
     assertEqual(settings.values['custom-hover-scale'], 1.18);
-    assertEqual(settings.values['custom-launch-effect'], 'bounce');
+    assertEqual(settings.values['custom-launch-effect'], 'pulse');
     assertEqual(settings.values['custom-launch-repeat-pause'], 400);
     assertEqual(settings.applyCount, 1);
 });
@@ -172,8 +171,8 @@ test('reset custom copies the default preset values', () => {
     settings.values['custom-hover-scale'] = 1.29;
     resetCustom(settings);
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
-    assertEqual(settings.values['custom-hover-scale'], 1.10);
-    assertEqual(settings.values['custom-launch-effect'], 'bounce');
+    assertEqual(settings.values['custom-hover-scale'], 1.04);
+    assertEqual(settings.values['custom-launch-effect'], 'pulse');
     assertEqual(settings.values['custom-launch-repeat-pause'], 400);
     assertEqual(settings.applyCount, 1);
 });
@@ -183,7 +182,7 @@ test('active recipe reads presets without touching custom', () => {
     settings.values['custom-hover-scale'] = 1.01;
     const recipe = readActiveRecipe(settings);
     assertEqual(recipe.id, Preset.EXPRESSIVE);
-    assertEqual(recipe.hover.scale, 1.22);
+    assertEqual(recipe.hover.scale, 1.32);
 });
 
 test('feature toggles create custom from the active preset', () => {
@@ -191,7 +190,7 @@ test('feature toggles create custom from the active preset', () => {
     editCustomSetting(settings, 'custom-launch-enabled', false);
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
     assertEqual(settings.values['custom-launch-enabled'], false);
-    assertEqual(settings.values['custom-hover-scale'], 1.10);
+    assertEqual(settings.values['custom-hover-scale'], 1.12);
 });
 
 test('press effect round-trips through custom settings', () => {
@@ -225,8 +224,8 @@ test('switching from custom to a preset overwrites custom values', () => {
     settings.values['custom-hover-scale'] = 1.29;
     switchToPresetFromCustom(settings, Preset.SUBTLE);
     assertEqual(settings.values['motion-profile'], Preset.SUBTLE);
-    assertEqual(settings.values['custom-hover-scale'], 1.10);
-    assertEqual(settings.values['custom-launch-effect'], 'bounce');
+    assertEqual(settings.values['custom-hover-scale'], 1.04);
+    assertEqual(settings.values['custom-launch-effect'], 'pulse');
     assertEqual(settings.applyCount, 1);
 });
 
@@ -238,12 +237,28 @@ test('neighbor radius round-trips through custom settings', () => {
     assertEqual(readActiveRecipe(settings).hover.neighborRadius, 2);
 });
 
+test('dynamic spacing edits preserve the preset and round-trip through Custom', () => {
+    const settings = new DelayedSettings(Preset.EXPRESSIVE);
+    editCustomSetting(settings, 'custom-hover-dynamic-spacing', false);
+    assertEqual(settings.committed['motion-profile'], Preset.CUSTOM);
+    assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
+    assertEqual(readActiveRecipe(settings).hover.scale, 1.32);
+    selectPreset(settings, Preset.BALANCED);
+    assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
+    selectPreset(settings, Preset.EXPRESSIVE);
+    assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, true);
+    selectPreset(settings, Preset.CUSTOM);
+    assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
+    resetCustom(settings);
+    assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
+});
+
 test('reset restores the default custom values after an edit', () => {
     const settings = new ImmediateSettings(Preset.CUSTOM);
     editCustomSetting(settings, 'custom-hover-scale', 1.29);
     resetCustom(settings);
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
-    assertEqual(readActiveRecipe(settings).hover.scale, 1.10);
+    assertEqual(readActiveRecipe(settings).hover.scale, 1.04);
 });
 
 test('attention settings round-trip through custom', () => {
@@ -251,15 +266,15 @@ test('attention settings round-trip through custom', () => {
     editCustomSetting(settings, 'custom-attention-effect', 'wiggle');
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
     assertEqual(settings.values['custom-attention-effect'], 'wiggle');
-    assertEqual(settings.values['custom-attention-interval'], 5);
+    assertEqual(settings.values['custom-attention-interval'], 8);
     assertEqual(settings.values['custom-attention-peek'], true);
     const recipe = readActiveRecipe(settings);
     assertEqual(recipe.attention.effect, 'wiggle');
     assertEqual(recipe.attention.speed, 0.70);
-    assertEqual(recipe.attention.cycles, 3);
+    assertEqual(recipe.attention.cycles, 2);
     assertEqual(recipe.attention.cyclePause, 120);
-    assertEqual(recipe.attention.interval, 5);
-    assertEqual(recipe.attention.reminders, 10);
+    assertEqual(recipe.attention.interval, 8);
+    assertEqual(recipe.attention.reminders, 5);
     assertEqual(recipe.attention.peekWhenHidden, true);
 });
 
@@ -269,10 +284,10 @@ test('switching to a preset writes the attention part too', () => {
     settings.values['custom-attention-cycles'] = 9;
     settings.values['custom-attention-cycle-pause'] = 500;
     switchToPresetFromCustom(settings, Preset.SUBTLE);
-    assertEqual(settings.values['custom-attention-interval'], 5);
-    assertEqual(settings.values['custom-attention-cycles'], 3);
+    assertEqual(settings.values['custom-attention-interval'], 10);
+    assertEqual(settings.values['custom-attention-cycles'], 1);
     assertEqual(settings.values['custom-attention-cycle-pause'], 120);
-    assertEqual(settings.values['custom-attention-effect'], 'wiggle');
+    assertEqual(settings.values['custom-attention-effect'], 'pulse');
 });
 
 test('every attention key round-trips through custom', () => {
@@ -293,12 +308,4 @@ test('every attention key round-trips through custom', () => {
         assertEqual(settings.values[key], value);
         assertEqual(readActiveRecipe(settings).attention[property], value);
     }
-});
-
-test('selectHoverMode commits without touching the preset values', () => {
-    const settings = new ImmediateSettings(Preset.EXPRESSIVE);
-    selectHoverMode(settings, 'wave');
-    assertEqual(settings.values['hover-mode'], 'wave');
-    assertEqual(settings.values['motion-profile'], 'expressive');
-    assertEqual(readActiveRecipe(settings).hover.scale, 1.22);
 });

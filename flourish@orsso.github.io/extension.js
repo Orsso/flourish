@@ -4,7 +4,6 @@ import Meta from 'gi://Meta';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
-import {HoverMode} from './lib/motion/catalog.js';
 import {readActiveRecipe} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
@@ -16,7 +15,6 @@ export default class FlourishExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._recipe = readActiveRecipe(this._settings);
-        const continuous = this._settings.get_string('hover-mode') === HoverMode.WAVE;
 
         const laters = global.compositor.get_laters();
         this._frameScheduler = {
@@ -29,14 +27,11 @@ export default class FlourishExtension extends Extension {
 
         this._dockIntegration = new DockIntegration({
             scheduler: this._frameScheduler,
-            settings: this._settings,
-            continuous,
             onUrgentChanged: (controller, urgent) =>
                 this._attentionEngine?.onUrgentChanged(controller, urgent),
         });
         this._dashIntegration = new DashIntegration({
             scheduler: this._frameScheduler,
-            continuous,
         });
 
         this._hoverStyle = new BackgroundStyle({
@@ -57,7 +52,7 @@ export default class FlourishExtension extends Extension {
 
         this._dockIntegration.enable(this._recipe);
         this._dashIntegration.enable(this._recipe);
-        this._syncPointerHook(continuous);
+        this._connectPointer();
 
         this._launchEngine = new LaunchEngine({
             getController: icon =>
@@ -70,9 +65,7 @@ export default class FlourishExtension extends Extension {
         this._launchEngine.enable();
 
         this._syncIdleId = 0;
-        this._settings.connectObject('changed', (_settings, key) => {
-            if (key === 'measured-hover-budget' || key === 'measured-icon-size')
-                return;
+        this._settings.connectObject('changed', () => {
             // A preset switch writes many keys at once.
             if (this._syncIdleId)
                 return;
@@ -123,21 +116,14 @@ export default class FlourishExtension extends Extension {
 
     _syncSettings() {
         this._recipe = readActiveRecipe(this._settings);
-        const continuous = this._settings.get_string('hover-mode') === HoverMode.WAVE;
-        this._dockIntegration.setContinuous(continuous);
-        this._dashIntegration.setContinuous(continuous);
-        this._syncPointerHook(continuous);
         this._dockIntegration.setRecipe(this._recipe);
         this._dashIntegration.setRecipe(this._recipe);
         if (this._syncStyles())
             this._refreshStyles();
     }
 
-    // Nothing reactive covers the gaps of the dash; the stage sees every motion.
-    _syncPointerHook(continuous) {
-        global.stage.disconnectObject(this);
-        if (!continuous)
-            return;
+    // The stage covers gaps; native hover signals also refresh the pointer.
+    _connectPointer() {
         global.stage.connectObject('motion-event', (_stage, event) => {
             const [x, y] = event.get_coords();
             this._dockIntegration.onPointerMotion(x, y);

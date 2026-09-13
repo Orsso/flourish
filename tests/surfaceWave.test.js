@@ -1,9 +1,11 @@
-import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
-import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../flourish@orsso.github.io/lib/motion/transforms.js';
+import {motionRecipe} from './fakes.js';
+import {OVERSHOOT_RESERVE} from '../flourish@orsso.github.io/lib/motion/transforms.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
-import {FakeRow, MeasurableBin, makeScheduler} from './fakes.js';
+import {FakeEmitter, FakeRow, MeasurableBin, makeScheduler} from './fakes.js';
 
-const DURATION = getBuiltInRecipe('expressive').hover.duration;
+import {fitHoverLevel} from '../flourish@orsso.github.io/lib/motion/continuum.js';
+
+const DURATION = motionRecipe('expressive').hover.duration;
 
 function makeSurface({
     preset = 'expressive',
@@ -11,23 +13,31 @@ function makeSurface({
     position = [0, 0],
     animationsEnabled = () => true,
     room = 120,
+    spreadRoom = 0,
+    getPointer = () => null,
+    containsPointer = () => true,
+    pointerActor = null,
+    clock = null,
 } = {}) {
     const horizontal = edge === 'bottom' || edge === 'top';
     const scheduler = makeScheduler();
     // Room between the icons and the clip, outward along the edge.
-    const parent = horizontal ? {parentY: 780 + room} : {parentX: room - 10};
+    const parent = horizontal
+        ? {parentY: edge === 'bottom' ? 780 + room : 932 - room}
+        : {parentX: edge === 'left' ? room - 10 : 942 - room};
     const box = new FakeRow(5, {
         horizontal, position, makeBin: () => new MeasurableBin(parent),
     });
     let now = 0;
     const surface = new MotionSurface({
-        recipe: getBuiltInRecipe(preset),
-        continuous: true,
+        recipe: motionRecipe(preset),
         scheduler,
-        clock: () => now,
+        clock: clock ?? (() => now),
         animationsEnabled,
+        getPointer,
     });
-    surface.addBox(box, edge);
+    const overflow = {room: spreadRoom, get actors() { return box.get_children(); }};
+    surface.addBox(box, edge, {getSpacing: () => spreadRoom ? overflow : null, containsPointer, pointerActor});
     scheduler.flush();
     const bins = box.icons.map(icon => icon.icon._iconBin);
     const frame = ms => {
@@ -39,7 +49,7 @@ function makeSurface({
         for (let i = 0; i < 8 && scheduler.pending.size > 0; i++)
             frame(DURATION / 2);
     };
-    return {surface, scheduler, box, bins, icons: box.icons, frame, settle};
+    return {surface, scheduler, box, bins, icons: box.icons, frame, settle, overflow};
 }
 
 test('wave peaks at the pointer and falls off with distance', () => {
@@ -56,6 +66,241 @@ test('wave peaks at the pointer and falls off with distance', () => {
     assertEqual(bins[4].scale_x, 1);
     // The wave lands per frame, not as a recipe-duration ease.
     assertEqual(bins[2].easeTargets.length, 0);
+});
+
+test('elevation alone follows the pointer, fits the clip and retreats on every edge', () => {
+    for (const edge of ['bottom', 'top', 'left', 'right']) {
+        const {surface, bins, frame, settle} = makeSurface({edge, room: 4, spreadRoom: 64});
+        const recipe = motionRecipe();
+        recipe.hover.scale = 1;
+        recipe.hover.lift = 12;
+        recipe.hover.easing = 'ease-out-cubic';
+        surface.setRecipe(recipe);
+        const horizontal = edge === 'bottom' || edge === 'top';
+        surface.onPointerMotion(...(horizontal ? [125, 25] : [25, 125]));
+        frame(0);
+        settle();
+        const key = horizontal ? 'translation_y' : 'translation_x';
+        assertClose(Math.abs(bins[2][key]), 4);
+        assertClose(Math.abs(bins[1][key]), 2);
+        assertEqual(bins[2].scale_x, 1);
+        assertEqual(bins[2].reactive, true);
+        surface.clearPointer();
+        settle();
+        assertClose(bins[2][key], 0);
+        assertEqual(bins[2].reactive, false);
+        surface.dispose();
+    }
+});
+
+test('enabling hover under a stationary pointer starts the shared envelope', () => {
+    const {surface, bins, frame, settle} = makeSurface({getPointer: () => [125, 25]});
+    const recipe = motionRecipe();
+    recipe.hover.enabled = false;
+    surface.setRecipe(recipe);
+    frame(0);
+    assertEqual(bins[2].scale_x, 1);
+    recipe.hover.enabled = true;
+    surface.setRecipe(recipe);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    surface.dispose();
+});
+
+test('dock spacing translates native containers, not their allocations', () => {
+    const {surface, box, frame, settle} = makeSurface({spreadRoom: 64});
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertClose(box.children[2].translation_x, 0);
+    assertEqual(box.children[1].translation_x < 0, true);
+    assertEqual(box.children[3].translation_x > 0, true);
+    assertEqual(box.children[1].get_allocation_box().x1, 50);
+    surface.dispose();
+    for (const actor of box.children)
+        assertEqual(actor.translation_x, 0);
+});
+
+test('Lively sweeps magnify without moving containers on every edge', () => {
+    for (const edge of ['bottom', 'top', 'left', 'right']) {
+        const {surface, box, bins, frame, settle} = makeSurface({preset: 'balanced', edge, spreadRoom: 64});
+        const horizontal = edge === 'bottom' || edge === 'top';
+        for (let point = 25; point <= 225; point += 4) {
+            surface.onPointerMotion(...(horizontal ? [point, 25] : [25, point]));
+            frame(16);
+            settle();
+            assertEqual(bins.some(bin => bin.scale_x > 1.05), true);
+            for (const actor of box.children) {
+                assertEqual(actor.translation_x, 0);
+                assertEqual(actor.translation_y, 0);
+            }
+        }
+        surface.dispose();
+    }
+});
+
+test('spacing can toggle under a stationary wave and restores foreign translations', () => {
+    const {surface, box, bins, frame, settle, scheduler} = makeSurface({spreadRoom: 64});
+    box.children[1].translation_x = 7;
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertEqual(box.children[1].translation_x < 7, true);
+    const recipe = motionRecipe('expressive');
+    recipe.hover.dynamicSpacing = false;
+    surface.setRecipe(recipe);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    assertEqual(box.children[1].translation_x, 7);
+    assertEqual(box.children[3].translation_x, 0);
+    assertEqual(scheduler.pending.size, 0);
+    surface.setRecipe(motionRecipe('expressive'));
+    frame(0);
+    settle();
+    assertEqual(box.children[1].translation_x < 7, true);
+    surface.dispose();
+    assertEqual(box.children[1].translation_x, 7);
+});
+
+test('fixed spacing keeps the zoom budget during entry and retreat', () => {
+    for (const dynamicSpacing of [true, false]) {
+        const {surface, box, bins, frame, settle, overflow} = makeSurface({spreadRoom: 2});
+        const recipe = motionRecipe('expressive');
+        recipe.hover.dynamicSpacing = dynamicSpacing;
+        recipe.hover.easing = 'ease-out-cubic';
+        surface.setRecipe(recipe);
+        surface.onPointerMotion(125, 25);
+        frame(0);
+        settle();
+        const fitted = bins[2].scale_x;
+        assertEqual(fitted > 1 && fitted < 1.22, true);
+        if (!dynamicSpacing)
+            for (const actor of box.children)
+                assertEqual(actor.translation_x, 0);
+        surface.onPointerMotion(125, 1000);
+        frame(1);
+        assertClose(bins[2].scale_x, fitted);
+        overflow.room = 0;
+        frame(10);
+        for (const bin of bins)
+            assertEqual(bin.scale_x, 1);
+        settle();
+        surface.dispose();
+    }
+});
+
+test('RTL uses the same physical wave and spacing as LTR', () => {
+    const {surface, box, bins, frame, settle} = makeSurface({spreadRoom: 64});
+    box.children.forEach((container, index) => { container.index = 4 - index; });
+    surface.onPointerMotion(75, 25);
+    frame(0);
+    settle();
+    assertClose(bins[3].scale_x, 1.22);
+    assertClose(bins[2].scale_x, 1.11);
+    assertEqual(box.children[4].translation_x < 0, true);
+    assertEqual(box.children[2].translation_x > 0, true);
+    surface.dispose();
+    for (const child of box.children)
+        assertEqual(child.translation_x, 0);
+});
+
+test('spacing restores on hover exit, mode change and overflow closure', () => {
+    const {surface, box, frame, settle, overflow} = makeSurface({spreadRoom: 64});
+    for (const stop of [
+        () => { surface.onPointerMotion(125, 1000); settle(); },
+        () => { overflow.room = 0; surface.invalidateGeometry(); frame(0); },
+        () => { const recipe = motionRecipe('expressive'); recipe.hover.enabled = false; surface.setRecipe(recipe); },
+    ]) {
+        surface.setRecipe(motionRecipe('expressive'));
+        overflow.room = 64;
+        surface.onPointerMotion(125, 25);
+        frame(0);
+        settle();
+        assertEqual(box.children[1].translation_x < 0, true);
+        stop();
+        for (const actor of box.children)
+            assertEqual(actor.translation_x, 0);
+    }
+    surface.dispose();
+});
+
+test('vertical spacing uses the dock axis and preserves foreign translation', () => {
+    const {surface, box, frame, settle} = makeSurface({edge: 'left', spreadRoom: 64});
+    box.children[1].translation_y = 7;
+    surface.onPointerMotion(25, 125);
+    frame(0);
+    settle();
+    assertEqual(box.children[1].translation_y < 7, true);
+    assertEqual(box.children[3].translation_y > 0, true);
+    assertEqual(box.children[3].translation_x, 0);
+    surface.dispose();
+    assertEqual(box.children[1].translation_y, 7);
+});
+
+test('spacing bounds magnification instead of sacrificing gaps', () => {
+    const {surface, box, bins, frame, settle} = makeSurface({spreadRoom: 2});
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertEqual(Math.abs(box.children[0].translation_x) <= 2.00001, true);
+    assertEqual(bins[2].scale_x < 1.22, true);
+    const gap = 50 + box.children[2].translation_x - box.children[1].translation_x -
+        48 * (bins[1].scale_x + bins[2].scale_x) / 2;
+    assertClose(gap, 2);
+    surface.dispose();
+});
+
+test('a surface with no remaining spacing room reduces its wave to rest', () => {
+    const {surface, box, bins, frame, settle, overflow} = makeSurface({spreadRoom: 64});
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertEqual(box.children[1].translation_x < 0, true);
+    overflow.room = 0;
+    surface.invalidateGeometry();
+    frame(0);
+    settle();
+    for (const actor of box.children)
+        assertEqual(actor.translation_x, 0);
+    for (const bin of bins)
+        assertEqual(bin.scale_x, 1);
+    surface.dispose();
+});
+
+test('disabling animations restores spacing without waiting for pointer motion', () => {
+    let animations = true;
+    const {surface, box, frame, settle} = makeSurface({spreadRoom: 64, animationsEnabled: () => animations});
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertEqual(box.children[1].translation_x < 0, true);
+    animations = false;
+    surface.setRecipe(motionRecipe('expressive'));
+    for (const actor of box.children)
+        assertEqual(actor.translation_x, 0);
+    surface.dispose();
+});
+
+test('a settled spread performs no further translation writes', () => {
+    const {surface, box, frame, settle, scheduler} = makeSurface({spreadRoom: 64});
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    let writes = 0;
+    for (const actor of box.children) {
+        let value = actor.translation_x;
+        Object.defineProperty(actor, 'translation_x', {
+            get: () => value,
+            set: next => { writes++; value = next; },
+        });
+    }
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    assertEqual(writes, 0);
+    assertEqual(scheduler.pending.size, 0);
+    surface.dispose();
 });
 
 test('two motions in one frame coalesce into one apply', () => {
@@ -177,7 +422,7 @@ test('a stationary pointer settles and schedules no work', () => {
     assertEqual(scheduler.pending.size, 0);
 });
 
-test('beginLaunch takes its magnify from the wave', () => {
+test('beginLaunch keeps the measured wave rather than the discrete neighbor scale', () => {
     const {surface, bins, icons, frame, settle} = makeSurface();
     surface.onPointerMotion(75, 25);
     frame(0);
@@ -185,8 +430,242 @@ test('beginLaunch takes its magnify from the wave', () => {
     // Icon 2 is one pitch from the pointer: 1.11, not the 1.08 discrete.
     const result = surface.getController(icons[2]).beginLaunch(true);
     assertEqual(result.active, true);
-    assertClose(result.magnify, 1.11);
+    assertClose(bins[2].scale_x, 1.11);
     assertClose(bins[1].scale_x, 1.22);
+});
+
+test('a launching icon continues to follow the shared wave and its exit', () => {
+    const {surface, bins, icons, frame, settle} = makeSurface();
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    const controller = surface.getController(icons[2]);
+    controller.beginLaunch(true);
+    assertClose(bins[2].scale_x, 1.22);
+    surface.onPointerMotion(75, 25);
+    frame(0);
+    assertClose(bins[2].scale_x, 1.11);
+    surface.onPointerMotion(75, 1000);
+    settle();
+    assertClose(bins[2].scale_x, 1);
+    controller.endOverlay();
+    frame(0);
+    assertClose(bins[2].scale_x, 1);
+});
+
+test('surface disappearance clears a stationary wave without new pointer motion', () => {
+    const {surface, bins, box, frame, settle} = makeSurface({spreadRoom: 64});
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    box.mapped = false;
+    box.emit('notify::mapped');
+    settle();
+    for (const bin of bins)
+        assertClose(bin.scale_x, 1);
+    for (const actor of box.children)
+        assertClose(actor.translation_x, 0);
+    box.mapped = true;
+    box.emit('notify::mapped');
+    frame(0);
+    for (const bin of bins)
+        assertClose(bin.scale_x, 1);
+});
+
+test('leaving the Shell clears a cached wave even before native hover changes', () => {
+    const {surface, icons, bins, frame, settle, scheduler} = makeSurface();
+    icons[2].setHover(true);
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    surface.clearPointer();
+    settle();
+    for (const bin of bins)
+        assertClose(bin.scale_x, 1);
+    assertEqual(scheduler.pending.size, 0);
+    icons[2].setHover(false);
+    icons[2].setHover(true);
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+});
+
+test('native hover exit refreshes the pointer when client motion bypasses the stage', () => {
+    let pointer = [125, 25];
+    const {surface, icons, bins, frame, settle} = makeSurface({getPointer: () => pointer});
+    icons[2].setHover(true);
+    surface.onPointerMotion(...pointer);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    pointer = [120, 260];
+    icons[2].setHover(false);
+    settle();
+    for (const bin of bins)
+        assertClose(bin.scale_x, 1);
+});
+
+test('native hover exit cannot sustain the wave through an overlapping client', () => {
+    let pointer = [125, 25];
+    let onSurface = true;
+    const {surface, icons, bins, frame, settle} = makeSurface({
+        getPointer: () => pointer, containsPointer: () => onSurface,
+    });
+    icons[2].setHover(true);
+    surface.onPointerMotion(...pointer);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    onSurface = false;
+    icons[2].setHover(false);
+    pointer = [125, 26];
+    frame(0);
+    settle();
+    for (const bin of bins)
+        assertClose(bin.scale_x, 1);
+    surface.dispose();
+});
+
+test('native hover exit samples the pointer after the notification', () => {
+    let pointer = [125, 25];
+    const {surface, icons, bins, frame, settle} = makeSurface({getPointer: () => pointer});
+    icons[2].setHover(true);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    icons[2].setHover(false);
+    pointer = [125, 260];
+    frame(0);
+    settle();
+    for (const bin of bins)
+        assertClose(bin.scale_x, 1);
+    surface.dispose();
+});
+
+test('surface picking is coalesced, bounded to the row and idle after settling', () => {
+    let picks = 0;
+    const {surface, frame, settle, scheduler} = makeSurface({
+        containsPointer: () => { picks++; return true; },
+    });
+    surface.onPointerMotion(120, 25);
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    assertEqual(picks, 1);
+    settle();
+    const settled = picks;
+    frame(1000);
+    assertEqual(picks, settled);
+    assertEqual(scheduler.pending.size, 0);
+    surface.onPointerMotion(125, 1000);
+    settle();
+    assertEqual(picks, settled);
+    surface.dispose();
+});
+
+test('surface gaps retain the wave after native icon hover ends', () => {
+    const {surface, icons, bins, frame, settle} = makeSurface();
+    icons[2].setHover(true);
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    icons[2].setHover(false);
+    surface.onPointerMotion(150, 25);
+    frame(0);
+    settle();
+    assertEqual(bins[2].scale_x > 1, true);
+    assertEqual(bins[3].scale_x > 1, true);
+    surface.dispose();
+});
+
+test('the raised wave band bridges gaps without extending beyond its height', () => {
+    const {surface, bins, frame, settle} = makeSurface();
+    for (const [index, bin] of bins.entries()) {
+        bin.get_transformed_position = () => [index * 50 + 10, index === 2 ? -12 : 4];
+        bin.get_transformed_size = () => [30, 42];
+    }
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    surface.onPointerMotion(150, -4);
+    frame(0);
+    settle();
+    assertEqual(bins[2].scale_x > 1, true);
+    surface.onPointerMotion(150, -30);
+    settle();
+    for (const bin of bins)
+        assertEqual(bin.scale_x, 1);
+    surface.dispose();
+});
+
+test('surface leave refreshes a settled wave without an icon hover change', () => {
+    const pointerActor = new FakeEmitter();
+    let owned = true;
+    const {surface, bins, frame, settle, scheduler} = makeSurface({
+        pointerActor, containsPointer: () => owned,
+    });
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertEqual(bins[2].scale_x > 1, true);
+    owned = false;
+    pointerActor.emit('leave-event', {get_coords: () => [125, 25]});
+    settle();
+    for (const bin of bins)
+        assertEqual(bin.scale_x, 1);
+    surface.dispose();
+    pointerActor.emit('leave-event', {get_coords: () => [125, 25]});
+    assertEqual(scheduler.pending.size, 0);
+});
+
+test('a vertical wave bridges gaps only along its own row axis', () => {
+    const {surface, bins, frame, settle} = makeSurface({edge: 'left'});
+    for (const [index, bin] of bins.entries()) {
+        bin.get_transformed_position = () => [index === 2 ? -12 : 4, index * 50 + 10];
+        bin.get_transformed_size = () => [42, 30];
+    }
+    surface.onPointerMotion(25, 125);
+    frame(0);
+    settle();
+    surface.onPointerMotion(-4, 150);
+    frame(0);
+    settle();
+    assertEqual(bins[2].scale_x > 1, true);
+    surface.onPointerMotion(-30, 150);
+    settle();
+    for (const bin of bins)
+        assertEqual(bin.scale_x, 1);
+    surface.dispose();
+});
+
+test('a retreat completing during a flush still applies its final frame', () => {
+    let time = 0;
+    let step = 0;
+    const {surface, bins, box, frame, scheduler} = makeSurface({
+        spreadRoom: 64,
+        clock: () => { const value = time; time += step; return value; },
+    });
+    const recipe = motionRecipe('expressive');
+    recipe.hover.easing = 'ease-out-cubic';
+    surface.setRecipe(recipe);
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    time = DURATION;
+    frame(0);
+    surface.onPointerMotion(125, 1000);
+    frame(0);
+    time = 2 * DURATION - 0.5;
+    step = 1;
+    frame(0);
+    assertEqual(scheduler.pending.size, 1);
+    frame(0);
+    for (const bin of bins) {
+        assertEqual(bin.scale_x, 1);
+        assertEqual(bin.reactive, false);
+    }
+    for (const actor of box.children)
+        assertEqual(actor.translation_x, 0);
+    surface.dispose();
 });
 
 test('hover enter and leave order cleanly around the wave', () => {
@@ -196,7 +675,6 @@ test('hover enter and leave order cleanly around the wave', () => {
     settle();
     icons[2].setHover(true);
     frame(0);
-    // The wave owns the hovered icon; the value equals the classic peak.
     assertClose(bins[2].scale_x, 1.22);
     icons[2].setHover(false);
     frame(0);
@@ -206,28 +684,7 @@ test('hover enter and leave order cleanly around the wave', () => {
     settle();
     for (const bin of bins)
         assertEqual(bin.scale_x, 1);
-    // The release may ease the last sliver of the decay, but only to 1:
-    // never to the classic hover peak.
-    const lastEase = bins[2].easeTargets[bins[2].easeTargets.length - 1];
-    assertEqual(lastEase === undefined || lastEase === 1, true);
-});
-
-test('switching to classic mid-transition restores instantly', () => {
-    const {surface, scheduler, bins, frame} = makeSurface();
-    surface.onPointerMotion(100, 25);
-    frame(0);
-    assertEqual(scheduler.pending.size, 1);
-    surface.setContinuous(false);
-    frame(0);
-    for (const bin of bins)
-        assertEqual(bin.scale_x, 1);
-    assertEqual(scheduler.pending.size, 0);
-    // The wave is inert until re-enabled.
-    surface.onPointerMotion(125, 25);
-    frame(0);
-    for (const bin of bins)
-        assertEqual(bin.scale_x, 1);
-    assertEqual(scheduler.pending.size, 0);
+    assertEqual(bins[2].easeTargets.length, 0);
 });
 
 test('a recipe change is picked up by the next transition', () => {
@@ -236,7 +693,7 @@ test('a recipe change is picked up by the next transition', () => {
     frame(0);
     settle();
     // Short-recipe: the exit transition finishes almost at once.
-    const recipe = getBuiltInRecipe('expressive');
+    const recipe = motionRecipe('expressive');
     recipe.hover.duration = 1;
     surface.setRecipe(recipe);
     surface.onPointerMotion(125, 1000);
@@ -354,7 +811,8 @@ test('the wave fits its peak to the row budget once per sweep', () => {
     surface.onPointerMotion(125, 25);
     frame(0);
     settle();
-    const fitted = fitHoverToBudget(1.22, 5, 48, 10, OVERSHOOT_RESERVE);
+    const level = fitHoverLevel(motionRecipe().hover, 48, 10, OVERSHOOT_RESERVE);
+    const fitted = {hoverScale: 1 + 0.22 * level, lift: 5 * level};
     assertClose(bins[2].scale_x, fitted.hoverScale);
     assertClose(bins[2].translation_y, -fitted.lift);
     // One measure for the row, none per icon per frame.
@@ -374,4 +832,23 @@ test('disposing the surface restores every bin', () => {
     scheduler.flush();
     for (const bin of bins)
         assertEqual(bin.scale_x, 1);
+});
+
+test('the wave stays active over the visible overflow of an original icon', () => {
+    const {surface, bins, frame, settle} = makeSurface();
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    bins[2].get_transformed_position = () => [100, -8];
+    bins[2].get_transformed_size = () => [50, 54];
+    surface.onPointerMotion(125, -4);
+    frame(16);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    assertEqual(bins[2].reactive, true);
+    surface.onPointerMotion(125, -12);
+    frame(16);
+    settle();
+    assertClose(bins[2].scale_x, 1);
+    assertEqual(bins[2].reactive, false);
 });

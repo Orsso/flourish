@@ -81,3 +81,12 @@ test('disable clears the mark and stops listening', () => {
     assertEqual(tracker.handlers.size, 0);
     assertEqual(box.handlers.size, 0);
 });
+
+test('destroying the native row disconnects the surviving focus tracker', () => {
+    const {box, tracker, highlight} = setup(['a']);
+    highlight.enable();
+    tracker.focus('a');
+    box.destroy();
+    assertEqual(tracker.handlers.size, 0);
+    tracker.focus('b');
+});

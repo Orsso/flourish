@@ -2,11 +2,11 @@ import {DEFAULT_PRESET, Preset, RecipePart, getBuiltInRecipe} from './catalog.js
 
 const DEFINITIONS = [
     definition('custom-hover-enabled', 'boolean', RecipePart.HOVER, 'enabled'),
+    definition('custom-hover-dynamic-spacing', 'boolean', RecipePart.HOVER, 'dynamicSpacing'),
     definition('custom-hover-scale', 'double', RecipePart.HOVER, 'scale'),
     definition('custom-hover-lift', 'int', RecipePart.HOVER, 'lift'),
     definition('custom-hover-duration', 'int', RecipePart.HOVER, 'duration'),
     definition('custom-hover-easing', 'string', RecipePart.HOVER, 'easing'),
-    definition('custom-neighbor-scale', 'double', RecipePart.HOVER, 'neighborScale'),
     definition('custom-neighbor-radius', 'int', RecipePart.HOVER, 'neighborRadius'),
     definition('custom-press-enabled', 'boolean', RecipePart.PRESS, 'enabled'),
     definition('custom-press-mode', 'string', RecipePart.PRESS, 'mode'),
@@ -73,11 +73,6 @@ export function editCustomSetting(settings, key, value) {
 export function selectPreset(settings, preset) {
     settings.set_string('motion-profile', preset);
     // delay() sticks for this GSettings object, so presets call apply() too.
-    settings.apply();
-}
-
-export function selectHoverMode(settings, mode) {
-    settings.set_string('hover-mode', mode);
     settings.apply();
 }
 

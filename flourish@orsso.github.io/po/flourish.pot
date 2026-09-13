@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-12 18:24+0200\n"
+"POT-Creation-Date: 2026-09-13 02:13+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -41,7 +41,7 @@ msgstr ""
 msgid "Presets"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:50 flourish@orsso.github.io/prefs.js:150
+#: flourish@orsso.github.io/prefs.js:50
 msgid "Hover to preview. Click to apply."
 msgstr ""
 
@@ -54,11 +54,11 @@ msgid "Motion"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:91
-msgid "Hover magnification"
+msgid "Hover motion"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:92 flourish@orsso.github.io/prefs.js:160
-msgid "Scale and lift the pointed icon"
+#: flourish@orsso.github.io/prefs.js:92
+msgid "Magnification and elevation around the pointer"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:94
@@ -78,7 +78,7 @@ msgid "Animate cold starts and new windows"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:100
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:160
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:141
 msgid "Attention"
 msgstr ""
 
@@ -94,275 +94,249 @@ msgstr ""
 msgid "Timing, effects, and repeats"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:149
-msgid ""
-"The preview shows the classic hover; the wave uses the preset peak, lift and "
-"timing."
-msgstr ""
-
-#: flourish@orsso.github.io/prefs.js:159
-msgid "Wave the icons around the pointer"
-msgstr ""
-
-#: flourish@orsso.github.io/prefs.js:209
+#: flourish@orsso.github.io/prefs.js:202
 #, javascript-format
 msgid "Switch to %s?"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:210
+#: flourish@orsso.github.io/prefs.js:203
 #, javascript-format
 msgid ""
 "Your Custom recipe will be abandoned and replaced by the %s preset values."
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:212
+#: flourish@orsso.github.io/prefs.js:205
 msgid "Cancel"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:213
+#: flourish@orsso.github.io/prefs.js:206
 msgid "Switch"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:44
-msgid "Hover room"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:45
-msgid "Measured from the dock"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:48
-msgid ""
-"Dash to Dock cuts off anything that reaches past its edge. This is the "
-"padding it leaves around the icons, in pixels. Flourish keeps magnification "
-"and lift within it. The padding comes from the theme, and the Shrink option "
-"of Dash to Dock makes it smaller. The overview dash has no such limit."
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:57
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:38
 msgid "Hover"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:59
-msgid "Hover behavior"
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:39
+msgid "Motion adapts to the available space."
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:61
-msgid "Classic"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:62
-msgid "Continuous wave"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:65
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:237
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:41
 msgid "Magnification"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:68
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:238
-msgid "Outward lift"
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:46
+msgid "Elevation"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:70
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:48
 msgid "px"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:72
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:110
-msgid "Duration"
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:50
+msgid "Transition duration"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:74
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:112
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:143
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:147
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:187
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:241
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:268
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:52
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:93
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:124
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:128
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:168
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:230
 msgid "ms"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:76
-msgid "Easing"
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:54
+msgid "Transition curve"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:78
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:56
 msgid "Linear"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:79
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:57
 msgid "Ease out (quad)"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:80
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:58
 msgid "Ease out (cubic)"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:81
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:59
 msgid "Ease out (back)"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:84
-msgid "Neighbor scale"
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:62
+msgid "Reach"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:87
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:244
-msgid "Neighbor radius"
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:64
+msgid "Reach on each side of the pointer, in icon steps"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:89
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:247
-msgid "Icons on each side that follow the hover"
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:67
+msgid "Dynamic spacing"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:93
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:68
+msgid "Move neighboring icons apart as they grow"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:69
+msgid ""
+"When off, icons keep their positions and may overlap at high magnification. "
+"Motion still adapts to the available space."
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:74
 msgid "Press"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:95
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:76
 msgid "Trigger"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:97
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:78
 msgid "Launches only"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:98
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:79
 msgid "All primary clicks"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:101
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:117
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:164
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:82
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:98
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:145
 msgid "Effect"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:103
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:84
 msgid "Squash"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:104
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:85
 msgid "Dim"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:107
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:125
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:172
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:88
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:106
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:153
 msgid "Intensity"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:115
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:91
+msgid "Duration"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:96
 msgid "Launch"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:119
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:166
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:100
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:147
 msgid "Pulse"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:120
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:167
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:101
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:148
 msgid "Bounce"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:121
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:168
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:102
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:149
 msgid "Stretch"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:122
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:103
 msgid "Stock zoom"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:128
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:175
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:109
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:156
 msgid "Speed"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:131
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:112
 msgid "Repeat while starting"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:132
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:113
 msgid "Stop when the application is running"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:136
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:117
 msgid "Soften repeated cycles"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:137
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:118
 msgid "Reduce the intensity of each repeat"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:141
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:122
 msgid "Repeat pause"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:145
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:126
 msgid "Maximum duration"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:149
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:130
 msgid "Bounce decay"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:152
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:133
 msgid "Pulse count"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:155
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:136
 msgid "Stretch elasticity"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:162
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:143
 msgid "Plays when an app asks for attention, with Dash to Dock or Ubuntu Dock."
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:169
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:150
 msgid "Wiggle"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:178
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:159
 msgid "Cycles"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:181
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:162
 msgid "Cycles played at each reminder"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:183
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:164
 msgid "Cycle pause"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:189
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:170
 msgid "Reminder interval"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:192
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:173
 msgid "Seconds between two reminders"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:194
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:175
 msgid "Reminders"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:197
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:178
 msgid "Stop after this many reminders"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:199
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:180
 msgid "Show when the dock is hidden"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:200
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:181
 msgid "Slide the icon out from the dock edge"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:201
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:182
 msgid ""
 "Useful with IntelliHide or auto-hide: the icon slides out of the hidden dock "
 "on its own. For the best effect, turn off \"Show dock for urgent "
@@ -371,77 +345,24 @@ msgid ""
 "window the icon shows only if Dash to Dock may reveal the dock there."
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:213
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:194
 msgid "Appearance"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:222
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:203
 msgid "Reset Custom"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:223
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:204
 msgid "Copy the Subtle preset into Custom"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:225
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:206
 msgid "Reset"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:237
-msgid "Peak magnification"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:238
-msgid "Peak outward lift"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:240
-msgid "Entry and exit transition (ms)"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:242
-msgid "Entry and exit easing"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:244
-msgid "Wave radius"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:246
-msgid "Icon pitches the wave reaches on each side"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:267
+#: flourish@orsso.github.io/lib/prefs/advancedPage.js:229
 msgid "Dim is instant for primary clicks"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:349
-msgid "No dock to measure (full motion applies)"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:350
-msgid "Outward magnification on hover"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:351
-msgid "Outward rise on hover, in pixels"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:366
-#, javascript-format
-msgid "About %s px of room per icon, updates with your dock"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:369
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:373
-#, javascript-format
-msgid "Reduced to fit the dock: ~%s of %s px"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:370
-#: flourish@orsso.github.io/lib/prefs/advancedPage.js:374
-#, javascript-format
-msgid "Uses ~%s of %s px"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/rows.js:35

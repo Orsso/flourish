@@ -4,8 +4,10 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {ScreenEdge} from '../motion/catalog.js';
+import {DockState, ScreenEdge} from '../motion/catalog.js';
 import {DockVisibility} from './dockVisibility.js';
+import {DockOverflow} from './dockOverflow.js';
+import {pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.
@@ -16,35 +18,29 @@ const DASH_TO_DOCK_BUILDS = [
 
 export class DockIntegration {
     #attachIdleId = 0;
-    #continuous = false;
     #generation = 0;
     #injections = null;
     #manager = null;
     #managerSignals = [];
-    #measureId = 0;
     #onUrgentChanged;
+    #overflows = new Set();
+    #recipe;
     #scheduler;
-    #settings;
     #surface = null;
     #visibilities = [];
 
     constructor({
         scheduler,
-        settings,
-        continuous = false,
         onUrgentChanged = () => {},
     }) {
         this.#scheduler = scheduler;
-        this.#continuous = continuous;
-        this.#settings = settings;
         this.#onUrgentChanged = onUrgentChanged;
     }
 
     enable(recipe) {
+        this.#recipe = recipe;
         this.#surface = new MotionSurface({
             recipe,
-            continuous: this.#continuous,
-            onMeasured: measurement => this.#publishBudget(measurement),
             onUrgentChanged: this.#onUrgentChanged,
             scheduler: this.#scheduler,
         });
@@ -68,21 +64,24 @@ export class DockIntegration {
         this.#cancelScheduledAttach();
         this.#handBackWiggles();
         this.#detachManager();
-        this.#cancelBudgetMeasure();
         this.#surface.dispose();
         this.#surface = null;
     }
 
     setRecipe(recipe) {
+        this.#recipe = recipe;
+        this.#syncOverflow();
         this.#surface?.setRecipe(recipe);
-    }
-
-    setContinuous(on) {
-        this.#surface?.setContinuous(on);
     }
 
     onPointerMotion(x, y) {
         this.#surface?.onPointerMotion(x, y);
+    }
+
+    #syncOverflow() {
+        const {hover} = this.#recipe;
+        for (const overflow of this.#overflows)
+            overflow.setActive(hover.enabled && (hover.scale > 1 || hover.lift > 0));
     }
 
     refreshStyles() {
@@ -159,6 +158,8 @@ export class DockIntegration {
     }
 
     #disposeVisibilities() {
+        for (const overflow of [...this.#overflows])
+            overflow.dispose();
         for (const visibility of this.#visibilities)
             visibility.dispose();
         this.#visibilities = [];
@@ -198,18 +199,36 @@ export class DockIntegration {
             });
             const context = {
                 visibility,
+                pointerActor: slid,
+                isAvailable: () => visibility.state === DockState.SHOWN,
+                containsPointer: (x, y) => pointerOnSurface(slid, x, y),
                 edge,
                 getMonitor,
                 dockSettings: this.#manager.settings ?? null,
             };
+            const overflow = new DockOverflow({
+                actor: slid,
+                row: box,
+                edge,
+                injections: new InjectionManager(),
+                onChanged: () => this.#surface.invalidateGeometry(),
+                onDisposed: disposed => this.#overflows.delete(disposed),
+            });
+            context.getSpacing = () => overflow.room ? overflow : null;
             if (!this.#surface.addBox(box, edge, context)) {
                 visibility.dispose();
                 continue;
             }
             this.#visibilities.push(visibility);
+            visibility.subscribe(state => {
+                if (state !== DockState.SHOWN)
+                    this.#surface.clearPointer(box);
+            });
+            this.#overflows.add(overflow);
+            overflow.enable();
+            this.#syncOverflow();
             this.#stopWiggles(dock);
         }
-        this.#scheduleBudgetMeasure();
         this.refreshStyles();
     }
 
@@ -259,44 +278,6 @@ export class DockIntegration {
             for (const icon of urgentIcons(dock))
                 icon.notify('urgent');
         }
-    }
-
-    // Populate the prefs readout before the first hover.
-    #scheduleBudgetMeasure() {
-        this.#cancelBudgetMeasure();
-        this.#measureId = GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => {
-            this.#measureId = 0;
-            for (const controller of this.#surface.controllers) {
-                if (this.#publishBudget(controller.measure()))
-                    break;
-            }
-            return GLib.SOURCE_REMOVE;
-        });
-    }
-
-    #cancelBudgetMeasure() {
-        if (this.#measureId) {
-            GLib.source_remove(this.#measureId);
-            this.#measureId = 0;
-        }
-    }
-
-    // Read by the preferences window for the hover room readout.
-    #publishBudget(measurement) {
-        if (!measurement)
-            return false;
-        const {budgetPx, iconNormalSize} = measurement;
-        if (!(budgetPx > 0) || !(iconNormalSize > 0))
-            return false;
-        this.#writeDouble('measured-hover-budget', budgetPx);
-        this.#writeDouble('measured-icon-size', iconNormalSize);
-        return true;
-    }
-
-    #writeDouble(key, value) {
-        const rounded = Math.round(value * 100) / 100;
-        if (this.#settings.get_double(key) !== rounded)
-            this.#settings.set_double(key, rounded);
     }
 
 }

@@ -36,3 +36,16 @@ test('restoring returns the stock texture and layout', () => {
     assertEqual(Object.hasOwn(baseIcon, '_createIconTexture'), false);
     assertDeepEqual([baseIcon.icon.width, baseIcon.icon.height], [-1, -1]);
 });
+
+test('texture refresh does not revisit an icon removed from its bin', () => {
+    const baseIcon = new FakeBaseIcon();
+    const restore = sharpenIconTexture(baseIcon);
+    baseIcon.icon.destroy = () => { throw new Error('disposed texture'); };
+    baseIcon._iconBin.child = null;
+    baseIcon._createIconTexture(64);
+    assertEqual(baseIcon.icon.size, 128);
+    baseIcon.icon.destroy = () => { throw new Error('disposed texture'); };
+    baseIcon._iconBin.child = null;
+    restore();
+    assertEqual(baseIcon.icon.size, 64);
+});

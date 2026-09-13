@@ -4,7 +4,7 @@ import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 
 import {Easing, PressMode, RecipePart, ScreenEdge} from '../motion/catalog.js';
-import {waveScaleAt} from '../motion/continuum.js';
+import {waveOffsets, waveFalloff} from '../motion/continuum.js';
 import {
     ATTENTION_SLIDE_DURATION,
     buildAttentionSegments,
@@ -13,7 +13,6 @@ import {
     getLaunchPivot,
     interpolateTransform,
     launchDuration,
-    projectHoverTransform,
     resolveIconTransform,
     sampleLaunchSegments,
 } from '../motion/transforms.js';
@@ -55,7 +54,7 @@ const EASINGS = {
 };
 
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
-    _init({recipe, part = null, wave = false, ...params}) {
+    _init({recipe, part = null, ...params}) {
         const inline = Boolean(part);
         const iconCount = part === RecipePart.HOVER ? hoverIconCount(recipe) : 1;
         super._init({
@@ -67,7 +66,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         });
         this._selected = false;
         this._part = part;
-        this._wave = wave;
         this._iconCount = iconCount;
         this._visibleCount = iconCount;
         this._countAnimation = IDLE_ANIMATION;
@@ -112,14 +110,13 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         return resolveIconTransform({
             edge: ScreenEdge.BOTTOM,
             recipe: this._recipe,
-            hovered: this._hovered,
+            hoverLevel: this._hovered ? 1 : 0,
             pressLevel: this._pressed ? 1 : 0,
             launching: this._launching,
         });
     }
 
-    updateRecipe(recipe, wave = this._wave) {
-        this._wave = wave;
+    updateRecipe(recipe) {
         this._recipe = this._adoptRecipe(recipe);
         this._syncIconCount();
         if (this._motionAnimation.state !== Adw.AnimationState.PLAYING)
@@ -227,11 +224,11 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                         this._sweepAnimation = IDLE_ANIMATION;
                         this._sweepActive = false;
                         this._hovered = true;
-                        this._hoverProgress = 0;
+                        this._hoverProgress = 1;
                         this._motionTransform = resolveIconTransform({
                             edge: ScreenEdge.BOTTOM,
                             recipe: this._recipe,
-                            hovered: true,
+                            hoverLevel: 1,
                         });
                         this.queue_draw();
                         onComplete();
@@ -584,10 +581,11 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const innerRight = dockX + dockWidth - pad - iconSize / 2;
         const step = (innerRight - innerLeft) / (count - 1);
 
+        const transforms = Array.from({length: count}, (_, i) => this._iconTransforms(i, middle));
+        const offsets = this._spacing(transforms, iconSize);
         for (let i = 0; i < count; i++) {
-            const transforms = this._iconTransforms(i, middle);
-            drawIcon(cr, innerLeft + i * step, iconTop, iconSize,
-                ICON_COLORS[i], transforms);
+            drawIcon(cr, innerLeft + i * step + offsets[i], iconTop, iconSize,
+                ICON_COLORS[i], transforms[i]);
         }
     }
 
@@ -597,53 +595,45 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const iconTop = height - INLINE_ICON_SIZE - 8;
         const first = width / 2 - middle * INLINE_STEP;
         const colorOffset = (ICON_COLORS.length - count) >> 1;
+        const transforms = Array.from({length: count}, (_, i) => this._iconTransforms(i, middle));
+        const offsets = this._spacing(transforms, INLINE_ICON_SIZE);
         for (let i = 0; i < count; i++) {
             const birth = iconBirth(this._visibleCount, Math.abs(i - middle));
             if (birth === 0)
                 continue;
-            const transforms = this._iconTransforms(i, middle);
+            const transform = transforms[i];
             const color = ICON_COLORS[
                 PART_COLOR_INDEX[this._part] ??
                 (i + colorOffset + ICON_COLORS.length) % ICON_COLORS.length];
-            drawIcon(cr, first + i * INLINE_STEP, iconTop, INLINE_ICON_SIZE,
+            drawIcon(cr, first + i * INLINE_STEP + offsets[i], iconTop, INLINE_ICON_SIZE,
                 color, {
-                    ...transforms,
+                    ...transform,
                     motion: {
-                        ...transforms.motion,
-                        scaleX: transforms.motion.scaleX * birth,
-                        scaleY: transforms.motion.scaleY * birth,
+                        ...transform.motion,
+                        scaleX: transform.motion.scaleX * birth,
+                        scaleY: transform.motion.scaleY * birth,
                     },
                 });
         }
     }
 
+    _spacing(transforms, size) {
+        return this._recipe.hover.dynamicSpacing && (!this._part || this._part === RecipePart.HOVER)
+            ? waveOffsets(transforms.map(() => size),
+                transforms.map(transform => transform.motion.scaleX))
+            : transforms.map(() => 0);
+    }
+
     _iconTransforms(index, middle) {
-        if (this._sweepActive) {
-            const intensity = Math.max(0, 1 - Math.abs(index - this._sweepValue));
-            const hoverFull = resolveIconTransform({
-                edge: ScreenEdge.BOTTOM,
-                recipe: this._recipe,
-                hovered: true,
-            });
-            return {
-                motion: interpolateTransform(IDENTITY, hoverFull, intensity),
-                launch: IDENTITY,
-                launchPivot: BOTTOM_PIVOT,
-                peek: 1,
-            };
-        }
-        if (this._wave && this._part === RecipePart.HOVER) {
-            // Same math as the runtime: sequence progress is the amplitude.
-            const hover = this._recipe.hover;
-            const scale = 1 + (waveScaleAt(
-                Math.abs(index - middle), hover.neighborRadius, hover.scale) - 1)
-                * this._hoverProgress;
+        const pointer = this._sweepActive ? this._sweepValue : middle;
+        const level = waveFalloff(Math.abs(index - pointer), this._recipe.hover.neighborRadius) *
+            (this._sweepActive ? 1 : this._hoverProgress);
+        if (this._sweepActive || this._part === RecipePart.HOVER) {
             return {
                 motion: resolveIconTransform({
                     edge: ScreenEdge.BOTTOM,
                     recipe: this._recipe,
-                    hovered: false,
-                    continuousScale: scale,
+                    hoverLevel: level,
                 }),
                 launch: IDENTITY,
                 launchPivot: BOTTOM_PIVOT,
@@ -665,11 +655,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             };
         }
         return {
-            motion: projectHoverTransform({
+            motion: resolveIconTransform({
                 edge: ScreenEdge.BOTTOM,
                 recipe: this._recipe,
-                neighborDistance: distance,
-                progress: this._hoverProgress,
+                hoverLevel: level,
             }),
             launch: IDENTITY,
             launchPivot: BOTTOM_PIVOT,

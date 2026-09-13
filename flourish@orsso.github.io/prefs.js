@@ -3,7 +3,7 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {HoverMode, Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
@@ -88,8 +88,8 @@ export default class FlourishPreferences extends ExtensionPreferences {
 
         const featureGroup = new Adw.PreferencesGroup({title: _('Motion')});
         controls.hoverEnabled = createSwitchRow(
-            featureGroup, _('Hover magnification'),
-            _('Scale and lift the pointed icon'));
+            featureGroup, _('Hover motion'),
+            _('Magnification and elevation around the pointer'));
         controls.pressEnabled = createSwitchRow(
             featureGroup, _('Press feedback'), _('Squash or dim the pressed icon'));
         controls.launchEnabled = createSwitchRow(
@@ -144,10 +144,6 @@ function syncControls(settings, controls, state) {
     state.syncing = true;
     const preset = settings.get_string('motion-profile');
     const recipe = readActiveRecipe(settings);
-    const wave = settings.get_string('hover-mode') === HoverMode.WAVE;
-    controls.presetGroup.description = wave
-        ? _('The preview shows the classic hover; the wave uses the preset peak, lift and timing.')
-        : _('Hover to preview. Click to apply.');
 
     for (const [id, card] of controls.presets) {
         card.preview.setSelected(id === preset);
@@ -155,9 +151,6 @@ function syncControls(settings, controls, state) {
     }
     controls.customBadge.visible = preset === Preset.CUSTOM;
 
-    controls.hoverEnabled.subtitle = wave
-        ? _('Wave the icons around the pointer')
-        : _('Scale and lift the pointed icon');
     controls.hoverEnabled.active = recipe.hover.enabled;
     controls.pressEnabled.active = recipe.press.enabled;
     controls.launchEnabled.active = recipe.launch.enabled;

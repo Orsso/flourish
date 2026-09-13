@@ -1,7 +1,9 @@
+import {motionRecipe} from './fakes.js';
+
 import Clutter from 'gi://Clutter';
 
-import {easingProgress, getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
-import {waveScaleAt} from '../flourish@orsso.github.io/lib/motion/continuum.js';
+import {easingProgress} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+import {waveFalloff} from '../flourish@orsso.github.io/lib/motion/continuum.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
 import {FakeRow, MeasurableBin, makeScheduler} from './fakes.js';
 
@@ -57,12 +59,13 @@ class TimedBin extends MeasurableBin {
 function replay(easing, events) {
     let now = 0;
     const clock = () => now;
-    const recipe = getBuiltInRecipe('expressive');
+    const recipe = motionRecipe('expressive');
     recipe.hover.easing = easing;
     const scheduler = makeScheduler();
     const box = new FakeRow(5, {makeBin: () => new TimedBin(clock)});
     const surface = new MotionSurface({
-        recipe, continuous: true, scheduler, clock, animationsEnabled: () => true,
+        getPointer: () => null,
+        recipe, scheduler, clock, animationsEnabled: () => true,
     });
     surface.addBox(box, 'bottom');
     scheduler.flush();
@@ -136,16 +139,17 @@ for (const easing of ['linear', 'ease-out-cubic', 'ease-out-back']) {
         const limit = stepLimit(easing, 280, 0.22);
         assertEqual(largestStep(frames, 700, 1000) < limit, true);
         // The pointer ended 3px off center.
-        assertClose(frames[frames.length - 1].sy, waveScaleAt(3 / 50, 2, 1.22));
+        assertClose(frames[frames.length - 1].sy, 1 + 0.22 * waveFalloff(3 / 50, 2));
     });
 }
 
-test('a launch during the entry ramp hands the wave target to the clone', () => {
+test('a launch during the entry ramp starts without a separate magnify target', () => {
     let launch;
     replay('linear', context => {
         const played = gesture(context);
         launch = played.launch;
         return played.events;
     });
-    assertClose(launch.result.magnify, 1.22);
+    assertEqual(launch.result.active, true);
+    assertEqual('magnify' in launch.result, false);
 });

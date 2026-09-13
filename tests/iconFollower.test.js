@@ -1,4 +1,4 @@
-import {followIcon} from '../flourish@orsso.github.io/lib/runtime/iconFollower.js';
+import {anchoredPlacement, followIcon} from '../flourish@orsso.github.io/lib/runtime/iconFollower.js';
 import {FakeEmitter, makeScheduler} from './fakes.js';
 
 class FakeActor extends FakeEmitter {
@@ -85,4 +85,46 @@ test('a destroyed icon stops the follower', () => {
     root.emit('notify::allocation');
     scheduler.flush();
     assertEqual(clone.moves.length, 0);
+});
+
+test('the follower observes translation and scale without reallocation', () => {
+    const {box, target, clone, scheduler} = setup();
+    target.x = 712;
+    target.width = 60;
+    box.emit('notify::translation-x');
+    box.emit('notify::scale-x');
+    assertEqual(scheduler.pending.size, 1);
+    scheduler.flush();
+    assertDeepEqual(clone.moves, [[712, 1016]]);
+    assertDeepEqual(clone.sizes, [[60, 48]]);
+});
+
+test('detached placement can freeze the last visible geometry', () => {
+    const {box, clone, scheduler, dispose} = setup(() => null);
+    box.emit('notify::allocation');
+    scheduler.flush();
+    assertEqual(clone.moves.length, 0);
+    dispose();
+});
+
+test('detached placement keeps its anchor while source size retreats', () => {
+    let attached = true;
+    const place = anchoredPlacement(() => attached, [0.5, 1]);
+    const start = {x: 592, y: 669, width: 96, height: 96};
+    assertDeepEqual(place(start), start);
+    attached = false;
+    assertDeepEqual(place({x: 900, y: 1200, width: 80, height: 80}),
+        {x: 600, y: 685, width: 80, height: 80});
+    assertDeepEqual(place({x: 608, y: 706, width: 64, height: 64}),
+        {x: 608, y: 701, width: 64, height: 64});
+    attached = true;
+    const next = {x: 300, y: 600, width: 70, height: 70};
+    assertDeepEqual(place(next), next);
+});
+
+test('detached placement handles a launch that starts hidden and a central pivot', () => {
+    const place = anchoredPlacement(() => false, [0.5, 0.5]);
+    place({x: 100, y: 100, width: 96, height: 96});
+    assertDeepEqual(place({x: 700, y: 800, width: 64, height: 64}),
+        {x: 116, y: 116, width: 64, height: 64});
 });

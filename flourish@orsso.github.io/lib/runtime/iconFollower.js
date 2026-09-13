@@ -1,7 +1,19 @@
 import {actorGeometry} from './geometry.js';
 
-// Keeps a clone on its icon while the dock or dash lays out around it. Only
-// allocations are watched; the clone mirrors the icon's own motion itself.
+export function anchoredPlacement(isAttached, pivot) {
+    let attachedRect = null;
+    return rect => {
+        if (isAttached() || attachedRect === null)
+            attachedRect = rect;
+        return {
+            ...rect,
+            x: attachedRect.x + (attachedRect.width - rect.width) * pivot[0],
+            y: attachedRect.y + (attachedRect.height - rect.height) * pivot[1],
+        };
+    };
+}
+
+// Surface transforms can move an icon without changing its allocation.
 export function followIcon({target, clone, scheduler, place = rect => rect}) {
     const owner = {};
     let flushId = 0;
@@ -19,6 +31,8 @@ export function followIcon({target, clone, scheduler, place = rect => rect}) {
     const sync = () => {
         flushId = 0;
         const rect = place(actorGeometry(target));
+        if (!rect)
+            return;
         clone.set_position(rect.x, rect.y);
         clone.set_size(rect.width, rect.height);
     };
@@ -30,7 +44,13 @@ export function followIcon({target, clone, scheduler, place = rect => rect}) {
 
     let node = target;
     while (node) {
-        node.connectObject('notify::allocation', schedule, owner);
+        node.connectObject(
+            'notify::allocation', schedule,
+            'notify::translation-x', schedule,
+            'notify::translation-y', schedule,
+            'notify::scale-x', schedule,
+            'notify::scale-y', schedule,
+            owner);
         watched.push(node);
         node = node.get_parent();
     }

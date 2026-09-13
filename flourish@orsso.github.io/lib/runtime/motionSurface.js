@@ -1,9 +1,10 @@
+import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 
-import {Easing, NeighborRadius, ScreenEdge, sampleRamp} from '../motion/catalog.js';
-import {waveScales} from '../motion/continuum.js';
-import {OVERSHOOT_RESERVE, fitHoverToBudget} from '../motion/transforms.js';
+import {Easing, ScreenEdge, sampleRamp} from '../motion/catalog.js';
+import {fitHoverLevel, waveFalloff, waveGeometry} from '../motion/continuum.js';
+import {OVERSHOOT_RESERVE} from '../motion/transforms.js';
 import {IconMotionController} from './iconMotionController.js';
 import {LiveRegistry} from './liveRegistry.js';
 
@@ -13,9 +14,8 @@ export class MotionSurface {
     #animationsEnabled;
     #clock;
     #contexts = new Map();
-    #continuous;
     #groups = new Set();
-    #onMeasured;
+    #getPointer;
     #onUrgentChanged;
     #recipe;
     #registry = new LiveRegistry();
@@ -23,18 +23,16 @@ export class MotionSurface {
 
     constructor({
         recipe,
-        continuous = false,
         clock = () => GLib.get_monotonic_time() / 1000,
+        getPointer = () => global.get_pointer(),
         animationsEnabled = () => St.Settings.get().enable_animations,
-        onMeasured = () => {},
         onUrgentChanged = () => {},
         scheduler,
     }) {
         this.#recipe = recipe;
-        this.#continuous = continuous;
         this.#clock = clock;
+        this.#getPointer = getPointer;
         this.#animationsEnabled = animationsEnabled;
-        this.#onMeasured = onMeasured;
         this.#onUrgentChanged = onUrgentChanged;
         this.#scheduler = scheduler;
     }
@@ -60,18 +58,14 @@ export class MotionSurface {
             controller.setRecipe(recipe);
     }
 
-    // The hover-mode key flips mid session.
-    setContinuous(on) {
-        if (on === this.#continuous)
-            return;
-        this.#continuous = on;
-        for (const group of this.#groups)
-            group.setContinuous(on);
-    }
-
     refreshStyles() {
         for (const controller of this.controllers)
             controller.refreshStyle();
+    }
+
+    invalidateGeometry() {
+        for (const group of this.#groups)
+            group.invalidateGeometry();
     }
 
     onPointerMotion(x, y) {
@@ -79,15 +73,25 @@ export class MotionSurface {
             group.onPointerMotion(x, y);
     }
 
+    clearPointer(box = null) {
+        for (const group of this.#groups)
+            if (!box || group.box === box)
+                group.clearPointer();
+    }
+
     addBox(box, edge, context = null) {
         const group = new NeighborGroup({
             scheduler: this.#scheduler,
             box,
+            pointerActor: context?.pointerActor ?? box,
             edge,
             recipe: this.#recipe,
-            continuous: this.#continuous,
             clock: this.#clock,
+            getPointer: this.#getPointer,
             animationsEnabled: this.#animationsEnabled,
+            getSpacing: context?.getSpacing ?? (() => null),
+            isAvailable: context?.isAvailable ?? (() => true),
+            containsPointer: context?.containsPointer ?? (() => true),
         });
         this.#groups.add(group);
         const release = () => {
@@ -98,8 +102,10 @@ export class MotionSurface {
             box.disconnectObject(this);
             release();
         }, release);
-        if (!added)
+        if (!added) {
+            release();
             return false;
+        }
         for (const container of box.get_children())
             this.#registerContainer(container, edge, group, context);
         box.connectObject('child-added', (_box, container) => {
@@ -127,12 +133,11 @@ export class MotionSurface {
             recipe: this.#recipe,
             clock: this.#clock,
             onAnimate: () => group.touch(controller),
-            onHoverChanged: (changed, hovered) => group.setHovered(changed, hovered),
+            onHoverChanged: changed => group.refreshPointer(changed),
             onDestroyed: destroyed => {
                 this.#contexts.delete(destroyed);
                 group.remove(destroyed);
             },
-            onMeasured: measurement => this.#onMeasured(measurement),
             onUrgentChanged: (changed, urgent) => this.#onUrgentChanged(changed, urgent),
         });
         group.add(controller, container, boxChildren(container));
@@ -149,31 +154,53 @@ class NeighborGroup {
     #animationsEnabled;
     #box;
     #clock;
-    #continuous;
+    #containsPointer;
     #dirty = new Set();
     #edge;
     #entries = [];
     // Wave amplitude, 0 at rest to 1 in full, eased over the hover duration.
     #envRamp = IDLE_RAMP;
     #flushId = 0;
-    #hovered = null;
+    #getPointer;
+    #isAvailable;
+    #getSpacing;
     #peak = null;
     #pointer = null;
+    #pointerActor;
     #recipe;
     #scheduler;
+    #spreadShape = null;
+    #translations = new Map();
 
-    constructor({scheduler, box, edge, recipe, continuous, clock, animationsEnabled}) {
+    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, isAvailable, containsPointer}) {
         this.#scheduler = scheduler;
         this.#box = box;
+        this.#pointerActor = pointerActor;
         this.#edge = edge;
         this.#recipe = recipe;
-        this.#continuous = continuous;
         this.#clock = clock;
+        this.#getPointer = getPointer;
         this.#animationsEnabled = animationsEnabled;
+        this.#getSpacing = getSpacing;
+        this.#isAvailable = isAvailable;
+        this.#containsPointer = containsPointer;
+        box.connectObject('notify::mapped', () => {
+            if (!box.mapped)
+                this.clearPointer();
+        }, this);
+        // Client entry can leave the surface without changing any icon's hover.
+        pointerActor.connectObject('leave-event', (_actor, event) => {
+            this.onPointerMotion(...event.get_coords());
+            return Clutter.EVENT_PROPAGATE;
+        }, this);
+    }
+
+    get box() {
+        return this.#box;
     }
 
     add(controller, container, orderedContainers) {
-        this.#entries.push({controller, container, waveScale: null});
+        this.#entries.push({controller, container, level: 0});
         this.#entries.sort((first, second) =>
             orderedContainers.indexOf(first.container) -
             orderedContainers.indexOf(second.container));
@@ -185,13 +212,16 @@ class NeighborGroup {
         if (index === -1)
             return;
         this.#entries.splice(index, 1);
-        if (this.#hovered === controller)
-            this.#hovered = null;
         this.#scheduleFlush();
     }
 
-    setHovered(controller, hovered) {
-        this.#hovered = hovered ? controller : this.#hovered === controller ? null : this.#hovered;
+    refreshPointer(controller) {
+        // Client motion bypasses stage events but still changes native hover.
+        if (this.#waveOn()) {
+            const pointer = this.#getPointer();
+            if (pointer)
+                this.#pointer = pointer;
+        }
         this.touch(controller);
     }
 
@@ -203,13 +233,18 @@ class NeighborGroup {
     setRecipe(recipe) {
         this.#recipe = recipe;
         this.#peak = null;
+        if (!this.#waveOn())
+            this.#releaseWave();
+        else {
+            this.#pointer = this.#getPointer() ?? this.#pointer;
+            if (!this.#animationsEnabled())
+                this.#restoreSpread();
+        }
+        this.#scheduleFlush();
     }
 
-    setContinuous(on) {
-        this.#continuous = on;
-        if (on)
-            return;
-        this.#releaseWave();
+    invalidateGeometry() {
+        this.#peak = null;
         this.#scheduleFlush();
     }
 
@@ -221,9 +256,18 @@ class NeighborGroup {
         this.#scheduleFlush();
     }
 
+    clearPointer() {
+        for (const {controller} of this.#entries)
+            controller.clearHover();
+        this.#pointer = null;
+        this.#scheduleFlush();
+    }
+
     dispose() {
+        this.#pointerActor.disconnectObject(this);
+        this.#box.disconnectObject(this);
+        this.#restoreSpread();
         this.#cancelFlush();
-        this.#hovered = null;
         this.#entries = [];
         this.#pointer = null;
     }
@@ -246,8 +290,6 @@ class NeighborGroup {
         this.#flushId = 0;
         if (this.#waveOn())
             this.#syncWave();
-        else
-            this.#syncClassic();
         const dirty = this.#dirty;
         this.#dirty = new Set();
         const now = this.#clock();
@@ -259,7 +301,7 @@ class NeighborGroup {
 
     #waveOn() {
         const {hover} = this.#recipe;
-        return this.#continuous && hover.enabled && hover.scale > 1;
+        return hover.enabled && (hover.scale > 1 || hover.lift > 0);
     }
 
     // One measure per sweep: the row shares one clip and one icon size.
@@ -270,9 +312,8 @@ class NeighborGroup {
         const room = this.#entries[0].controller.measure();
         const overshoot = hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
         this.#peak = room
-            ? fitHoverToBudget(hover.scale, hover.lift,
-                room.iconNormalSize, room.budgetPx, overshoot).hoverScale
-            : hover.scale;
+            ? fitHoverLevel(hover, room.iconNormalSize, room.budgetPx, overshoot)
+            : 1;
         return this.#peak;
     }
 
@@ -293,25 +334,13 @@ class NeighborGroup {
         return sampleRamp(this.#envRamp, this.#clock());
     }
 
-    #syncClassic() {
-        const hoveredIndex = this.#entries.findIndex(
-            entry => entry.controller === this.#hovered);
-        for (let index = 0; index < this.#entries.length; index++) {
-            const distance = hoveredIndex === -1
-                ? Infinity
-                : Math.abs(index - hoveredIndex);
-            // Past the max radius the transform is identity: report no change.
-            if (this.#entries[index].controller.setNeighborDistance(
-                distance > NeighborRadius.MAX ? Infinity : distance))
-                this.#dirty.add(this.#entries[index].controller);
-        }
-    }
-
     // Row geometry under the pointer, or null.
     #waveShape() {
         // The overview dash keeps its allocation while hidden.
-        if (this.#pointer === null || !this.#box.mapped)
+        if (this.#pointer === null || !this.#box.mapped || !this.#isAvailable())
             return null;
+        // Native hover notification can precede the pointer coordinate update.
+        this.#pointer = this.#getPointer() ?? this.#pointer;
         const count = this.#entries.length;
         if (count === 0)
             return null;
@@ -333,17 +362,25 @@ class NeighborGroup {
         const band = this.#entries[0].container.get_allocation_box();
         const crossStart = horizontal ? band.y1 : band.x1;
         const crossEnd = horizontal ? band.y2 : band.x2;
-        if (cross < crossStart || cross > crossEnd)
+        if ((cross < crossStart || cross > crossEnd) &&
+            !this.#entries.some(({controller}) => controller.containsCrossPoint(...this.#pointer)))
             return null;
         // Another monitor's dock can share the band, so check the reach first.
-        const first = horizontal ? (band.x1 + band.x2) / 2 : (band.y1 + band.y2) / 2;
-        const last = count > 1 ? center(count - 1) : first;
+        let first = horizontal ? (band.x1 + band.x2) / 2 : (band.y1 + band.y2) / 2;
+        let last = count > 1 ? center(count - 1) : first;
+        // Spacing follows physical order even when the row is RTL.
+        if (first > last) {
+            this.#entries.reverse();
+            [first, last] = [last, first];
+        }
         const pitch = count > 1
             ? (last - first) / (count - 1)
             : horizontal ? band.x2 - band.x1 : band.y2 - band.y1;
         // The wave dies one radius past the row.
         const reach = this.#recipe.hover.neighborRadius * pitch;
         if (!(pitch > 0) || pointer < first - reach || pointer > last + reach)
+            return null;
+        if (!this.#containsPointer(...this.#pointer))
             return null;
         const centers = new Array(count);
         for (let index = 0; index < count; index++)
@@ -353,53 +390,109 @@ class NeighborGroup {
 
     #syncWave() {
         const shape = this.#waveShape();
+        let env;
         if (shape) {
             const {hover} = this.#recipe;
-            const scales = waveScales(
-                shape.pointer, shape.centers, hover.neighborRadius,
-                shape.pitch, this.#wavePeak());
+            const limit = this.#wavePeak();
+            const levels = shape.centers.map(center => waveFalloff(
+                Math.abs(center - shape.pointer) / shape.pitch, hover.neighborRadius) * limit);
             if (this.#envRamp.to !== 1)
                 this.#startEnv(this.#sampleEnv(), 1);
-            const env = this.#sampleEnv();
-            for (let index = 0; index < this.#entries.length; index++) {
-                const entry = this.#entries[index];
-                entry.waveScale = scales[index];
-                this.#setWave(entry, 1 + (scales[index] - 1) * env, scales[index]);
-            }
+            env = this.#sampleEnv();
+            this.#spreadShape = shape;
+            for (let index = 0; index < this.#entries.length; index++)
+                this.#entries[index].level = levels[index];
+            this.#applyWave(levels.map(level => level * env));
         } else {
             if (this.#envRamp.to !== 0)
                 this.#startEnv(this.#sampleEnv(), 0);
-            const env = this.#sampleEnv();
+            env = this.#sampleEnv();
             if (env > 0) {
-                // Fade the last shape, never the faded values.
-                for (const entry of this.#entries) {
-                    if (entry.waveScale !== null)
-                        this.#setWave(entry, 1 + (entry.waveScale - 1) * env);
-                }
+                this.#applyWave(this.#entries.map(entry => entry.level * env));
             } else {
                 this.#releaseWave();
             }
-            this.#syncClassic();
         }
-        // A running ramp needs further frames; a settled wave is idle.
-        if (this.#sampleEnv() !== this.#envRamp.to)
+        // Stop only after applying the endpoint, not after the clock passes it.
+        if (env !== this.#envRamp.to)
             this.#scheduleFlush();
     }
 
-    // An explicit 1 keeps the wave in charge; null hands the icon back to the hover path.
-    #setWave(entry, scale, target = scale) {
-        if (entry.controller.setContinuousScale(scale, target))
+    #setWave(entry, level) {
+        if (entry.controller.setHoverLevel(level))
             this.#dirty.add(entry.controller);
     }
 
     #releaseWave() {
+        this.#restoreSpread();
+        this.#spreadShape = null;
         this.#pointer = null;
         this.#envRamp = IDLE_RAMP;
         this.#peak = null;
         for (const entry of this.#entries) {
-            entry.waveScale = null;
-            this.#setWave(entry, null);
+            entry.level = 0;
+            this.#setWave(entry, 0);
         }
+    }
+
+    #applyWave(levels) {
+        const spacing = this.#getSpacing();
+        const {centers} = this.#spreadShape;
+        if (centers.length !== this.#entries.length) {
+            this.#releaseWave();
+            return;
+        }
+        const sizes = this.#entries.map(entry => entry.controller.icon.icon.iconSize);
+        const geometry = waveGeometry({
+            levels, sizes, hover: this.#recipe.hover,
+            room: spacing?.room ?? Infinity,
+        });
+        for (const [index, entry] of this.#entries.entries())
+            this.#setWave(entry, geometry.levels[index]);
+        if (!spacing || !this.#recipe.hover.dynamicSpacing || !this.#animationsEnabled()) {
+            this.#restoreSpread();
+            return;
+        }
+        const {offsets, growth, first} = geometry;
+        const horizontal = this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
+        const property = horizontal ? 'translation_x' : 'translation_y';
+        const axis = horizontal ? 0 : 1;
+        const origin = this.#box.get_transformed_position()[axis];
+        const actors = spacing.actors;
+        const iconOffsets = new Map(this.#entries.map((entry, index) => [entry.container, offsets[index]]));
+        for (const [actor, original] of this.#translations) {
+            if (!actors.includes(actor)) {
+                actor[property] = original;
+                actor.disconnectObject(this);
+                this.#translations.delete(actor);
+            }
+        }
+        for (const actor of actors) {
+            if (!this.#translations.has(actor)) {
+                this.#translations.set(actor, actor[property]);
+                actor.connectObject('destroy', () => this.#translations.delete(actor), this);
+            }
+            const original = this.#translations.get(actor);
+            let offset = iconOffsets.get(actor);
+            if (offset === undefined) {
+                const position = actor.get_transformed_position()[axis] - actor[property] + original - origin;
+                offset = first;
+                for (let i = 0; i < centers.length && centers[i] < position; i++)
+                    offset += growth[i];
+            }
+            if (actor[property] !== original + offset)
+                actor[property] = original + offset;
+        }
+    }
+
+    #restoreSpread() {
+        const property = this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP
+            ? 'translation_x' : 'translation_y';
+        for (const [actor, original] of this.#translations) {
+            actor[property] = original;
+            actor.disconnectObject(this);
+        }
+        this.#translations.clear();
     }
 }
 

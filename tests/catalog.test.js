@@ -1,13 +1,10 @@
 import {
-    AttentionEffect,
     DEFAULT_PRESET,
     Easing,
-    HoverMode,
     LaunchEffect,
     PressEffect,
     PressMode,
     Preset,
-    RecipePart,
     easingProgress,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
@@ -21,27 +18,27 @@ test('built-in recipes match the presets', () => {
     const balanced = getBuiltInRecipe(Preset.BALANCED);
     const expressive = getBuiltInRecipe(Preset.EXPRESSIVE);
 
-    assertEqual(subtle.hover.enabled, false);
+    assertEqual(subtle.hover.enabled, true);
     assertEqual(subtle.press.mode, PressMode.ALL_PRIMARY_CLICKS);
     assertEqual(subtle.press.effect, PressEffect.DIM);
-    assertEqual(subtle.launch.effect, LaunchEffect.BOUNCE);
-    assertEqual(subtle.launch.speed, 0.55);
+    assertEqual(subtle.launch.effect, LaunchEffect.PULSE);
+    assertEqual(subtle.launch.speed, 0.65);
     assertEqual(subtle.launch.repeatPause, 400);
     assertEqual(subtle.launch.softenRepeats, true);
     assertEqual(balanced.hover.enabled, true);
-    assertEqual(balanced.hover.scale, 1.10);
+    assertEqual(balanced.hover.scale, 1.12);
     assertEqual(balanced.press.mode, PressMode.LAUNCHES_ONLY);
-    assertEqual(balanced.launch.effect, LaunchEffect.PULSE);
-    assertEqual(balanced.launch.repeatPause, 0);
-    assertEqual(expressive.hover.easing, Easing.EASE_OUT_BACK);
-    assertEqual(expressive.launch.effect, LaunchEffect.STRETCH);
-    assertEqual(expressive.launch.repeatPause, 0);
+    assertEqual(balanced.launch.effect, LaunchEffect.BOUNCE);
+    assertEqual(balanced.launch.repeatPause, 400);
+    assertEqual(expressive.hover.easing, Easing.EASE_OUT_CUBIC);
+    assertEqual(expressive.launch.effect, LaunchEffect.BOUNCE);
+    assertEqual(expressive.launch.repeatPause, 300);
 });
 
 test('built-in recipes are copied', () => {
     const first = getBuiltInRecipe(Preset.BALANCED);
     first.hover.scale = 9;
-    assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.scale, 1.10);
+    assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.scale, 1.12);
 });
 
 test('presets declare their press effects', () => {
@@ -52,43 +49,26 @@ test('presets declare their press effects', () => {
 
 test('presets carry the neighbor radius', () => {
     assertEqual(getBuiltInRecipe(Preset.SUBTLE).hover.neighborRadius, 1);
-    assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.neighborRadius, 1);
+    assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.neighborRadius, 2);
     assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).hover.neighborRadius, 2);
 });
 
-test('presets carry an attention part', () => {
-    const subtle = getBuiltInRecipe(Preset.SUBTLE);
-    const balanced = getBuiltInRecipe(Preset.BALANCED);
-    const expressive = getBuiltInRecipe(Preset.EXPRESSIVE);
-    assertEqual(RecipePart.ATTENTION, 'attention');
-    assertDeepEqual(subtle.attention, {
-        enabled: true,
-        peekWhenHidden: true,
-        effect: AttentionEffect.WIGGLE,
-        intensity: 0.5,
-        speed: 0.60,
-        cycles: 3,
-        cyclePause: 120,
-        interval: 5,
-        reminders: 5,
-    });
-    assertEqual(balanced.attention.effect, AttentionEffect.PULSE);
-    assertEqual(balanced.attention.speed, 0.70);
-    assertEqual(balanced.attention.cycles, 3);
-    assertEqual(balanced.attention.interval, 5);
-    assertEqual(balanced.attention.reminders, 10);
-    assertEqual(expressive.attention.effect, AttentionEffect.BOUNCE);
-    assertEqual(expressive.attention.intensity, 0.45);
-    assertEqual(expressive.attention.speed, 0.60);
-    assertEqual(expressive.attention.cycles, 3);
-    assertEqual(expressive.attention.cyclePause, 120);
-    assertEqual(expressive.attention.interval, 3);
-    assertEqual(expressive.attention.reminders, 15);
+test('only Expressive spreads its wave by default', () => {
+    assertEqual(getBuiltInRecipe(Preset.SUBTLE).hover.dynamicSpacing, false);
+    assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.dynamicSpacing, false);
+    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).hover.dynamicSpacing, true);
 });
 
-test('hover-mode values match the gschema nicks', () => {
-    assertEqual(HoverMode.CLASSIC, 'classic');
-    assertEqual(HoverMode.WAVE, 'wave');
+test('presets form a measured progression across hover, launch and attention', () => {
+    const recipes = ['subtle', 'balanced', 'expressive'].map(getBuiltInRecipe);
+    assertDeepEqual(recipes.map(r => [r.hover.scale, r.hover.lift, r.hover.duration]),
+        [[1.04, 0, 160], [1.12, 0, 180], [1.32, 3, 220]]);
+    assertDeepEqual(recipes.map(r => [r.launch.intensity, r.launch.repeat, r.launch.maxDuration]),
+        [[0.20, false, 8000], [0.35, true, 8000], [0.60, true, 8000]]);
+    assertDeepEqual(recipes.map(r => [r.attention.effect, r.attention.intensity,
+        r.attention.cycles, r.attention.interval, r.attention.reminders, r.attention.peekWhenHidden]),
+    [['pulse', 0.25, 1, 10, 3, false], ['pulse', 0.40, 2, 8, 5, true],
+        ['bounce', 0.55, 2, 6, 5, true]]);
 });
 
 test('easingProgress samples the recipe curves', () => {

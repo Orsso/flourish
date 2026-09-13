@@ -1,3 +1,15 @@
+import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
+
+// Fixed reference gestures keep geometry tests independent of preset tuning.
+export function motionRecipe(preset = 'expressive') {
+    const recipe = getBuiltInRecipe(preset);
+    Object.assign(recipe.hover, preset === 'expressive'
+        ? {scale: 1.22, lift: 5, duration: 280, easing: 'ease-out-back', neighborRadius: 2}
+        : {enabled: preset !== 'subtle', scale: 1.10, lift: 0, duration: 190, neighborRadius: 1});
+    Object.assign(recipe.press, {intensity: 0.85, duration: 170, mode: 'all-primary-clicks'});
+    return recipe;
+}
+
 // Signal fake with the shell's connectObject/disconnectObject contract.
 export class FakeEmitter {
     constructor() {
@@ -102,6 +114,7 @@ export class FakeBin {
         this.translation_x = 0;
         this.translation_y = 0;
         this.opacity = 255;
+        this.reactive = false;
         this.offscreen_redirect = 0;
         this.easeTargets = [];
         this.onEase = null;
@@ -123,6 +136,14 @@ export class FakeBin {
     set_pivot_point() {}
 
     set_size() {}
+
+    get_transformed_position() {
+        return [0, 0];
+    }
+
+    get_transformed_size() {
+        return [0, 0];
+    }
 
     set_scale(x, y) {
         this.scale_x = x;
@@ -279,8 +300,11 @@ export class MeasurableBin extends FakeBin {
 
 // A dash row: 50px pitch, 42px icons, allocation boxes parent-relative
 // like the real containers. `makeBin` builds each icon's bin.
-export class FakeRowContainer {
+export class FakeRowContainer extends FakeEmitter {
     constructor(index, horizontal, bin) {
+        super();
+        this.translation_x = 0;
+        this.translation_y = 0;
         this.child = new FakeIcon(bin);
         this.index = index;
         this.horizontal = horizontal;

@@ -7,11 +7,6 @@
     <value nick="custom" value="3"/>
   </enum>
 
-  <enum id="org.gnome.shell.extensions.flourish.hover-mode">
-    <value nick="classic" value="0"/>
-    <value nick="wave" value="1"/>
-  </enum>
-
   <enum id="org.gnome.shell.extensions.flourish.easing">
     <value nick="linear" value="0"/>
     <value nick="ease-out-quad" value="1"/>
@@ -55,33 +50,32 @@
       <summary>Use hover motion in Custom</summary>
     </key>
     <key name="custom-hover-scale" type="d">
-      <default>1.16</default>
-      <range min="1.0" max="1.30"/>
+      <default>1.04</default>
+      <range min="1.0" max="1.50"/>
       <summary>Hover scale</summary>
     </key>
+    <key name="custom-hover-dynamic-spacing" type="b">
+      <default>false</default>
+      <summary>Move neighboring icons apart on hover</summary>
+    </key>
     <key name="custom-hover-lift" type="i">
-      <default>2</default>
-      <range min="0" max="12"/>
+      <default>0</default>
+      <range min="0" max="16"/>
       <summary>Hover lift in pixels</summary>
     </key>
     <key name="custom-hover-duration" type="i">
-      <default>190</default>
-      <range min="100" max="800"/>
+      <default>160</default>
+      <range min="80" max="800"/>
       <summary>Hover duration in milliseconds</summary>
     </key>
     <key name="custom-hover-easing" enum="org.gnome.shell.extensions.flourish.easing">
       <default>"ease-out-cubic"</default>
       <summary>Hover transition easing</summary>
     </key>
-    <key name="custom-neighbor-scale" type="d">
-      <default>1.035</default>
-      <range min="1.0" max="1.15"/>
-      <summary>Neighbor scale</summary>
-    </key>
     <key name="custom-neighbor-radius" type="i">
       <default>1</default>
       <range min="1" max="3"/>
-      <summary>Neighbor radius</summary>
+      <summary>Hover reach in icon steps</summary>
     </key>
 
     <key name="custom-press-enabled" type="b">
@@ -93,16 +87,16 @@
       <summary>Press feedback trigger</summary>
     </key>
     <key name="custom-press-effect" enum="org.gnome.shell.extensions.flourish.press-effect">
-      <default>"squash"</default>
+      <default>"dim"</default>
       <summary>Press feedback effect</summary>
     </key>
     <key name="custom-press-intensity" type="d">
-      <default>0.60</default>
+      <default>0.15</default>
       <range min="0.0" max="1.0"/>
       <summary>Press intensity</summary>
     </key>
     <key name="custom-press-duration" type="i">
-      <default>130</default>
+      <default>100</default>
       <range min="80" max="500"/>
       <summary>Press duration in milliseconds</summary>
     </key>
@@ -112,21 +106,21 @@
       <summary>Use launch animation in Custom</summary>
     </key>
     <key name="custom-launch-effect" enum="org.gnome.shell.extensions.flourish.launch-effect">
-      <default>"bounce"</default>
+      <default>"pulse"</default>
       <summary>Launch effect</summary>
     </key>
     <key name="custom-launch-intensity" type="d">
-      <default>0.60</default>
+      <default>0.2</default>
       <range min="0.0" max="1.0"/>
       <summary>Launch effect intensity</summary>
     </key>
     <key name="custom-launch-speed" type="d">
-      <default>0.55</default>
+      <default>0.65</default>
       <range min="0.30" max="1.0"/>
       <summary>Launch speed</summary>
     </key>
     <key name="custom-launch-repeat" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Repeat while starting</summary>
     </key>
     <key name="custom-launch-soften-repeats" type="b">
@@ -134,17 +128,17 @@
       <summary>Reduce the intensity of repeated launch cycles</summary>
     </key>
     <key name="custom-launch-repeat-pause" type="i">
-      <default>300</default>
+      <default>400</default>
       <range min="0" max="1000"/>
       <summary>Pause between launch repeats in milliseconds</summary>
     </key>
     <key name="custom-launch-max-duration" type="i">
-      <default>10000</default>
+      <default>8000</default>
       <range min="500" max="15000"/>
       <summary>Maximum launch repeat time in milliseconds</summary>
     </key>
     <key name="custom-bounce-decay" type="d">
-      <default>0.0</default>
+      <default>0</default>
       <range min="0.0" max="1.0"/>
       <summary>Height kept by each further bounce</summary>
     </key>
@@ -154,7 +148,7 @@
       <summary>Pulse count</summary>
     </key>
     <key name="custom-stretch-elasticity" type="d">
-      <default>0.70</default>
+      <default>0.7</default>
       <range min="0.0" max="1.0"/>
       <summary>Stretch effect elasticity</summary>
     </key>
@@ -163,21 +157,21 @@
       <summary>Use the attention animation in Custom</summary>
     </key>
     <key name="custom-attention-effect" enum="org.gnome.shell.extensions.flourish.attention-effect">
-      <default>"wiggle"</default>
+      <default>"pulse"</default>
       <summary>Attention effect</summary>
     </key>
     <key name="custom-attention-intensity" type="d">
-      <default>0.5</default>
+      <default>0.25</default>
       <range min="0.0" max="1.0"/>
       <summary>Attention effect intensity</summary>
     </key>
     <key name="custom-attention-speed" type="d">
-      <default>0.60</default>
+      <default>0.6</default>
       <range min="0.30" max="1.0"/>
       <summary>Attention speed</summary>
     </key>
     <key name="custom-attention-cycles" type="i">
-      <default>3</default>
+      <default>1</default>
       <range min="1" max="10"/>
       <summary>Cycles played at each attention reminder</summary>
     </key>
@@ -187,24 +181,18 @@
       <summary>Pause between attention cycles in milliseconds</summary>
     </key>
     <key name="custom-attention-interval" type="i">
-      <default>5</default>
+      <default>10</default>
       <range min="2" max="60"/>
       <summary>Seconds between two attention reminders</summary>
     </key>
     <key name="custom-attention-reminders" type="i">
-      <default>5</default>
+      <default>3</default>
       <range min="1" max="30"/>
       <summary>Reminders before the attention animation stops</summary>
     </key>
     <key name="custom-attention-peek" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Show the attention animation while the dock is hidden</summary>
-    </key>
-
-    <key name="hover-mode" enum="org.gnome.shell.extensions.flourish.hover-mode">
-      <default>"classic"</default>
-      <summary>Hover behavior</summary>
-      <description>Classic magnifies the hovered icon and its fixed neighbors. Wave scales the whole row with a smooth falloff around the pointer.</description>
     </key>
 
     <key name="show-hover-background" type="b">
@@ -219,18 +207,5 @@
       <description>Mark the app that owns the focused window in the dash or dock.</description>
     </key>
 
-    <key name="measured-hover-budget" type="d">
-      <default>0.0</default>
-      <range min="0.0" max="4096.0"/>
-      <summary>Hover room in pixels</summary>
-      <description>Measured from the live dock. 0 means unknown. Not a user setting.</description>
-    </key>
-
-    <key name="measured-icon-size" type="d">
-      <default>0.0</default>
-      <range min="0.0" max="4096.0"/>
-      <summary>Measured dock icon size in pixels</summary>
-      <description>Measured with the hover room. Not a user setting.</description>
-    </key>
   </schema>
 </schemalist>

@@ -21,11 +21,13 @@ globalThis.assertClose = (actual, expected, epsilon = 0.0001) => {
 const modules = [
     './catalog.test.js',
     './continuum.test.js',
+    './dashSpacing.test.js',
     './deferredLaunchEnds.test.js',
     './focusHighlight.test.js',
     './iconFollower.test.js',
     './demoSequence.test.js',
     './dockVisibility.test.js',
+    './dockOverflow.test.js',
     './iconMotionController.test.js',
     './iconTexture.test.js',
     './liveRegistry.test.js',

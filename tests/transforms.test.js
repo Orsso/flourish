@@ -15,18 +15,14 @@ import {
     composeIconTransform,
     dimOpacity,
     dockVisibilityState,
-    fitHoverToBudget,
     getAttentionPivot,
     getLaunchPivot,
     getOrientation,
     hoverIntroLift,
     hoverIntroScale,
-    hoverNeedsBudget,
     interpolateTransform,
     launchDuration,
-    neighborScaleAt,
     nextReminderDelay,
-    projectHoverTransform,
     launchIconRect,
     projectIconRect,
     resolveIconTransform,
@@ -153,8 +149,8 @@ test('bounce follows the outward vector and decays', () => {
     assertEqual(Math.abs(outward[1].translationX) > Math.abs(outward[2].translationX), true);
 });
 
-test('subtle bounce defaults to one macOS-style hop per cycle', () => {
-    const recipe = getBuiltInRecipe('subtle');
+test('Lively bounce defaults to one macOS-style hop per cycle', () => {
+    const recipe = getBuiltInRecipe('balanced');
     const segments = buildLaunchSegments(
         recipe.launch.effect, recipe.launch, 'bottom');
     assertEqual(segments.length, 2);
@@ -254,7 +250,7 @@ test('hover and press compose into one controller target', () => {
     const transform = resolveIconTransform({
         edge: 'bottom',
         recipe,
-        hovered: true,
+        hoverLevel: 1,
         pressLevel: 1,
     });
     assertClose(transform.scaleX, recipe.hover.scale); // tangent axis holds at hover, no bulge
@@ -262,99 +258,28 @@ test('hover and press compose into one controller target', () => {
     assertEqual(transform.translationY, -recipe.hover.lift);
 });
 
-test('neighbor response uses only the configured neighbor scale', () => {
-    const recipe = getBuiltInRecipe('expressive');
-    const transform = resolveIconTransform({
-        edge: 'bottom',
-        recipe,
-        neighborDistance: 1,
-    });
-    assertEqual(transform.scaleX, recipe.hover.neighborScale);
-    assertEqual(transform.scaleY, recipe.hover.neighborScale);
-    assertEqual(transform.translationY, 0);
-});
-
 test('wave lift follows the same falloff as the wave scale', () => {
     const recipe = getBuiltInRecipe('expressive');
     const atHalf = resolveIconTransform({
         edge: 'bottom',
         recipe,
-        continuousScale: 1 + (recipe.hover.scale - 1) / 2,
+        hoverLevel: 0.5,
     });
     assertClose(atHalf.translationY, -recipe.hover.lift / 2);
     const atPeak = resolveIconTransform({
         edge: 'bottom',
         recipe,
-        hovered: true,
-        continuousScale: recipe.hover.scale,
+        hoverLevel: 1,
     });
     assertClose(atPeak.translationY, -recipe.hover.lift);
     assertEqual(resolveIconTransform({edge: 'bottom', recipe}).translationY, 0);
-});
-
-test('preview neighbor hover follows one shared progress', () => {
-    const recipe = getBuiltInRecipe('expressive');
-    const start = projectHoverTransform({
-        edge: 'bottom',
-        recipe,
-        neighborDistance: 1,
-        progress: 0,
-    });
-    const halfway = projectHoverTransform({
-        edge: 'bottom',
-        recipe,
-        neighborDistance: 1,
-        progress: 0.5,
-    });
-    const end = projectHoverTransform({
-        edge: 'bottom',
-        recipe,
-        neighborDistance: 1,
-        progress: 1,
-    });
-
-    assertEqual(start.scaleX, 1);
-    assertClose(halfway.scaleX, 1 + (recipe.hover.neighborScale - 1) / 2);
-    assertEqual(end.scaleX, recipe.hover.neighborScale);
-});
-
-test('neighbor falloff is full at distance one and linear outward', () => {
-    const hover = {neighborScale: 1.12, neighborRadius: 3};
-    assertClose(neighborScaleAt(hover, 1), 1.12);
-    assertClose(neighborScaleAt(hover, 2), 1.08);
-    assertClose(neighborScaleAt(hover, 3), 1.04);
-    assertEqual(neighborScaleAt(hover, 4), 1);
-});
-
-test('radius one keeps the legacy single-neighbor behavior', () => {
-    const hover = {neighborScale: 1.08, neighborRadius: 1};
-    assertClose(neighborScaleAt(hover, 1), 1.08);
-    assertEqual(neighborScaleAt(hover, 2), 1);
-    assertEqual(neighborScaleAt(hover, 0), 1);
-    assertEqual(neighborScaleAt(hover, Infinity), 1);
-});
-
-test('resolved transform applies the falloff to far neighbors', () => {
-    const recipe = getBuiltInRecipe('expressive');
-    recipe.hover.neighborRadius = 2;
-    const transform = resolveIconTransform({
-        edge: 'bottom',
-        recipe,
-        neighborDistance: 2,
-    });
-    assertClose(transform.scaleX, 1 + (recipe.hover.neighborScale - 1) / 2);
-    assertEqual(resolveIconTransform({
-        edge: 'bottom',
-        recipe,
-        neighborDistance: 3,
-    }).scaleX, 1);
 });
 
 test('disabled system animations return the identity transform', () => {
     const transform = resolveIconTransform({
         edge: 'bottom',
         recipe: getBuiltInRecipe('expressive'),
-        hovered: true,
+        hoverLevel: 1,
         pressLevel: 1,
         animationsEnabled: false,
     });
@@ -372,7 +297,7 @@ test('launch state suppresses hover magnification', () => {
     const transform = resolveIconTransform({
         edge: 'bottom',
         recipe: getBuiltInRecipe('balanced'),
-        hovered: true,
+        hoverLevel: 1,
         overlaid: true,
     });
     assertDeepEqual(transform, {
@@ -518,79 +443,6 @@ test('hover intro lift isolates the side-dock lift from the scale', () => {
     const lift = hoverIntroLift(visible, neutral, getOrientation('left').pivot);
     assertClose(lift.x, 3);
     assertClose(lift.y, 0);
-});
-
-test('budget fit leaves a fitting magnification untouched', () => {
-    assertDeepEqual(
-        fitHoverToBudget(1.16, 2, 48, 100), {hoverScale: 1.16, lift: 2});
-});
-
-test('budget fit shrinks scale growth and lift by the same factor', () => {
-    const factor = 12 / (48 * 0.22 + 5);
-    const fit = fitHoverToBudget(1.22, 5, 48, 12);
-    assertClose(fit.hoverScale, 1 + (48 * 0.22 * factor) / 48);
-    assertClose(fit.lift, 5 * factor);
-    assertClose(48 * (fit.hoverScale - 1) + fit.lift, 12);
-});
-
-test('budget fit preserves the scale-to-lift ratio when shrinking', () => {
-    const fit = fitHoverToBudget(1.22, 5, 48, 8);
-    const growth = 48 * (fit.hoverScale - 1);
-    assertClose(growth / fit.lift, (48 * 0.22) / 5);
-    assertClose(growth + fit.lift, 8);
-});
-
-test('budget fit reserves headroom for easing overshoot', () => {
-    const budget = 12 / 1.1;
-    const factor = budget / (48 * 0.22 + 5);
-    const fit = fitHoverToBudget(1.22, 5, 48, 12, 0.1);
-    assertClose(fit.hoverScale, 1 + (48 * 0.22 * factor) / 48);
-    assertClose(fit.lift, 5 * factor);
-});
-
-test('budget fit is inert without measurable geometry', () => {
-    assertDeepEqual(
-        fitHoverToBudget(1.22, 5, 0, 12), {hoverScale: 1.22, lift: 5});
-    assertDeepEqual(
-        fitHoverToBudget(1.22, 5, 48, Infinity), {hoverScale: 1.22, lift: 5});
-});
-
-test('resolved transform fits the hovered reach within the dock budget', () => {
-    const recipe = getBuiltInRecipe('balanced'); // scale 1.10, lift 0, cubic
-    const transform = resolveIconTransform({
-        edge: 'bottom',
-        recipe,
-        hovered: true,
-        budgetPx: 4,
-        iconNormalSize: 48,
-    });
-    const liftPx = -transform.translationY;
-    assertClose(48 * (transform.scaleY - 1) + liftPx, 4);
-});
-
-test('the budget is needed only when the hover reach can move', () => {
-    const expressive = getBuiltInRecipe('expressive');
-    assertEqual(hoverNeedsBudget(
-        {recipe: expressive, hovered: true}), true);
-    assertEqual(hoverNeedsBudget(
-        {recipe: expressive, hovered: false, neighborDistance: 1}), true);
-    assertEqual(hoverNeedsBudget(
-        {recipe: expressive, hovered: false, neighborDistance: 3}), false);
-    assertEqual(hoverNeedsBudget(
-        {recipe: expressive, hovered: true, overlaid: true}), false);
-    assertEqual(hoverNeedsBudget(
-        {recipe: getBuiltInRecipe('subtle'), hovered: true}), false);
-    assertEqual(hoverNeedsBudget(
-        {recipe: expressive, hovered: true, continuousScale: 1.1}), false);
-});
-
-test('a lift alone still needs the budget', () => {
-    const recipe = getBuiltInRecipe('expressive');
-    recipe.hover.scale = 1;
-    recipe.hover.lift = 5;
-    assertEqual(hoverNeedsBudget({recipe, hovered: true}), true);
-    recipe.hover.lift = 0;
-    assertEqual(hoverNeedsBudget({recipe, hovered: true}), false);
 });
 
 const MONITOR = {x: 0, y: 0, width: 1920, height: 1080};

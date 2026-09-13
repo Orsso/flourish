@@ -1,7 +1,8 @@
 import {
     waveFalloff,
-    waveScaleAt,
-    waveScales,
+    fitHoverLevel,
+    waveGeometry,
+    waveOffsets,
 } from '../flourish@orsso.github.io/lib/motion/continuum.js';
 
 test('waveFalloff is 1 at zero and 0 from the radius on', () => {
@@ -24,33 +25,59 @@ test('waveFalloff falls off monotonically with a flat end', () => {
     assertClose(waveFalloff(1.99, 2), 0, 0.01);
 });
 
-test('waveScaleAt maps the falloff onto a scale of one', () => {
-    assertEqual(waveScaleAt(0, 2, 1.22), 1.22);
-    assertEqual(waveScaleAt(2, 2, 1.22), 1);
-    assertEqual(waveScaleAt(9, 2, 1.22), 1);
-    assertEqual(waveScaleAt(0, 2, 1), 1);
+test('spacing preserves the resting gaps and centers the row', () => {
+    assertDeepEqual(waveOffsets([48, 48, 48], [1.25, 1.5, 1.25]), [-18, 0, 18]);
+    assertDeepEqual(waveOffsets([48, 48], [1.5, 1.5]), [-12, 12]);
 });
 
-test('waveScales peaks at the pointer and is identity past the radius', () => {
-    // Five icons, pitch 50, centers 25..225.
-    const centers = [25, 75, 125, 175, 225];
-    const scales = waveScales(125, centers, 2, 50, 1.22);
-    assertClose(scales[2], 1.22);
-    assertClose(scales[1], 1.11);
-    assertClose(scales[3], 1.11);
-    assertEqual(scales[0], 1);
-    assertEqual(scales[4], 1);
+test('spacing is identity at rest and accepts an empty row', () => {
+    assertDeepEqual(waveOffsets([48, 48, 48], [1, 1, 1]), [0, 0, 0]);
+    assertDeepEqual(waveOffsets([], []), []);
 });
 
-test('waveScales is continuous across icon boundaries', () => {
-    const centers = [25, 75, 125, 175, 225];
-    const before = waveScales(49, centers, 2, 50, 1.22);
-    const after = waveScales(51, centers, 2, 50, 1.22);
-    for (let index = 0; index < centers.length; index++)
-        assertEqual(Math.abs(before[index] - after[index]) < 0.01, true);
+test('spacing preserves gaps for unequal sizes and an off-center pointer', () => {
+    const centers = [20, 75, 150];
+    const sizes = [32, 48, 64];
+    const scales = [1.4, 1.3, 1.1];
+    const shifts = waveOffsets(sizes, scales);
+    for (let i = 1; i < centers.length; i++) {
+        const oldGap = centers[i] - centers[i - 1] - (sizes[i] + sizes[i - 1]) / 2;
+        const gap = centers[i] + shifts[i] - centers[i - 1] - shifts[i - 1] -
+            (sizes[i] * scales[i] + sizes[i - 1] * scales[i - 1]) / 2;
+        assertClose(gap, oldGap);
+    }
+    assertClose(shifts[0] - sizes[0] * (scales[0] - 1) / 2,
+        -(shifts[2] + sizes[2] * (scales[2] - 1) / 2));
 });
 
-test('waveScales degrades on degenerate input', () => {
-    assertDeepEqual(waveScales(5, [10, 10], 2, 0, 1.22), [1, 1]);
-    assertDeepEqual(waveScales(5, [], 2, 0, 1.22), []);
+test('room limits preserve independent zoom and elevation', () => {
+    assertClose(fitHoverLevel({scale: 1, lift: 10}, 48, 5), 0.5);
+    assertClose(fitHoverLevel({scale: 1.5, lift: 0}, 48, 12), 0.5);
+    assertClose(fitHoverLevel({scale: 1.5, lift: 6}, 48, 15, 0.1), 0.5 / 1.1);
+    assertEqual(fitHoverLevel({scale: 1.5, lift: 6}, 48, Infinity), 1);
+    assertEqual(fitHoverLevel({scale: 1.5, lift: 6}, 48, -2), 0);
+    assertEqual(fitHoverLevel({scale: 1, lift: 0}, 48, 0), 1);
+});
+
+test('geometry returns fitted levels without mutating the sampled wave', () => {
+    const levels = [0.5, 1, 0.5];
+    const hover = {scale: 1.5, lift: 5};
+    const geometry = waveGeometry({levels, hover, sizes: [48, 48, 48], room: 12});
+    assertDeepEqual(levels, [0.5, 1, 0.5]);
+    assertDeepEqual(geometry.levels, [0.25, 0.5, 0.25]);
+    assertClose(geometry.first, -12);
+    assertClose(geometry.offsets.at(-1) + geometry.growth.at(-1) / 2, 12);
+});
+
+test('uniform sweeps do not ripple the row anchor at any supported radius', () => {
+    const sizes = new Array(15).fill(48);
+    for (const radius of [1, 2, 3]) {
+        let first;
+        for (let pointer = 4; pointer < 10; pointer += 0.05) {
+            const levels = sizes.map((_, i) => waveFalloff(Math.abs(i - pointer), radius));
+            const geometry = waveGeometry({levels, hover: {scale: 1.1}, sizes});
+            first ??= geometry.offsets[0];
+            assertClose(geometry.offsets[0], first);
+        }
+    }
 });
