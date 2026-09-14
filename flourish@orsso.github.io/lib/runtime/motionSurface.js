@@ -5,6 +5,7 @@ import St from 'gi://St';
 import {Easing, ScreenEdge, sampleRamp} from '../motion/catalog.js';
 import {fitHoverLevel, waveFalloff, waveGeometry} from '../motion/continuum.js';
 import {OVERSHOOT_RESERVE} from '../motion/transforms.js';
+import {IconDecorations} from './iconDecorations.js';
 import {IconMotionController} from './iconMotionController.js';
 import {LiveRegistry} from './liveRegistry.js';
 
@@ -90,9 +91,9 @@ export class MotionSurface {
             getPointer: this.#getPointer,
             animationsEnabled: this.#animationsEnabled,
             getSpacing: context?.getSpacing ?? (() => null),
-            getMonitor: context?.getMonitor ?? (() => null),
             isAvailable: context?.isAvailable ?? (() => true),
             containsPointer: context?.containsPointer ?? (() => true),
+            decorationContext: context,
         });
         this.#groups.add(group);
         const release = () => {
@@ -134,6 +135,8 @@ export class MotionSurface {
             recipe: this.#recipe,
             clock: this.#clock,
             onAnimate: () => group.touch(controller),
+            decorations: container.label && context
+                ? {container, getMonitor: context.getMonitor, labelOffset: context.labelOffset} : null,
             onHoverChanged: changed => group.refreshPointer(changed),
             onDestroyed: destroyed => {
                 this.#contexts.delete(destroyed);
@@ -152,6 +155,8 @@ export class MotionSurface {
 }
 
 class NeighborGroup {
+    #decorationContext;
+    #extraDecorations = new Map();
     #animationsEnabled;
     #box;
     #clock;
@@ -162,7 +167,6 @@ class NeighborGroup {
     // Wave amplitude, 0 at rest to 1 in full, eased over the hover duration.
     #envRamp = IDLE_RAMP;
     #flushId = 0;
-    #getMonitor;
     #getPointer;
     #isAvailable;
     #getSpacing;
@@ -174,7 +178,7 @@ class NeighborGroup {
     #spreadShape = null;
     #translations = new Map();
 
-    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, getMonitor, isAvailable, containsPointer}) {
+    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, isAvailable, containsPointer, decorationContext}) {
         this.#scheduler = scheduler;
         this.#box = box;
         this.#pointerActor = pointerActor;
@@ -184,9 +188,9 @@ class NeighborGroup {
         this.#getPointer = getPointer;
         this.#animationsEnabled = animationsEnabled;
         this.#getSpacing = getSpacing;
-        this.#getMonitor = getMonitor;
         this.#isAvailable = isAvailable;
         this.#containsPointer = containsPointer;
+        this.#decorationContext = decorationContext;
         box.connectObject('notify::mapped', () => {
             if (!box.mapped)
                 this.clearPointer();
@@ -270,6 +274,11 @@ class NeighborGroup {
         this.#pointerActor.disconnectObject(this);
         this.#box.disconnectObject(this);
         this.#restoreSpread();
+        for (const [actor, decorations] of this.#extraDecorations) {
+            actor.disconnectObject(decorations);
+            decorations.dispose();
+        }
+        this.#extraDecorations.clear();
         this.#cancelFlush();
         this.#entries = [];
         this.#pointer = null;
@@ -299,7 +308,10 @@ class NeighborGroup {
         for (const {controller} of this.#entries) {
             if (dirty.has(controller) && controller.applyHoverState(now))
                 this.touch(controller);
+            controller.updateDecorations();
         }
+        for (const decorations of this.#extraDecorations.values())
+            decorations.update();
     }
 
     #waveOn() {
@@ -312,7 +324,7 @@ class NeighborGroup {
         if (this.#peak !== null)
             return this.#peak;
         const {hover} = this.#recipe;
-        const room = this.#entries[0].controller.measure(this.#getMonitor());
+        const room = this.#entries[0].controller.measure(this.#decorationContext?.getMonitor());
         const overshoot = hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
         this.#peak = room
             ? fitHoverLevel(hover, room.iconNormalSize, room.budgetPx, overshoot)
@@ -460,6 +472,21 @@ class NeighborGroup {
         const axis = horizontal ? 0 : 1;
         const actors = spacing.actors;
         const iconOffsets = new Map(this.#entries.map((entry, index) => [entry.container, offsets[index]]));
+        for (const actor of actors) {
+            if (!iconOffsets.has(actor) && actor.label && actor.icon?._iconBin &&
+                !this.#extraDecorations.has(actor)) {
+                const decorations = new IconDecorations({
+                    ...this.#decorationContext, container: actor, icon: actor,
+                    bin: actor.icon._iconBin, edge: this.#edge,
+                    onChanged: () => this.#scheduleFlush(),
+                });
+                this.#extraDecorations.set(actor, decorations);
+                actor.connectObject('destroy', () => {
+                    decorations.dispose();
+                    this.#extraDecorations.delete(actor);
+                }, decorations);
+            }
+        }
         for (const [actor, original] of this.#translations) {
             if (!actors.includes(actor)) {
                 actor[property] = original;

@@ -251,7 +251,9 @@ export class AttentionEngine {
         session.overlaid = true;
         session.peeking = false;
         const clone = createIconClone(
-            target, actorGeometry(target), Main.uiGroup, {pivot: this.#pivot(session)});
+            target, actorGeometry(target), Main.uiGroup, {
+                badgeBox: session.icon.icon.get_parent(), pivot: this.#pivot(session),
+            });
         session.clone = clone;
         session.unfollow = followIcon({target, clone, scheduler: this.#scheduler});
         session.originalOpacity = target.opacity;
@@ -268,6 +270,7 @@ export class AttentionEngine {
         const rect = place(actorGeometry(target));
         const {outward} = getOrientation(controller.edge);
         const clone = createIconClone(target, rect, Main.uiGroup, {
+            badgeBox: session.icon.icon.get_parent(),
             pivot: this.#pivot(session),
             translation: {x: -outward[0] * rect.width, y: -outward[1] * rect.height},
             opacity: 0,

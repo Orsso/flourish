@@ -1,4 +1,17 @@
-import {dashSpacing} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+import {dashSpacing, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+
+test('tooltips follow the visual icon on every edge and stay on its monitor', () => {
+    const icon = {x: 120, y: 140, width: 80, height: 80};
+    const label = {width: 100, height: 30};
+    const monitor = {x: 100, y: 100, width: 400, height: 300};
+    for (const [edge, position] of Object.entries({
+        bottom: {x: 110, y: 102}, top: {x: 110, y: 228},
+        left: {x: 208, y: 165}, right: {x: 100, y: 165},
+    }))
+        assertDeepEqual(tooltipPosition(icon, label, edge, 8, monitor), position);
+    assertDeepEqual(tooltipPosition({...icon, x: 490, y: 390}, label, 'top', 8, monitor),
+        {x: 400, y: 370});
+});
 
 function fixture({x = 100, width = 800, logicalWidth = 800} = {}) {
     const icons = [{}, {}];

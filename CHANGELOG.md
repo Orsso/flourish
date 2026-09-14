@@ -20,6 +20,8 @@
   longer plays on a click that launches the app.
 - The Dim press effect darkens the icon instead of fading it, and follows the
   launch clone.
+- Notification badges and app labels now follow the magnified icon, including
+  during launch and attention.
 
 ## 1.1.0
 

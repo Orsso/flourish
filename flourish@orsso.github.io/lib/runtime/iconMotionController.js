@@ -10,6 +10,7 @@ import {
 } from '../motion/transforms.js';
 import {sharpenIconTexture} from './iconTexture.js';
 import {setIconDim} from './iconDim.js';
+import {IconDecorations} from './iconDecorations.js';
 
 // Toggling any class name invalidates the widget's style context.
 const REFRESH_CLASS = 'flourish-style-refresh';
@@ -24,6 +25,7 @@ const OWNED_TRANSITIONS = [
 export class IconMotionController {
     #bin;
     #clock;
+    #decorations = null;
     #hoverLevel = 0;
     #hovered = false;
     #icon;
@@ -49,6 +51,7 @@ export class IconMotionController {
         recipe,
         clock = () => 0,
         setDim = setIconDim,
+        decorations = null,
         onAnimate = () => {},
         onHoverChanged = () => {},
         onDestroyed = () => {},
@@ -104,6 +107,10 @@ export class IconMotionController {
             }, GObject.ConnectFlags.AFTER, // after the stock click handler
             this);
         this.#syncHover();
+        if (decorations)
+            this.#decorations = new IconDecorations({
+                ...decorations, icon, bin, edge, onChanged: onAnimate,
+            });
     }
 
     get edge() {
@@ -205,6 +212,8 @@ export class IconMotionController {
     }
 
     onTargetDestroyed() {
+        this.#decorations?.dispose();
+        this.#decorations = null;
         this.#overlay = null;
         this.#bin = null;
         this.#icon = null;
@@ -212,6 +221,8 @@ export class IconMotionController {
     }
 
     dispose() {
+        this.#decorations?.dispose();
+        this.#decorations = null;
         this.#icon.disconnectObject(this);
         this.#setDim(this.#icon, 0);
         this.#restore();
@@ -232,6 +243,10 @@ export class IconMotionController {
 
     clearHover() {
         this.#syncHover(false);
+    }
+
+    updateDecorations() {
+        this.#decorations?.update();
     }
 
     #syncHover(hovered = this.#icon.hover) {

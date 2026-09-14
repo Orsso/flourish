@@ -5,6 +5,21 @@ export function pointerOnSurface(actor, x, y, gapActor = null) {
     return picked !== null && (actor.contains(picked) || picked === gapActor);
 }
 
+export function tooltipPosition(icon, label, edge, offset, monitor) {
+    let x = icon.x + (icon.width - label.width) / 2;
+    let y = icon.y + (icon.height - label.height) / 2;
+    switch (edge) {
+        case 'top': y = icon.y + icon.height + offset; break;
+        case 'left': x = icon.x + icon.width + offset; break;
+        case 'right': x = icon.x - label.width - offset; break;
+        default: y = icon.y - label.height - offset;
+    }
+    return {
+        x: Math.max(monitor.x, Math.min(x, monitor.x + monitor.width - label.width)),
+        y: Math.max(monitor.y, Math.min(y, monitor.y + monitor.height - label.height)),
+    };
+}
+
 export function actorGeometry(actor) {
     const [x, y] = actor.get_transformed_position();
     const [width, height] = actor.get_transformed_size();

@@ -118,6 +118,7 @@ export class LaunchEngine {
         const clone = createIconClone(target, {
             x: 0, y: 0, width: neutralGeometry.width, height: neutralGeometry.height,
         }, frame, {
+            badgeBox: appIcon.icon.get_parent(),
             pivot: launchPivot,
             scale: introScale,
             translation: introLift,
@@ -282,6 +283,7 @@ export class LaunchEngine {
         session.unfollow();
         Shell.AppSystem.get_default().disconnectObject(session);
         session.clone.remove_all_transitions();
+        session.clone.destroy();
         session.frame.destroy();
         this.#sessions.delete(session.target);
         if (targetDestroyed) {

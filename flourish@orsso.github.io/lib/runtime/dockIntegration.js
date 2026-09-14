@@ -207,6 +207,7 @@ export class DockIntegration {
                 edge,
                 getMonitor,
                 dockSettings: this.#manager.settings ?? null,
+                labelOffset: '-x-offset',
             };
             const overflow = new DockOverflow({
                 actor: slid,

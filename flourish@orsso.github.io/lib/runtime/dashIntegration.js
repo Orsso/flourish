@@ -53,6 +53,7 @@ export class DashIntegration {
             containsPointer: (x, y) => pointerOnSurface(dash, x, y, Main.layoutManager.overviewGroup),
             getSpacing: () => dashSpacing(box, Main.layoutManager.primaryMonitor),
             getMonitor: () => Main.layoutManager.primaryMonitor,
+            labelOffset: '-y-offset',
         });
         Main.overview.connectObject('hiding', () => this.#surface.clearPointer(), this);
         Main.layoutManager.connectObject('monitors-changed', () => this.#surface.invalidateGeometry(), this);
