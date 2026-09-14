@@ -48,6 +48,10 @@ const BOUNDED_KEYS = [
     ['custom-attention-reminders', AttentionReminders],
 ];
 
+test('custom magnification spans 100 to 200 percent', () => {
+    assertDeepEqual(rangeOf('custom-hover-scale'), {min: 1, max: 2});
+});
+
 test('the gschema ranges mirror the catalog bounds', () => {
     for (const [key, bounds] of BOUNDED_KEYS) {
         const range = rangeOf(key);

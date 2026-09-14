@@ -15,6 +15,7 @@
   dash lays out around it during a cycle.
 - Fixed the hover room on left and right docks, which was measured on the
   wrong side.
+- Custom magnification now goes up to 200 %.
 
 ## 1.1.0
 

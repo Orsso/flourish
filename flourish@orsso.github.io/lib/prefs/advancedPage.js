@@ -38,7 +38,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
     const hover = createPartGroup(page, controls, settings, _('Hover'), RecipePart.HOVER);
     hover.group.description = _('Motion adapts to the available space.');
     controls.hoverScale = createScaleRow(
-        hover.group, _('Magnification'), 100, 150, 1,
+        hover.group, _('Magnification'), 100, 200, 1,
         value => editCustomSetting(settings, 'custom-hover-scale', value / 100), state);
     controls.hoverScale.scale.draw_value = true;
     controls.hoverScale.scale.set_format_value_func((_scale, value) => `${Math.round(value)}%`);

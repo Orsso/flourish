@@ -58,7 +58,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const inline = Boolean(part);
         const iconCount = part === RecipePart.HOVER ? hoverIconCount(recipe) : 1;
         super._init({
-            height_request: inline ? 64 : 96,
+            height_request: inline ? 72 : 96,
             width_request: inline ? inlineWidth(iconCount) : -1,
             hexpand: !inline,
             valign: inline ? Gtk.Align.CENTER : Gtk.Align.FILL,

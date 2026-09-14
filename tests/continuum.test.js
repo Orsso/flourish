@@ -5,6 +5,20 @@ import {
     waveOffsets,
 } from '../flourish@orsso.github.io/lib/motion/continuum.js';
 
+test('200 percent fits dense waves at small, fractional and large icon sizes', () => {
+    for (const size of [16, 24, 48, 60, 64, 96, 128, 192]) {
+        for (const room of [0, 1, 8, 32, 64, 200, 1000]) {
+            const hover = {scale: 2, lift: 16};
+            const peak = fitHoverLevel(hover, size, room, 0.1);
+            assertEqual(peak * (size + 16) * 1.1 <= room + 0.0001, true);
+            const levels = [0.25, 0.75, 1, 0.75, 0.25].map(level => level * peak * 1.1);
+            const geometry = waveGeometry({levels, hover, sizes: Array(5).fill(size), room});
+            assertEqual(geometry.growth.reduce((sum, growth) => sum + growth, 0) <= 2 * room + 0.0001, true);
+            assertEqual(geometry.levels.every(level => Number.isFinite(level) && level >= 0), true);
+        }
+    }
+});
+
 test('waveFalloff is 1 at zero and 0 from the radius on', () => {
     assertClose(waveFalloff(0, 2), 1);
     assertClose(waveFalloff(2, 2), 0);
