@@ -38,8 +38,7 @@ const DEFINITIONS = [
 
 const DEFINITION_BY_KEY = new Map(DEFINITIONS.map(item => [item.key, item]));
 
-// The motion-profile key predates the preset wording; renaming it would
-// reset every user's choice.
+// The stored profile key predates the preset wording.
 export function readActiveRecipe(settings) {
     const preset = settings.get_string('motion-profile');
     if (preset !== Preset.CUSTOM)

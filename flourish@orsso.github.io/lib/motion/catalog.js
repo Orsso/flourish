@@ -20,8 +20,9 @@ export const AttentionEffect = {
 };
 
 export const PressMode = {
-    LAUNCHES_ONLY: 'launches-only',
     ALL_PRIMARY_CLICKS: 'all-primary-clicks',
+    LAUNCHES_ONLY: 'launches-only',
+    CLICKS_AND_LAUNCHES: 'clicks-and-launches',
 };
 
 export const PressEffect = {
@@ -150,7 +151,7 @@ const BUILTIN_RECIPES = {
             enabled: true,
             mode: PressMode.ALL_PRIMARY_CLICKS,
             effect: PressEffect.DIM,
-            intensity: 0.15,
+            intensity: 0.075,
             duration: 100,
         },
         launch: {

@@ -2,6 +2,7 @@ import Clutter from 'gi://Clutter';
 
 import {resolveAnimationMode} from '../motion/catalog.js';
 import {getOrientation} from '../motion/transforms.js';
+import {setIconDim} from './iconDim.js';
 
 export const OPAQUE = 255;
 const RETREAT_DURATION = 180;
@@ -40,16 +41,26 @@ export function runSegments(clone, segments, {
     }
 
     const segment = segments[index];
+    const animation = {
+        duration: segment.duration,
+        mode: resolveAnimationMode(segment.easing, Clutter.AnimationMode),
+    };
+    // The frame captures the already-scaled clone, preserving its texture resolution.
+    setIconDim(clone.get_parent(), segment.dim ?? 0, animation);
     clone.ease({
         scale_x: segment.scaleX,
         scale_y: segment.scaleY,
         translation_x: segment.translationX,
         translation_y: segment.translationY,
         rotation_angle_z: segment.rotation ?? 0,
-        duration: segment.duration,
-        mode: resolveAnimationMode(segment.easing, Clutter.AnimationMode),
-        onComplete: () => runSegments(
-            clone, segments, {isCancelled, onComplete}, index + 1),
+        ...animation,
+        onComplete: () => {
+            // The ease callback can outlive its launch or attention session.
+            if (isCancelled())
+                return;
+            setIconDim(clone.get_parent(), segment.dim ?? 0);
+            runSegments(clone, segments, {isCancelled, onComplete}, index + 1);
+        },
     });
 }
 

@@ -9,6 +9,7 @@ import {
     ATTENTION_SLIDE_DURATION,
     buildAttentionSegments,
     buildLaunchSegments,
+    buildLaunchPressSegments,
     getAttentionPivot,
     getLaunchPivot,
     interpolateTransform,
@@ -75,7 +76,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._hoverProgress = 0;
         this._pressed = false;
         this._launching = false;
-        this._pressGeneration = 0;
         this._motionTransform = {...IDENTITY};
         this._launchTransform = {...IDENTITY};
         this._motionAnimation = IDLE_ANIMATION;
@@ -112,7 +112,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             recipe: this._recipe,
             hoverLevel: this._hovered ? 1 : 0,
             pressLevel: this._pressed ? 1 : 0,
-            launching: this._launching,
         });
     }
 
@@ -159,7 +158,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._cancelLoop();
         this._countAnimation.skip();
         this._held = false;
-        this._pressGeneration++;
         this._motionAnimation.reset();
         this._motionAnimation = IDLE_ANIMATION;
         this._hovered = false;
@@ -262,7 +260,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             return;
         }
         this._cancelLoop();
-        this._pressGeneration++;
         this._pressed = false;
         this._launching = false;
         this._hovered = false;
@@ -374,14 +371,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
     _demoClickLaunch(done) {
         const press = this._recipe.press;
-        if (press.enabled && press.mode === PressMode.ALL_PRIMARY_CLICKS) {
+        if (press.enabled && press.mode === PressMode.CLICKS_AND_LAUNCHES) {
             this._pressed = true;
-            this._animateMotion(press.duration, () => {
-                this._pressed = false;
-                this._beginLaunch({ownsPressFeedback: true, onComplete: done});
-            });
-        } else if (press.enabled && press.mode === PressMode.LAUNCHES_ONLY) {
-            this._playLaunchPressFeedback(done);
+            this._animateMotion(press.duration, () =>
+                this._beginLaunch({onComplete: done}));
         } else {
             this._beginLaunch({onComplete: done});
         }
@@ -394,11 +387,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const hoverFrom = this._hoverProgress;
         const hoverTo = this._hovered ? 1 : 0;
         this._motionAnimation.reset();
-        this._motionTransform = {...from, dim: to.dim ?? 0};
         this.queue_draw();
         const target = Adw.CallbackAnimationTarget.new(value => {
             this._hoverProgress = hoverFrom + (hoverTo - hoverFrom) * value;
-            this._motionTransform = interpolateMotionTransform(from, to, value);
+            this._motionTransform = interpolateTransform(from, to, value);
             this.queue_draw();
         });
         this._motionAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
@@ -413,52 +405,39 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._motionAnimation.play();
     }
 
-    _playLaunchPressFeedback(onComplete = () => {}) {
-        const generation = ++this._pressGeneration;
-        this._pressed = true;
-        this._animateMotion(Math.round(this._recipe.press.duration / 2), () => {
-            if (generation !== this._pressGeneration)
-                return;
-            this._beginLaunch({ownsPressFeedback: true, onComplete});
-        });
-    }
-
-    _beginLaunch({ownsPressFeedback = false, onComplete = () => {}} = {}) {
-        if (this._launching ||
-            (!this._recipe.launch.enabled && !ownsPressFeedback)) {
+    _beginLaunch({onComplete = () => {}} = {}) {
+        if (this._launching) {
             onComplete();
             return;
         }
         this._launching = true;
+        const pressSegments = buildLaunchPressSegments(
+            this._recipe.press, ScreenEdge.BOTTOM, this._pressed ? 1 : 0);
         this._pressed = false;
-        if (this._recipe.launch.enabled) {
-            if (this._part === RecipePart.LAUNCH) {
-                this._motionAnimation.reset();
-                this._motionAnimation = IDLE_ANIMATION;
-                this._motionTransform = {...IDENTITY};
-            } else {
-                this._animateMotion(
-                    this._recipe.hover.duration, () => {},
-                    Adw.Easing.EASE_OUT_CUBIC);
-            }
-            this._playLaunch(onComplete);
-        } else {
-            this._animateMotion(this._recipe.hover.duration,
-                () => this._finishLaunch(onComplete), Adw.Easing.EASE_OUT_CUBIC);
-        }
-    }
-
-    _playLaunch(onComplete = () => {}) {
-        const segments = buildLaunchSegments(
-            this._recipe.launch.effect, this._recipe.launch, ScreenEdge.BOTTOM);
+        const from = this._motionTransform;
+        this._motionAnimation.reset();
+        this._motionAnimation = IDLE_ANIMATION;
+        this._motionTransform = this._resolveMotion();
+        this._launchTransform = {
+            ...IDENTITY,
+            scaleX: from.scaleX / this._motionTransform.scaleX,
+            scaleY: from.scaleY / this._motionTransform.scaleY,
+            dim: from.dim,
+        };
+        const segments = [
+            ...pressSegments,
+            ...(this._recipe.launch.enabled ? buildLaunchSegments(
+                this._recipe.launch.effect, this._recipe.launch, ScreenEdge.BOTTOM) : []),
+        ];
         this._playSegments(segments, () => this._finishLaunch(onComplete));
     }
 
     _playSegments(segments, onDone) {
         const duration = launchDuration(segments);
+        const from = this._launchTransform;
         this._launchAnimation.reset();
         const target = Adw.CallbackAnimationTarget.new(value => {
-            this._launchTransform = sampleLaunchSegments(segments, value * duration);
+            this._launchTransform = sampleLaunchSegments(segments, value * duration, from);
             this.queue_draw();
         });
         this._launchAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
@@ -702,13 +681,6 @@ function oddCountFor(value) {
     return 2 * Math.ceil((value - 1) / 2) + 1;
 }
 
-function interpolateMotionTransform(from, to, progress) {
-    return {
-        ...interpolateTransform(from, to, progress),
-        dim: to.dim ?? 0,
-    };
-}
-
 function drawIcon(cr, centerX, top, size, color, {
     motion,
     launch,
@@ -745,7 +717,7 @@ function drawIcon(cr, centerX, top, size, color, {
     cr.setSourceRGBA(1, 1, 1, 0.10 * alpha);
     cr.setLineWidth(1);
     cr.stroke();
-    const dim = motion.dim ?? 0;
+    const dim = 1 - (1 - (motion.dim ?? 0)) * (1 - (launch.dim ?? 0));
     if (dim > 0) {
         roundedRectangle(cr, -pivotX, -pivotY, size, size, radius);
         cr.setSourceRGBA(0, 0, 0, dim * alpha);

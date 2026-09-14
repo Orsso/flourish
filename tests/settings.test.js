@@ -9,6 +9,16 @@ import {
     writeCustomRecipe,
 } from '../flourish@orsso.github.io/lib/motion/settings.js';
 
+test('the press mode is part of the custom recipe', () => {
+    const settings = new ImmediateSettings(Preset.SUBTLE);
+    editCustomSetting(settings, 'custom-press-mode', 'clicks-and-launches');
+    const {press} = readActiveRecipe(settings);
+    assertEqual(press.mode, 'clicks-and-launches');
+    assertEqual(press.effect, 'dim');
+    assertEqual(press.intensity, 0.075);
+    assertEqual(press.duration, 100);
+});
+
 class ImmediateSettings {
     constructor(preset = Preset.BALANCED) {
         this.values = {'motion-profile': preset};

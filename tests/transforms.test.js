@@ -5,6 +5,7 @@ import {
     LaunchEffect,
     Preset,
     PressEffect,
+    PressMode,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
@@ -12,8 +13,8 @@ import {
     attentionPeriod,
     buildAttentionSegments,
     buildLaunchSegments,
+    buildLaunchPressSegments,
     composeIconTransform,
-    dimOpacity,
     dockVisibilityState,
     getAttentionPivot,
     getLaunchPivot,
@@ -116,13 +117,7 @@ test('dim press keeps geometry identity and darkens with intensity', () => {
     assertClose(press.scaleY, 1);
     assertClose(press.translationX, 0);
     assertClose(press.translationY, 0);
-    assertClose(press.dim, 0.18);
-});
-
-test('dim opacity is derived from the undimmed opacity', () => {
-    assertEqual(dimOpacity(255, 0.105), 228);
-    assertEqual(dimOpacity(200, 0.18), 164);
-    assertEqual(dimOpacity(255, 0), 255);
+    assertClose(press.dim, 0.36);
 });
 
 test('pulse segments scale without translation', () => {
@@ -247,6 +242,7 @@ test('the stock launch produces no clone segments', () => {
 
 test('hover and press compose into one controller target', () => {
     const recipe = getBuiltInRecipe('expressive');
+    recipe.press.effect = PressEffect.SQUASH;
     const transform = resolveIconTransform({
         edge: 'bottom',
         recipe,
@@ -407,6 +403,7 @@ test('launch segment sampling uses the shared timeline', () => {
         translationX: 0,
         translationY: 0,
         rotation: 0,
+        dim: 0,
     });
     assertDeepEqual(sampleLaunchSegments(segments, total), {
         scaleX: 1,
@@ -414,6 +411,7 @@ test('launch segment sampling uses the shared timeline', () => {
         translationX: 0,
         translationY: 0,
         rotation: 0,
+        dim: 0,
     });
     assertEqual(sampleLaunchSegments(segments, segments[0].duration).scaleX > 1, true);
 });
@@ -654,4 +652,53 @@ test('reminders fall on multiples of the period from the anchor', () => {
     assertEqual(nextReminderDelay({now: 4000, anchor: 0, period: 4000}), 4000);
     assertEqual(nextReminderDelay({now: 9000, anchor: 1000, period: 4000}), 4000);
     assertEqual(nextReminderDelay({now: 0, anchor: 500, period: 4000}), 4000);
+});
+
+test('launches-only presses and releases the clone before the launch', () => {
+    for (const edge of ['bottom', 'top', 'left', 'right']) {
+        for (const effect of Object.values(PressEffect)) {
+            const press = {
+                enabled: true, mode: PressMode.LAUNCHES_ONLY, effect,
+                intensity: 0.8, duration: 301,
+            };
+            const segments = buildLaunchPressSegments(press, edge);
+            assertEqual(segments.length, 2);
+            assertEqual(segments[0].duration, 151);
+            assertEqual(segments[1].duration, 301);
+            const peak = sampleLaunchSegments(segments, segments[0].duration);
+            const expected = resolvePressTransform(effect, 0.8, getOrientation(edge));
+            assertClose(peak.scaleX, expected.scaleX);
+            assertClose(peak.scaleY, expected.scaleY);
+            assertClose(peak.dim, expected.dim);
+            const end = sampleLaunchSegments(segments, launchDuration(segments));
+            assertClose(end.scaleX, 1);
+            assertClose(end.scaleY, 1);
+            assertClose(end.dim, 0);
+            assertDeepEqual(buildLaunchPressSegments({...press, enabled: false}, edge), []);
+        }
+    }
+});
+
+test('click modes only release a press that is still held', () => {
+    for (const mode of [PressMode.ALL_PRIMARY_CLICKS, PressMode.CLICKS_AND_LAUNCHES]) {
+        const press = {enabled: true, mode, effect: PressEffect.DIM, intensity: 1, duration: 120};
+        assertDeepEqual(buildLaunchPressSegments(press, 'bottom', 0), []);
+        const segments = buildLaunchPressSegments(press, 'bottom', 0.4);
+        assertEqual(segments.length, 1);
+        assertEqual(segments[0].duration, 120);
+        assertClose(sampleLaunchSegments(segments, 120).dim, 0);
+    }
+});
+
+test('launch sampling releases a physical dim without repeating the click', () => {
+    const recipe = getBuiltInRecipe('subtle');
+    const initial = {
+        scaleX: 1, scaleY: 1, translationX: 0, translationY: 0, rotation: 0, dim: 0.24,
+    };
+    const segments = buildLaunchSegments(recipe.launch.effect, recipe.launch, 'bottom');
+    assertDeepEqual(sampleLaunchSegments(segments, 0, initial), initial);
+    const middle = sampleLaunchSegments(segments, segments[0].duration / 2, initial);
+    assertEqual(middle.dim > 0 && middle.dim < initial.dim, true);
+    assertEqual(middle.scaleX > 1, true);
+    assertEqual(sampleLaunchSegments(segments, segments[0].duration, initial).dim, 0);
 });

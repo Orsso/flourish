@@ -75,8 +75,9 @@ export function buildAdvancedPage(page, controls, settings, state) {
     controls.pressMode = createComboRow(
         press.group, _('Trigger'),
         [
+            [_('Clicks only'), PressMode.ALL_PRIMARY_CLICKS],
             [_('Launches only'), PressMode.LAUNCHES_ONLY],
-            [_('All primary clicks'), PressMode.ALL_PRIMARY_CLICKS],
+            [_('Clicks and launches'), PressMode.CLICKS_AND_LAUNCHES],
         ], value => editCustomSetting(settings, 'custom-press-mode', value), state);
     controls.pressEffect = createComboRow(
         press.group, _('Effect'),
@@ -222,12 +223,6 @@ export function syncAdvancedPage(settings, controls, recipe) {
     setComboValue(controls.pressEffect, recipe.press.effect);
     controls.pressIntensity.adjustment.value = recipe.press.intensity;
     controls.pressDuration.value = recipe.press.duration;
-    const instantPrimaryDim = recipe.press.effect === PressEffect.DIM &&
-        recipe.press.mode === PressMode.ALL_PRIMARY_CLICKS;
-    controls.pressDuration.sensitive = !instantPrimaryDim;
-    controls.pressDuration.subtitle = instantPrimaryDim
-        ? _('Dim is instant for primary clicks')
-        : _('ms');
     setComboValue(controls.launchEffect, recipe.launch.effect);
     controls.launchIntensity.adjustment.value = recipe.launch.intensity;
     controls.launchSpeed.adjustment.value = recipe.launch.speed;

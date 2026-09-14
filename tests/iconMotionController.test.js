@@ -1,8 +1,17 @@
 import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
-import {IconMotionController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
+import {IconMotionController as RuntimeController} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
 import {FakeBin, FakeIcon, MeasurableBin} from './fakes.js';
 
+class IconMotionController extends RuntimeController {
+    constructor(options) {
+        super({...options, setDim: (actor, level) => {
+            actor.effects = level > 0 ? [{name: 'flourish-dim', level}] : [];
+        }});
+    }
+}
+
 function makeMeasuredController(preset = 'expressive') {
+    let now = 0;
     const icon = new FakeIcon();
     const bin = new MeasurableBin();
     const controller = new IconMotionController({
@@ -10,11 +19,13 @@ function makeMeasuredController(preset = 'expressive') {
         bin,
         edge: 'bottom',
         recipe: getBuiltInRecipe(preset),
+        clock: () => now,
     });
-    return {controller, icon, bin};
+    return {controller, icon, bin, advance(ms) { now += ms; controller.applyHoverState(); }};
 }
 
 function makeController(preset = 'expressive') {
+    let now = 0;
     const hoverEvents = [];
     const icon = new FakeIcon();
     const bin = new FakeBin();
@@ -23,10 +34,43 @@ function makeController(preset = 'expressive') {
         bin,
         edge: 'bottom',
         recipe: getBuiltInRecipe(preset),
+        clock: () => now,
         onHoverChanged: (_controller, hovered) => hoverEvents.push(hovered),
     });
-    return {controller, icon, bin, hoverEvents};
+    return {controller, icon, bin, hoverEvents,
+        advance(ms) { now += ms; controller.applyHoverState(); }};
 }
+
+test('monitor fitting uses icon-local units at every edge and parent scale', () => {
+    for (const scale of [0.75, 1, 1.25, 1.5, 2, 3]) {
+        const monitor = {x: -500, y: -300, width: 1200, height: 900};
+        for (const [edge, expected] of Object.entries({
+            bottom: 400 / scale + 20, top: 500 / scale - 68,
+            left: 600 / scale - 58, right: 600 / scale + 10,
+        })) {
+            const bin = new MeasurableBin({parentX: 100, parentY: 100});
+            bin._clip.has_clip = false;
+            bin._parent.get_transformed_size = () => [48 * scale, 48 * scale];
+            const controller = new IconMotionController({icon: new FakeIcon(), bin, edge,
+                recipe: getBuiltInRecipe('expressive')});
+            const measured = controller.measure(monitor);
+            assertClose(measured.budgetPx, expected);
+            assertEqual(measured.iconNormalSize, 48);
+            controller.dispose();
+        }
+    }
+});
+
+test('ancestor clipping and monitor bounds both constrain magnification', () => {
+    const {controller, bin} = makeMeasuredController();
+    bin._parent.has_clip = true;
+    bin._parent.get_clip = () => [-1000, -1000, 2000, 2000];
+    assertClose(controller.measure().budgetPx, 120);
+    assertClose(controller.measure({x: 0, y: 910, width: 1000, height: 800}).budgetPx, 10);
+    bin._parent.get_transformed_size = () => [0, 0];
+    assertEqual(controller.measure().budgetPx, 0);
+    controller.dispose();
+});
 
 test('hover changes notify the neighbor group', () => {
     const {icon, hoverEvents} = makeController();
@@ -59,6 +103,7 @@ test('a recipe change clears an in-flight press level', () => {
     const bin = new FakeBin();
     const recipe = getBuiltInRecipe('expressive');
     recipe.press.mode = 'all-primary-clicks';
+    recipe.press.effect = 'squash';
     const controller = new IconMotionController({icon, bin, recipe, edge: 'bottom', clock: () => now});
     icon.emit('button-press-event', {get_button: () => 1});
     now = 200;
@@ -122,10 +167,19 @@ test('hover with an unchanged transform does not ease', () => {
     assertEqual(bin.eases, 0);
 });
 
-test('press dim lands without easing an unchanged transform', () => {
-    const {icon, bin} = makeController('subtle');
+test('press dim follows its duration without an actor transition', () => {
+    const {icon, bin, advance} = makeController('subtle');
     icon.emit('button-press-event', {get_button: () => 1});
-    assertEqual(bin.opacity, 244);
+    assertEqual(bin.opacity, 255);
+    advance(50);
+    assertEqual(icon.get_effect('flourish-dim').level > 0, true);
+    assertEqual(bin.opacity, 255);
+    advance(50);
+    assertClose(icon.get_effect('flourish-dim').level, 0.045);
+    icon.emit('clicked');
+    advance(100);
+    assertEqual(bin.opacity, 255);
+    assertEqual(icon.get_effect('flourish-dim'), null);
     assertEqual(bin.eases, 0);
 });
 
@@ -154,11 +208,13 @@ test('applyHoverState is inert during detached attention', () => {
     assertEqual(bin.eases, eases);
 });
 
-test('a press stays immediate while a hover flush is pending', () => {
-    const {icon, bin} = makeController('subtle');
+test('a press ramp starts while a hover flush is pending', () => {
+    const {icon, bin, advance} = makeController('subtle');
     icon.setHover(true);
     icon.emit('button-press-event', {get_button: () => 1});
-    assertEqual(bin.opacity, 244);
+    advance(100);
+    assertEqual(bin.opacity, 255);
+    assertClose(icon.get_effect('flourish-dim').level, 0.045);
 });
 
 test('beginLaunch snaps immediately while a hover flush is pending', () => {
@@ -180,10 +236,12 @@ test('applies toward identity skip the geometry measure', () => {
 });
 
 test('a press without hover reach skips the geometry measure', () => {
-    const {icon, bin} = makeMeasuredController('subtle');
+    const {icon, bin, advance} = makeMeasuredController('subtle');
     icon.emit('button-press-event', {get_button: () => 1});
+    advance(100);
     assertEqual(bin.measures, 0);
-    assertEqual(bin.opacity, 244);
+    assertEqual(bin.opacity, 255);
+    assertClose(icon.get_effect('flourish-dim').level, 0.045);
 });
 
 test('endOverlay does not replay the hover notification', () => {
@@ -260,4 +318,50 @@ test('urgent changes reach the listener with the controller', () => {
     icon.emit('notify::urgent');
     assertDeepEqual(seen, [[true, true], [true, false]]);
     assertEqual(controller.urgent, false);
+});
+
+test('launch preparation follows the press mode and the held click', () => {
+    const modes = {
+        'all-primary-clicks': {plain: 1, launching: 0},
+        'launches-only': {plain: 2, launching: 2},
+        'clicks-and-launches': {plain: 1, launching: 1},
+    };
+    for (const [mode, expected] of Object.entries(modes)) {
+        for (const [kind, launching] of [['plain', false], ['launching', true]]) {
+            const {controller, icon, bin, advance} = makeController('subtle');
+            const recipe = getBuiltInRecipe('subtle');
+            Object.assign(recipe.press, {mode, effect: 'dim'});
+            controller.setRecipe(recipe);
+            icon.app = {get_n_windows: () => launching ? 0 : 1};
+            icon.emit('button-press-event', {get_button: () => 1});
+            advance(50);
+            const preparation = controller.beginLaunch(false);
+            const count = expected[kind];
+            assertEqual(preparation.active, count > 0, `${mode} ${kind}`);
+            if (preparation.active) {
+                assertEqual(preparation.pressSegments.length, count, `${mode} ${kind}`);
+                assertEqual(preparation.dim > 0, count === 1, `${mode} ${kind}`);
+                assertEqual(bin.scale_y, 1);
+                controller.endOverlay();
+            }
+            controller.dispose();
+        }
+    }
+});
+
+test('a keyboard launch has no press to release', () => {
+    const {controller} = makeController('subtle');
+    assertEqual(controller.beginLaunch(false).active, false);
+    controller.dispose();
+});
+
+test('the press master switch disables the launch press too', () => {
+    const {controller} = makeController('expressive');
+    const recipe = getBuiltInRecipe('expressive');
+    recipe.press.enabled = false;
+    controller.setRecipe(recipe);
+    assertEqual(controller.beginLaunch(false).active, false);
+    assertEqual(controller.beginLaunch(true).active, true);
+    controller.endOverlay();
+    controller.dispose();
 });

@@ -16,6 +16,10 @@
 - Fixed the hover room on left and right docks, which was measured on the
   wrong side.
 - Custom magnification now goes up to 200 %.
+- Press feedback has a new trigger, Clicks and launches, and Clicks only no
+  longer plays on a click that launches the app.
+- The Dim press effect darkens the icon instead of fading it, and follows the
+  launch clone.
 
 ## 1.1.0
 

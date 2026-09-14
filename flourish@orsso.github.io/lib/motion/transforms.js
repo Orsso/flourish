@@ -5,6 +5,7 @@ import {
     Easing,
     LaunchEffect,
     PressEffect,
+    PressMode,
     ScreenEdge,
 } from './catalog.js';
 
@@ -57,7 +58,7 @@ export function getLaunchPivot(effect, edge) {
 }
 
 const PRESS_SQUASH_FACTOR = 0.22;
-const PRESS_DIM_FACTOR = 0.30;
+const PRESS_DIM_FACTOR = 0.60;
 
 const PRESS_EFFECTS = {
     [PressEffect.SQUASH]: (intensity, orientation) => {
@@ -76,8 +77,19 @@ export function resolvePressTransform(effect, intensity, orientation) {
     return build(clamp(intensity, 0, 1), orientation);
 }
 
-export function dimOpacity(opacity, dim) {
-    return Math.round(opacity * (1 - clamp(dim, 0, 1)));
+export function buildLaunchPressSegments(press, edge, pressLevel = 0) {
+    if (!press.enabled)
+        return [];
+    const easing = Easing.EASE_OUT_CUBIC;
+    const release = segment({duration: press.duration, easing});
+    if (press.mode !== PressMode.LAUNCHES_ONLY)
+        return pressLevel > 0 ? [release] : [];
+    const transform = resolvePressTransform(
+        press.effect, press.intensity, getOrientation(edge));
+    return [
+        segment({...transform, duration: Math.round(press.duration / 2), easing}),
+        release,
+    ];
 }
 
 function pressTransform({
@@ -379,15 +391,16 @@ export function launchDuration(segments) {
     return segments.reduce((total, item) => total + item.duration, 0);
 }
 
-export function sampleLaunchSegments(segments, elapsed) {
+export function sampleLaunchSegments(segments, elapsed, initial = null) {
     const identity = {
         scaleX: 1,
         scaleY: 1,
         translationX: 0,
         translationY: 0,
         rotation: 0,
+        dim: 0,
     };
-    let previous = identity;
+    let previous = initial ?? identity;
     let remaining = Math.max(0, elapsed);
 
     for (const item of segments) {
@@ -501,6 +514,7 @@ function segment({
     translationX = 0,
     translationY = 0,
     rotation = 0,
+    dim = 0,
 }) {
     return {
         duration: segmentDuration,
@@ -510,6 +524,7 @@ function segment({
         translationX,
         translationY,
         rotation,
+        dim,
     };
 }
 
@@ -524,6 +539,7 @@ function transformFromSegment(item) {
         translationX: item.translationX,
         translationY: item.translationY,
         rotation: item.rotation ?? 0,
+        dim: item.dim ?? 0,
     };
 }
 
@@ -534,6 +550,7 @@ export function interpolateTransform(from, to, progress) {
         translationX: interpolate(from.translationX, to.translationX, progress),
         translationY: interpolate(from.translationY, to.translationY, progress),
         rotation: interpolate(from.rotation ?? 0, to.rotation ?? 0, progress),
+        dim: interpolate(from.dim ?? 0, to.dim ?? 0, progress),
     };
 }
 

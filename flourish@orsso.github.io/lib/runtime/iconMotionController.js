@@ -2,13 +2,14 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import St from 'gi://St';
 
-import {PressEffect, ScreenEdge, sampleRamp} from '../motion/catalog.js';
+import {ScreenEdge, sampleRamp} from '../motion/catalog.js';
 import {PressInteraction} from '../motion/pressInteraction.js';
 import {
-    dimOpacity,
+    buildLaunchPressSegments,
     resolveIconTransform,
 } from '../motion/transforms.js';
 import {sharpenIconTexture} from './iconTexture.js';
+import {setIconDim} from './iconDim.js';
 
 // Toggling any class name invalidates the widget's style context.
 const REFRESH_CLASS = 'flourish-style-refresh';
@@ -24,7 +25,6 @@ export class IconMotionController {
     #bin;
     #clock;
     #hoverLevel = 0;
-    #dimmed = false;
     #hovered = false;
     #icon;
     #onAnimate;
@@ -37,6 +37,7 @@ export class IconMotionController {
     #press = new PressInteraction();
     #pressRamp = null;
     #recipe;
+    #setDim;
     #restoreTexture;
     #returnRamp = null;
     #urgent = false;
@@ -47,6 +48,7 @@ export class IconMotionController {
         edge,
         recipe,
         clock = () => 0,
+        setDim = setIconDim,
         onAnimate = () => {},
         onHoverChanged = () => {},
         onDestroyed = () => {},
@@ -57,6 +59,7 @@ export class IconMotionController {
         this.#edge = edge;
         this.#recipe = recipe;
         this.#clock = clock;
+        this.#setDim = setDim;
         this.#onAnimate = onAnimate;
         this.#onHoverChanged = onHoverChanged;
         this.#onDestroyed = onDestroyed;
@@ -72,9 +75,7 @@ export class IconMotionController {
             translationY: bin.translation_y,
             pivotX,
             pivotY,
-            opacity: bin.opacity,
             reactive: bin.reactive,
-            redirect: bin.offscreen_redirect,
         };
 
         icon.connectObject(
@@ -87,17 +88,18 @@ export class IconMotionController {
             },
             'button-press-event', (_actor, event) => {
                 if (event.get_button() === Clutter.BUTTON_PRIMARY &&
-                    this.#press.beginPrimary(this.#recipe.press))
+                    this.#press.beginPrimary(this.#recipe.press,
+                        this.#icon.app?.get_n_windows() === 0))
                     this.#pressChanged();
                 return Clutter.EVENT_PROPAGATE;
             },
             'notify::pressed', () => {
                 if (this.#press.syncButtonPressed(
-                    this.#icon.pressed, this.#recipe.press))
+                    this.#icon.pressed))
                     this.#pressChanged();
             },
             'clicked', () => {
-                if (this.#press.finishClick())
+                if (this.#press.reset())
                     this.#pressChanged();
             }, GObject.ConnectFlags.AFTER, // after the stock click handler
             this);
@@ -188,29 +190,21 @@ export class IconMotionController {
     }
 
     beginLaunch(launchEnabled) {
-        const steps = this.#press.consumeLaunchSteps(this.#recipe.press);
-        if (this.overlaid ||
-            (!launchEnabled && steps.length === 0)) {
-            return {
-                active: false,
-                hoverDuration: this.#recipe.hover.duration,
-                pressSteps: steps,
-            };
-        }
+        const pressLevel = this.#pressLevel(this.#clock());
+        const pressSegments = buildLaunchPressSegments(
+            this.#recipe.press, this.#edge, pressLevel);
+        if (this.overlaid || (!launchEnabled && pressSegments.length === 0))
+            return {active: false};
 
-        this.#press.applyStep(false);
+        const {dim} = resolveIconTransform({recipe: this.#recipe, pressLevel});
+        this.#press.reset();
         this.#pressRamp = null;
         this.beginOverlay({followHover: true});
         this.#apply();
-        return {
-            active: true,
-            hoverDuration: this.#recipe.hover.duration,
-            pressSteps: steps,
-        };
+        return {active: true, dim, pressSegments};
     }
 
     onTargetDestroyed() {
-        this.#dimmed = false;
         this.#overlay = null;
         this.#bin = null;
         this.#icon = null;
@@ -219,7 +213,7 @@ export class IconMotionController {
 
     dispose() {
         this.#icon.disconnectObject(this);
-        this.#syncDim(0);
+        this.#setDim(this.#icon, 0);
         this.#restore();
         this.#restoreTexture();
         this.#onDestroyed(this);
@@ -260,7 +254,7 @@ export class IconMotionController {
         const now = this.#clock();
         this.#pressRamp = {
             start: now, from: this.#pressLevel(now), to,
-            duration: press.effect === PressEffect.DIM ? 0 : press.duration,
+            duration: press.duration,
             easing: hover.easing,
         };
     }
@@ -292,7 +286,7 @@ export class IconMotionController {
             translation_y: this.#original.translationY + transform.translationY,
         };
 
-        this.#syncDim(transform.dim);
+        this.#setDim(this.#icon, transform.dim);
         this.#bin.reactive = this.#original.reactive ||
             (animationsEnabled && this.#hoverLevel > 0 && this.#overlay !== 'hold');
         this.#bin.set_pivot_point(...transform.pivot);
@@ -347,22 +341,6 @@ export class IconMotionController {
             case ScreenEdge.BOTTOM:
             default:
                 return {budgetPx: (top - clipTop) / scaleY, iconNormalSize: box.y2 - box.y1};
-        }
-    }
-
-    // Opacity, not a brightness effect: offscreen rendering blurs the scaled icon.
-    #syncDim(dim) {
-        if (dim > 0) {
-            if (!this.#dimmed) {
-                this.#dimmed = true;
-                // Opacity alone can go offscreen too.
-                this.#bin.offscreen_redirect = 0;
-            }
-            this.#bin.opacity = dimOpacity(this.#original.opacity, dim);
-        } else if (this.#dimmed) {
-            this.#bin.opacity = this.#original.opacity;
-            this.#bin.offscreen_redirect = this.#original.redirect;
-            this.#dimmed = false;
         }
     }
 

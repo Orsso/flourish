@@ -1,51 +1,34 @@
 import {PressMode} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {PressInteraction} from '../flourish@orsso.github.io/lib/motion/pressInteraction.js';
 
-const allPrimary = {
-    enabled: true,
-    mode: PressMode.ALL_PRIMARY_CLICKS,
-};
-const launchesOnly = {
-    enabled: true,
-    mode: PressMode.LAUNCHES_ONLY,
-};
+const config = mode => ({enabled: true, mode});
 
-test('canonical button release clears press without leaving hover', () => {
+test('button release clears the press', () => {
     const interaction = new PressInteraction();
-
-    interaction.beginPrimary(allPrimary);
+    interaction.beginPrimary(config(PressMode.ALL_PRIMARY_CLICKS));
     assertEqual(interaction.pressed, true);
-
-    interaction.syncButtonPressed(false, allPrimary);
+    interaction.syncButtonPressed(false);
     assertEqual(interaction.pressed, false);
 });
 
-test('all-primary launch waits for the released shape', () => {
-    const interaction = new PressInteraction();
-
-    interaction.beginPrimary(allPrimary);
-    interaction.syncButtonPressed(false, allPrimary);
-
-    assertDeepEqual(interaction.consumeLaunchSteps(allPrimary), [
-        {pressed: false, durationFactor: 1},
-    ]);
-});
-
-test('launch-only feedback releases before handing off', () => {
-    const interaction = new PressInteraction();
-
-    assertDeepEqual(interaction.consumeLaunchSteps(launchesOnly), [
-        {pressed: true, durationFactor: 0.5},
-        {pressed: false, durationFactor: 1},
-    ]);
-});
-
-test('every launch preparation sequence ends released', () => {
-    for (const config of [allPrimary, launchesOnly]) {
+test('the mode decides which primary clicks press', () => {
+    const expected = {
+        [PressMode.ALL_PRIMARY_CLICKS]: {plain: true, launching: false},
+        [PressMode.LAUNCHES_ONLY]: {plain: false, launching: false},
+        [PressMode.CLICKS_AND_LAUNCHES]: {plain: true, launching: true},
+    };
+    for (const [mode, {plain, launching}] of Object.entries(expected)) {
         const interaction = new PressInteraction();
-        interaction.beginPrimary(config);
-        interaction.syncButtonPressed(false, config);
-        const steps = interaction.consumeLaunchSteps(config);
-        assertEqual(steps.at(-1).pressed, false);
+        interaction.beginPrimary(config(mode), false);
+        assertEqual(interaction.pressed, plain, `${mode} plain click`);
+        interaction.reset();
+        interaction.beginPrimary(config(mode), true);
+        assertEqual(interaction.pressed, launching, `${mode} launching click`);
     }
+});
+
+test('a disabled part never presses', () => {
+    const interaction = new PressInteraction();
+    interaction.beginPrimary({enabled: false, mode: PressMode.CLICKS_AND_LAUNCHES}, true);
+    assertEqual(interaction.pressed, false);
 });

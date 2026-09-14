@@ -53,7 +53,7 @@ export function buildPartSequence(part, recipe) {
 export function buildDemoSequence(recipe) {
     const hover = hoverIsActive(recipe);
     const phases = hover ? [DemoPhase.HOVER_IN, DemoPhase.HOLD] : [];
-    if (recipe.press.enabled && recipe.press.mode === PressMode.ALL_PRIMARY_CLICKS)
+    if (recipe.press.enabled && recipe.press.mode !== PressMode.LAUNCHES_ONLY)
         phases.push(DemoPhase.CLICK);
     phases.push(DemoPhase.PRE_LAUNCH_PAUSE);
     const showsLaunchFeedback = recipe.launch.enabled ||

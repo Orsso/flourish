@@ -6,11 +6,9 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 import {AppIcon} from 'resource:///org/gnome/shell/ui/appDisplay.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {DockState, LaunchEffect, resolveAnimationMode} from '../motion/catalog.js';
+import {DockState, LaunchEffect, PressMode} from '../motion/catalog.js';
 import {
     buildLaunchSegments,
-    composeIconTransform,
-    dimOpacity,
     getLaunchPivot,
     hoverIntroLift,
     hoverIntroScale,
@@ -20,7 +18,8 @@ import {
 } from '../motion/transforms.js';
 import {DeferredLaunchEnds} from './deferredLaunchEnds.js';
 import {actorGeometry} from './geometry.js';
-import {OPAQUE, createIconClone, retreatClone, runSegments} from './iconClone.js';
+import {createIconClone, retreatClone, runSegments} from './iconClone.js';
+import {setIconDim} from './iconDim.js';
 import {anchoredPlacement, followIcon} from './iconFollower.js';
 
 const HANDOFF_DURATION = 80;
@@ -73,8 +72,9 @@ export class LaunchEngine {
     #play(appIcon, controller, playStock) {
         this.#beforeLaunch(appIcon);
 
-        const {launch} = controller.recipe;
-        if (launch.enabled && launch.effect === LaunchEffect.STOCK)
+        const {launch, press} = controller.recipe;
+        if (launch.enabled && launch.effect === LaunchEffect.STOCK &&
+            !(press.enabled && press.mode === PressMode.LAUNCHES_ONLY))
             return playStock();
 
         // The St.Icon, not its bin: the bin carries the hover transform.
@@ -97,13 +97,12 @@ export class LaunchEngine {
         const neutralGeometry = place(after) ?? after;
         this.#startLaunch(
             appIcon, controller, target, visibleGeometry,
-            neutralGeometry, preparation, {place, visibility});
+            neutralGeometry, preparation, {place, visibility, playStock});
     }
 
     #startLaunch(appIcon, controller, target, visibleGeometry,
-        neutralGeometry, preparation, {place, visibility}) {
+        neutralGeometry, preparation, {place, visibility, playStock}) {
         const recipe = controller.recipe;
-        const {hoverDuration, pressSteps} = preparation;
         const launchPivot = getLaunchPivot(
             recipe.launch.effect, controller.edge);
         const introScale = hoverIntroScale(visibleGeometry, neutralGeometry);
@@ -115,6 +114,7 @@ export class LaunchEngine {
             reactive: false,
         });
         Main.uiGroup.add_child(frame);
+        setIconDim(frame, preparation.dim);
         const clone = createIconClone(target, {
             x: 0, y: 0, width: neutralGeometry.width, height: neutralGeometry.height,
         }, frame, {
@@ -125,12 +125,6 @@ export class LaunchEngine {
         clone.x_expand = true;
         clone.y_expand = true;
 
-        const pressTransform = composeIconTransform({
-            edge: controller.edge,
-            pressIntensity: recipe.press.intensity,
-            pressEffect: recipe.press.effect,
-        });
-
         const session = {
             app: appIcon.app,
             appSeenRunning: false,
@@ -140,11 +134,9 @@ export class LaunchEngine {
             // Ends first of: ease chain, repeat timer, target destroy.
             finished: false,
             frame,
-            hoverDuration,
             originalOpacity: target.opacity,
             launchPivot,
-            pressSteps,
-            pressTransform,
+            playStock,
             repeatSourceId: 0,
             startedAt: GLib.get_monotonic_time() / 1000,
             target,
@@ -170,66 +162,24 @@ export class LaunchEngine {
         }
         this.#sessions.set(target, session);
         target.opacity = 0;
-        this.#runIntroStep(session, 0);
-    }
-
-    #runIntroStep(session, index) {
-        if (session.finished)
-            return;
-        while (index < session.pressSteps.length &&
-            !session.pressSteps[index].pressed)
-            index++;
-        if (index >= session.pressSteps.length) {
-            this.#startEffect(session);
-            return;
-        }
-
-        const recipe = session.controller.recipe;
-        const duration = Math.round(
-            recipe.press.duration * session.pressSteps[index].durationFactor);
-        const mode = resolveAnimationMode(
-            recipe.hover.easing, Clutter.AnimationMode);
-        const onComplete = () => this.#runIntroStep(session, index + 1);
-        session.clone.opacity = dimOpacity(
-            OPAQUE, session.pressTransform.dim);
-        const geometry = {
-            scale_x: session.pressTransform.scaleX,
-            scale_y: session.pressTransform.scaleY,
-            translation_x: 0,
-            translation_y: 0,
-            duration,
-            mode,
-        };
-        if (session.pressTransform.dim > 0) {
-            // Use opacity as the timeline when geometry does not change.
-            session.clone.ease(geometry);
-            session.clone.ease_property('opacity', session.clone.opacity, {
-                duration,
-                mode: Clutter.AnimationMode.LINEAR,
-                onComplete,
-            });
-        } else {
-            session.clone.ease({...geometry, onComplete});
-        }
+        runSegments(clone, preparation.pressSegments, {
+            isCancelled: () => session.finished,
+            onComplete: () => this.#startEffect(session),
+        });
     }
 
     #startEffect(session) {
         if (session.finished)
             return;
-        session.clone.opacity = OPAQUE;
-        if (session.controller.recipe.launch.enabled) {
+        const {launch} = session.controller.recipe;
+        if (launch.enabled && launch.effect === LaunchEffect.STOCK) {
+            this.#finish(session);
+            session.playStock();
+        } else if (launch.enabled) {
             this.#runCycle(session);
-            return;
+        } else {
+            this.#handoff(session);
         }
-        session.clone.ease({
-            scale_x: 1,
-            scale_y: 1,
-            translation_x: 0,
-            translation_y: 0,
-            duration: session.hoverDuration,
-            mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
-            onComplete: () => this.#handoff(session),
-        });
     }
 
     #runCycle(session) {

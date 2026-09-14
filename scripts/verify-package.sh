@@ -27,6 +27,7 @@ required=(
     lib/runtime/focusHighlight.js
     lib/runtime/geometry.js
     lib/runtime/iconClone.js
+    lib/runtime/iconDim.js
     lib/runtime/iconFollower.js
     lib/runtime/iconMotionController.js
     lib/runtime/iconTexture.js
