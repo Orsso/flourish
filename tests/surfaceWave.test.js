@@ -24,7 +24,7 @@ function makeSurface({
     // Room between the icons and the clip, outward along the edge.
     const parent = horizontal
         ? {parentY: edge === 'bottom' ? 780 + room : 932 - room}
-        : {parentX: edge === 'left' ? room - 10 : 942 - room};
+        : {parentX: edge === 'right' ? room - 10 : 942 - room};
     const box = new FakeRow(5, {
         horizontal, position, makeBin: () => new MeasurableBin(parent),
     });
@@ -37,7 +37,8 @@ function makeSurface({
         getPointer,
     });
     const overflow = {room: spreadRoom, get actors() { return box.get_children(); }};
-    surface.addBox(box, edge, {getSpacing: () => spreadRoom ? overflow : null, containsPointer, pointerActor});
+    surface.addBox(box, edge, {getMonitor: () => null,
+        getSpacing: () => spreadRoom ? overflow : null, containsPointer, pointerActor});
     scheduler.flush();
     const bins = box.icons.map(icon => icon.icon._iconBin);
     const frame = ms => {

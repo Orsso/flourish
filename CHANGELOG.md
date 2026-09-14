@@ -13,6 +13,8 @@
   an app, as with the Super+number hotkeys.
 - The launch and attention animations now follow their icon when the dock or
   dash lays out around it during a cycle.
+- Fixed the hover room on left and right docks, which was measured on the
+  wrong side.
 
 ## 1.1.0
 

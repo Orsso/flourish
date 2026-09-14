@@ -276,12 +276,16 @@ export class MeasurableBin extends FakeBin {
         super();
         this.measures = 0;
         this._clip = {
+            width: 1000, height: 200,
+            get_transformed_size: () => [1000, 200],
             has_clip: true,
             get_clip: () => [0, 0, 1000, 200],
             get_transformed_position: () => [0, 800],
             get_parent: () => null,
         };
         this._parent = {
+            width: 48, height: 48,
+            get_transformed_size: () => [48, 48],
             has_clip: false,
             get_transformed_position: () => [parentX, parentY],
             get_parent: () => this._clip,
@@ -358,6 +362,10 @@ export class FakeRow extends FakeEmitter {
 
     get_transformed_position() {
         return this.position;
+    }
+
+    transform_stage_point(x, y) {
+        return [true, x - this.position[0], y - this.position[1]];
     }
 }
 

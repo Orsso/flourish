@@ -90,6 +90,7 @@ export class MotionSurface {
             getPointer: this.#getPointer,
             animationsEnabled: this.#animationsEnabled,
             getSpacing: context?.getSpacing ?? (() => null),
+            getMonitor: context?.getMonitor ?? (() => null),
             isAvailable: context?.isAvailable ?? (() => true),
             containsPointer: context?.containsPointer ?? (() => true),
         });
@@ -161,6 +162,7 @@ class NeighborGroup {
     // Wave amplitude, 0 at rest to 1 in full, eased over the hover duration.
     #envRamp = IDLE_RAMP;
     #flushId = 0;
+    #getMonitor;
     #getPointer;
     #isAvailable;
     #getSpacing;
@@ -172,7 +174,7 @@ class NeighborGroup {
     #spreadShape = null;
     #translations = new Map();
 
-    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, isAvailable, containsPointer}) {
+    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, getMonitor, isAvailable, containsPointer}) {
         this.#scheduler = scheduler;
         this.#box = box;
         this.#pointerActor = pointerActor;
@@ -182,6 +184,7 @@ class NeighborGroup {
         this.#getPointer = getPointer;
         this.#animationsEnabled = animationsEnabled;
         this.#getSpacing = getSpacing;
+        this.#getMonitor = getMonitor;
         this.#isAvailable = isAvailable;
         this.#containsPointer = containsPointer;
         box.connectObject('notify::mapped', () => {
@@ -309,7 +312,7 @@ class NeighborGroup {
         if (this.#peak !== null)
             return this.#peak;
         const {hover} = this.#recipe;
-        const room = this.#entries[0].controller.measure();
+        const room = this.#entries[0].controller.measure(this.#getMonitor());
         const overshoot = hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
         this.#peak = room
             ? fitHoverLevel(hover, room.iconNormalSize, room.budgetPx, overshoot)
@@ -346,13 +349,11 @@ class NeighborGroup {
             return null;
         const horizontal =
             this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
-        const [boxX, boxY] = this.#box.get_transformed_position();
-        const pointer = horizontal
-            ? this.#pointer[0] - boxX
-            : this.#pointer[1] - boxY;
-        const cross = horizontal
-            ? this.#pointer[1] - boxY
-            : this.#pointer[0] - boxX;
+        const [valid, localX, localY] = this.#box.transform_stage_point(...this.#pointer);
+        if (!valid)
+            return null;
+        const pointer = horizontal ? localX : localY;
+        const cross = horizontal ? localY : localX;
         // Allocation boxes are parent-relative, like the pointer above.
         const center = index => {
             const box = this.#entries[index].container.get_allocation_box();
@@ -457,7 +458,6 @@ class NeighborGroup {
         const horizontal = this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
         const property = horizontal ? 'translation_x' : 'translation_y';
         const axis = horizontal ? 0 : 1;
-        const origin = this.#box.get_transformed_position()[axis];
         const actors = spacing.actors;
         const iconOffsets = new Map(this.#entries.map((entry, index) => [entry.container, offsets[index]]));
         for (const [actor, original] of this.#translations) {
@@ -475,7 +475,8 @@ class NeighborGroup {
             const original = this.#translations.get(actor);
             let offset = iconOffsets.get(actor);
             if (offset === undefined) {
-                const position = actor.get_transformed_position()[axis] - actor[property] + original - origin;
+                const [, x, y] = this.#box.transform_stage_point(...actor.get_transformed_position());
+                const position = (axis === 0 ? x : y) - actor[property] + original;
                 offset = first;
                 for (let i = 0; i < centers.length && centers[i] < position; i++)
                     offset += growth[i];

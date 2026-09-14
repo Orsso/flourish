@@ -52,8 +52,10 @@ export class DashIntegration {
             isAvailable: () => Main.overview.visibleTarget,
             containsPointer: (x, y) => pointerOnSurface(dash, x, y, Main.layoutManager.overviewGroup),
             getSpacing: () => dashSpacing(box, Main.layoutManager.primaryMonitor),
+            getMonitor: () => Main.layoutManager.primaryMonitor,
         });
         Main.overview.connectObject('hiding', () => this.#surface.clearPointer(), this);
+        Main.layoutManager.connectObject('monitors-changed', () => this.#surface.invalidateGeometry(), this);
         this.#surface.refreshStyles();
     }
 
@@ -64,6 +66,7 @@ export class DashIntegration {
     disable() {
         if (!this.#surface)
             return;
+        Main.layoutManager.disconnectObject(this);
         Main.overview.disconnectObject(this);
         this.#surface.dispose();
         this.#surface = null;

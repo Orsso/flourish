@@ -45,6 +45,7 @@ export class DockIntegration {
             scheduler: this.#scheduler,
         });
         this.#generation++;
+        Main.layoutManager.connectObject('monitors-changed', () => this.#surface.invalidateGeometry(), this);
         Main.extensionManager.connectObject('extension-state-changed',
             (_manager, extension) => {
                 if (!DASH_TO_DOCK_BUILDS.includes(extension.uuid))
@@ -61,6 +62,7 @@ export class DockIntegration {
     disable() {
         this.#generation++;
         Main.extensionManager.disconnectObject(this);
+        Main.layoutManager.disconnectObject(this);
         this.#cancelScheduledAttach();
         this.#handBackWiggles();
         this.#detachManager();
@@ -81,7 +83,7 @@ export class DockIntegration {
     #syncOverflow() {
         const {hover} = this.#recipe;
         for (const overflow of this.#overflows)
-            overflow.setActive(hover.enabled && (hover.scale > 1 || hover.lift > 0));
+            overflow.setHover(hover);
     }
 
     refreshStyles() {
@@ -210,11 +212,12 @@ export class DockIntegration {
                 actor: slid,
                 row: box,
                 edge,
+                getMonitor,
                 injections: new InjectionManager(),
                 onChanged: () => this.#surface.invalidateGeometry(),
                 onDisposed: disposed => this.#overflows.delete(disposed),
             });
-            context.getSpacing = () => overflow.room ? overflow : null;
+            context.getSpacing = () => overflow;
             if (!this.#surface.addBox(box, edge, context)) {
                 visibility.dispose();
                 continue;

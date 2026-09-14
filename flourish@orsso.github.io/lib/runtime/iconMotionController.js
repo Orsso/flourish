@@ -300,46 +300,53 @@ export class IconMotionController {
         Object.assign(this.#bin, properties);
     }
 
-    measure() {
+    measure(monitor = null) {
         const bin = this.#bin;
         if (!bin)
             return null;
         const parent = bin.get_parent();
         if (!parent)
             return null;
-        let clipActor = null;
-        for (let node = bin; node; node = node.get_parent()) {
-            if (node.has_clip) {
-                clipActor = node;
-                break;
-            }
-        }
-        if (!clipActor)
-            return null;
-
         const box = bin.get_allocation_box();
-        const clip = clipActor.get_clip();
-        const [clipX, clipY] = clipActor.get_transformed_position();
+        const [parentWidth, parentHeight] = parent.get_transformed_size();
+        const scaleX = parentWidth / parent.width;
+        const scaleY = parentHeight / parent.height;
+        if (!(scaleX > 0 && scaleY > 0))
+            return {budgetPx: 0, iconNormalSize: 0};
         const [parentX, parentY] = parent.get_transformed_position();
-        const top = parentY + box.y1;
-        const bottom = parentY + box.y2;
-        const left = parentX + box.x1;
-        const right = parentX + box.x2;
-        const clipTop = clipY + clip[1];
-        const clipBottom = clipY + clip[1] + clip[3];
-        const clipLeft = clipX + clip[0];
-        const clipRight = clipX + clip[0] + clip[2];
+        const top = parentY + box.y1 * scaleY;
+        const bottom = parentY + box.y2 * scaleY;
+        const left = parentX + box.x1 * scaleX;
+        const right = parentX + box.x2 * scaleX;
+        let clipTop = monitor ? monitor.y : -Infinity;
+        let clipBottom = monitor ? monitor.y + monitor.height : Infinity;
+        let clipLeft = monitor ? monitor.x : -Infinity;
+        let clipRight = monitor ? monitor.x + monitor.width : Infinity;
+        // Compare clips in stage coordinates, then return a budget in icon-local units.
+        for (let node = parent; node; node = node.get_parent()) {
+            if (!node.has_clip)
+                continue;
+            const [x, y, width, height] = node.get_clip();
+            const [originX, originY] = node.get_transformed_position();
+            const [nodeWidth, nodeHeight] = node.get_transformed_size();
+            const sx = node.width > 0 ? nodeWidth / node.width : 0;
+            const sy = node.height > 0 ? nodeHeight / node.height : 0;
+            clipTop = Math.max(clipTop, originY + y * sy);
+            clipBottom = Math.min(clipBottom, originY + (y + height) * sy);
+            clipLeft = Math.max(clipLeft, originX + x * sx);
+            clipRight = Math.min(clipRight, originX + (x + width) * sx);
+        }
 
         switch (this.#edge) {
             case ScreenEdge.TOP:
-                return {budgetPx: clipBottom - bottom, iconNormalSize: box.y2 - box.y1};
+                return {budgetPx: (clipBottom - bottom) / scaleY, iconNormalSize: box.y2 - box.y1};
             case ScreenEdge.LEFT:
-                return {budgetPx: left - clipLeft, iconNormalSize: box.x2 - box.x1};
+                return {budgetPx: (clipRight - right) / scaleX, iconNormalSize: box.x2 - box.x1};
             case ScreenEdge.RIGHT:
-                return {budgetPx: clipRight - right, iconNormalSize: box.x2 - box.x1};
+                return {budgetPx: (left - clipLeft) / scaleX, iconNormalSize: box.x2 - box.x1};
             case ScreenEdge.BOTTOM:
             default:
-                return {budgetPx: top - clipTop, iconNormalSize: box.y2 - box.y1};
+                return {budgetPx: (top - clipTop) / scaleY, iconNormalSize: box.y2 - box.y1};
         }
     }
 
