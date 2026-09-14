@@ -92,7 +92,7 @@
       <summary>Press feedback effect</summary>
     </key>
     <key name="custom-press-intensity" type="d">
-      <default>0.075</default>
+      <default>0.35</default>
       <range min="0.0" max="1.0"/>
       <summary>Press intensity</summary>
     </key>
@@ -111,7 +111,7 @@
       <summary>Launch effect</summary>
     </key>
     <key name="custom-launch-intensity" type="d">
-      <default>0.2</default>
+      <default>0.5</default>
       <range min="0.0" max="1.0"/>
       <summary>Launch effect intensity</summary>
     </key>

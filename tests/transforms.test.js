@@ -144,10 +144,10 @@ test('bounce follows the outward vector and decays', () => {
     assertEqual(Math.abs(outward[1].translationX) > Math.abs(outward[2].translationX), true);
 });
 
-test('Lively bounce defaults to one macOS-style hop per cycle', () => {
+test('a bounce with no decay is one macOS-style hop per cycle', () => {
     const recipe = getBuiltInRecipe('balanced');
     const segments = buildLaunchSegments(
-        recipe.launch.effect, recipe.launch, 'bottom');
+        LaunchEffect.BOUNCE, recipe.launch, 'bottom');
     assertEqual(segments.length, 2);
     assertEqual(segments[0].translationY < 0, true);
     assertEqual(segments[1].translationY, 0);

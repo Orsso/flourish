@@ -27,8 +27,8 @@ test('built-in recipes match the presets', () => {
     assertEqual(subtle.launch.softenRepeats, true);
     assertEqual(balanced.hover.enabled, true);
     assertEqual(balanced.hover.scale, 1.12);
-    assertEqual(balanced.press.mode, PressMode.LAUNCHES_ONLY);
-    assertEqual(balanced.launch.effect, LaunchEffect.BOUNCE);
+    assertEqual(balanced.press.mode, PressMode.ALL_PRIMARY_CLICKS);
+    assertEqual(balanced.launch.effect, LaunchEffect.STRETCH);
     assertEqual(balanced.launch.repeatPause, 400);
     assertEqual(expressive.hover.easing, Easing.EASE_OUT_CUBIC);
     assertEqual(expressive.launch.effect, LaunchEffect.BOUNCE);
@@ -44,13 +44,14 @@ test('built-in recipes are copied', () => {
 test('presets declare their press effects', () => {
     assertEqual(getBuiltInRecipe(Preset.SUBTLE).press.effect, PressEffect.DIM);
     assertEqual(getBuiltInRecipe(Preset.BALANCED).press.effect, PressEffect.SQUASH);
-    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).press.effect, PressEffect.SQUASH);
+    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).press.effect, PressEffect.DIM);
+    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).press.mode, PressMode.CLICKS_AND_LAUNCHES);
 });
 
 test('presets carry the neighbor radius', () => {
     assertEqual(getBuiltInRecipe(Preset.SUBTLE).hover.neighborRadius, 1);
     assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.neighborRadius, 2);
-    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).hover.neighborRadius, 2);
+    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).hover.neighborRadius, 3);
 });
 
 test('only Expressive spreads its wave by default', () => {
@@ -62,9 +63,9 @@ test('only Expressive spreads its wave by default', () => {
 test('presets form a measured progression across hover, launch and attention', () => {
     const recipes = ['subtle', 'balanced', 'expressive'].map(getBuiltInRecipe);
     assertDeepEqual(recipes.map(r => [r.hover.scale, r.hover.lift, r.hover.duration]),
-        [[1.04, 0, 160], [1.12, 0, 180], [1.32, 3, 220]]);
+        [[1.04, 0, 160], [1.12, 3, 180], [1.50, 10, 280]]);
     assertDeepEqual(recipes.map(r => [r.launch.intensity, r.launch.repeat, r.launch.maxDuration]),
-        [[0.20, false, 8000], [0.35, true, 8000], [0.60, true, 8000]]);
+        [[0.50, false, 8000], [0.70, true, 8000], [0.60, true, 8000]]);
     assertDeepEqual(recipes.map(r => [r.attention.effect, r.attention.intensity,
         r.attention.cycles, r.attention.interval, r.attention.reminders, r.attention.peekWhenHidden]),
     [['pulse', 0.25, 1, 10, 3, false], ['pulse', 0.40, 2, 8, 5, true],

@@ -6,10 +6,8 @@ import {
     hoverIsActive,
 } from '../flourish@orsso.github.io/lib/prefs/demoSequence.js';
 
-test('all-primary preset shows a plain click before the launch click', () => {
-    const recipe = getBuiltInRecipe(Preset.EXPRESSIVE);
-    recipe.press.mode = PressMode.ALL_PRIMARY_CLICKS;
-    const sequence = buildDemoSequence(recipe);
+test('click feedback shows a plain click before the launch click', () => {
+    const sequence = buildDemoSequence(getBuiltInRecipe(Preset.EXPRESSIVE));
     assertDeepEqual(sequence, [
         DemoPhase.HOVER_IN,
         DemoPhase.HOLD,
@@ -22,9 +20,10 @@ test('all-primary preset shows a plain click before the launch click', () => {
     ]);
 });
 
-test('launches-only preset skips the plain click but keeps the launch click', () => {
-    const sequence = buildDemoSequence(getBuiltInRecipe(Preset.BALANCED));
-    assertEqual(getBuiltInRecipe(Preset.BALANCED).press.mode, PressMode.LAUNCHES_ONLY);
+test('launches-only skips the plain click but keeps the launch click', () => {
+    const recipe = getBuiltInRecipe(Preset.BALANCED);
+    recipe.press.mode = PressMode.LAUNCHES_ONLY;
+    const sequence = buildDemoSequence(recipe);
     assertDeepEqual(sequence, [
         DemoPhase.HOVER_IN,
         DemoPhase.HOLD,
@@ -52,7 +51,6 @@ test('inert hover drops the hover phases entirely', () => {
 test('disabling launch drops the launch click', () => {
     const recipe = getBuiltInRecipe(Preset.EXPRESSIVE);
     recipe.launch.enabled = false;
-    recipe.press.mode = PressMode.ALL_PRIMARY_CLICKS;
     const sequence = buildDemoSequence(recipe);
     assertDeepEqual(sequence, [
         DemoPhase.HOVER_IN,
@@ -65,8 +63,9 @@ test('disabling launch drops the launch click', () => {
     ]);
 });
 
-test('launch-only press feedback keeps the launch click when the effect is disabled', () => {
+test('launches-only keeps the launch click when the effect is disabled', () => {
     const recipe = getBuiltInRecipe(Preset.BALANCED);
+    recipe.press.mode = PressMode.LAUNCHES_ONLY;
     recipe.launch.enabled = false;
 
     const sequence = buildDemoSequence(recipe);

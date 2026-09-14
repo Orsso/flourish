@@ -15,7 +15,7 @@ test('the press mode is part of the custom recipe', () => {
     const {press} = readActiveRecipe(settings);
     assertEqual(press.mode, 'clicks-and-launches');
     assertEqual(press.effect, 'dim');
-    assertEqual(press.intensity, 0.075);
+    assertEqual(press.intensity, 0.35);
     assertEqual(press.duration, 100);
 });
 
@@ -192,7 +192,7 @@ test('active recipe reads presets without touching custom', () => {
     settings.values['custom-hover-scale'] = 1.01;
     const recipe = readActiveRecipe(settings);
     assertEqual(recipe.id, Preset.EXPRESSIVE);
-    assertEqual(recipe.hover.scale, 1.32);
+    assertEqual(recipe.hover.scale, 1.5);
 });
 
 test('feature toggles create custom from the active preset', () => {
@@ -252,7 +252,7 @@ test('dynamic spacing edits preserve the preset and round-trip through Custom', 
     editCustomSetting(settings, 'custom-hover-dynamic-spacing', false);
     assertEqual(settings.committed['motion-profile'], Preset.CUSTOM);
     assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
-    assertEqual(readActiveRecipe(settings).hover.scale, 1.32);
+    assertEqual(readActiveRecipe(settings).hover.scale, 1.5);
     selectPreset(settings, Preset.BALANCED);
     assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
     selectPreset(settings, Preset.EXPRESSIVE);

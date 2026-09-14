@@ -87,8 +87,8 @@ test('only the shared hover level drives the icon transform', () => {
     assertEqual(controller.setHoverLevel(0.5), true);
     assertEqual(controller.setHoverLevel(0.5), false);
     controller.applyHoverState();
-    assertClose(bin.scale_x, 1.16);
-    assertClose(bin.translation_y, -1.5);
+    assertClose(bin.scale_x, 1.25);
+    assertClose(bin.translation_y, -5);
     assertEqual(bin.reactive, true);
     controller.setHoverLevel(0);
     controller.applyHoverState();
@@ -102,7 +102,6 @@ test('a recipe change clears an in-flight press level', () => {
     const icon = new FakeIcon();
     const bin = new FakeBin();
     const recipe = getBuiltInRecipe('expressive');
-    recipe.press.mode = 'all-primary-clicks';
     recipe.press.effect = 'squash';
     const controller = new IconMotionController({icon, bin, recipe, edge: 'bottom', clock: () => now});
     icon.emit('button-press-event', {get_button: () => 1});
@@ -175,7 +174,7 @@ test('press dim follows its duration without an actor transition', () => {
     assertEqual(icon.get_effect('flourish-dim').level > 0, true);
     assertEqual(bin.opacity, 255);
     advance(50);
-    assertClose(icon.get_effect('flourish-dim').level, 0.045);
+    assertClose(icon.get_effect('flourish-dim').level, 0.21);
     icon.emit('clicked');
     advance(100);
     assertEqual(bin.opacity, 255);
@@ -214,7 +213,7 @@ test('a press ramp starts while a hover flush is pending', () => {
     icon.emit('button-press-event', {get_button: () => 1});
     advance(100);
     assertEqual(bin.opacity, 255);
-    assertClose(icon.get_effect('flourish-dim').level, 0.045);
+    assertClose(icon.get_effect('flourish-dim').level, 0.21);
 });
 
 test('beginLaunch snaps immediately while a hover flush is pending', () => {
@@ -241,7 +240,7 @@ test('a press without hover reach skips the geometry measure', () => {
     advance(100);
     assertEqual(bin.measures, 0);
     assertEqual(bin.opacity, 255);
-    assertClose(icon.get_effect('flourish-dim').level, 0.045);
+    assertClose(icon.get_effect('flourish-dim').level, 0.21);
 });
 
 test('endOverlay does not replay the hover notification', () => {
@@ -350,7 +349,7 @@ test('launch preparation follows the press mode and the held click', () => {
 });
 
 test('a keyboard launch has no press to release', () => {
-    const {controller} = makeController('subtle');
+    const {controller} = makeController('expressive');
     assertEqual(controller.beginLaunch(false).active, false);
     controller.dispose();
 });
