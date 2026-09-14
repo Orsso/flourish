@@ -135,6 +135,7 @@ export default class FlourishExtension extends Extension {
     _syncStyles() {
         const hideHover = !this._settings.get_boolean('show-hover-background');
         const showFocused = this._settings.get_boolean('show-focused-app-background');
+        this._dockIntegration.setOutline(this._settings.get_string('dock-outline'));
         // No short-circuit: every sheet must sync.
         return [
             this._hoverStyle.setEnabled(hideHover),

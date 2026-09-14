@@ -8,6 +8,7 @@ import {
     editCustomSetting,
     readActiveRecipe,
     selectPreset,
+    setStringCommitted,
     switchToPresetFromCustom,
 } from './lib/motion/settings.js';
 import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
@@ -15,10 +16,18 @@ import {MotionPreview} from './lib/prefs/motionPreview.js';
 import {
     connectSwitch,
     createBackgroundRow,
+    createComboRow,
     createSwitchRow,
+    setComboValue,
 } from './lib/prefs/rows.js';
 
 const N_ = s => s;
+const OUTLINES = [
+    [N_('None'), 'none'],
+    [N_('Follow theme'), 'auto'],
+    [N_('Light'), 'light'],
+    [N_('Dark'), 'dark'],
+];
 const PRESET_DETAILS = [
     [Preset.SUBTLE, N_('Subtle')],
     [Preset.BALANCED, N_('Lively')],
@@ -102,11 +111,20 @@ export default class FlourishPreferences extends ExtensionPreferences {
             connectSwitch(controls.attentionEnabled, enabled =>
                 editCustomSetting(settings, 'custom-attention-enabled', enabled), state);
         }
-        controls.hoverBackground = createBackgroundRow(
-            featureGroup, 'hover', settings, state);
-        controls.focusedAppBackground = createBackgroundRow(
-            featureGroup, 'focusedApp', settings, state);
         essentials.add(featureGroup);
+
+        const styleGroup = new Adw.PreferencesGroup({title: _('Style')});
+        if (controls.dockPresent) {
+            controls.outline = createComboRow(
+                styleGroup, _('Dock outline'),
+                OUTLINES.map(([label, value]) => [_(label), value]),
+                value => setStringCommitted(settings, 'dock-outline', value), state);
+        }
+        controls.hoverBackground = createBackgroundRow(
+            styleGroup, 'hover', settings, state);
+        controls.focusedAppBackground = createBackgroundRow(
+            styleGroup, 'focusedApp', settings, state);
+        essentials.add(styleGroup);
 
         connectSwitch(controls.hoverEnabled, enabled =>
             editCustomSetting(settings, 'custom-hover-enabled', enabled), state);
@@ -160,6 +178,8 @@ function syncControls(settings, controls, state) {
         settings.get_boolean('show-hover-background');
     controls.focusedAppBackground.active =
         settings.get_boolean('show-focused-app-background');
+    if (controls.outline)
+        setComboValue(controls.outline, settings.get_string('dock-outline'));
 
     syncAdvancedPage(settings, controls, recipe);
     state.syncing = false;

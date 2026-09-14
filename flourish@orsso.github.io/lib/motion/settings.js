@@ -80,6 +80,11 @@ export function setBooleanCommitted(settings, key, value) {
     settings.apply();
 }
 
+export function setStringCommitted(settings, key, value) {
+    settings.set_string(key, value);
+    settings.apply();
+}
+
 export function switchToPresetFromCustom(settings, preset) {
     settings.delay();
     writeCustomRecipe(settings, getBuiltInRecipe(preset));

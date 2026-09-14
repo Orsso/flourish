@@ -23,6 +23,7 @@ required=(
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
     lib/runtime/dockVisibility.js
+    lib/runtime/dockOutline.js
     lib/runtime/dockOverflow.js
     lib/runtime/focusHighlight.js
     lib/runtime/geometry.js

@@ -1,3 +1,4 @@
+import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -6,6 +7,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DockState, ScreenEdge} from '../motion/catalog.js';
 import {DockVisibility} from './dockVisibility.js';
+import {DockOutline} from './dockOutline.js';
 import {DockOverflow} from './dockOverflow.js';
 import {pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
@@ -23,6 +25,7 @@ export class DockIntegration {
     #manager = null;
     #managerSignals = [];
     #onUrgentChanged;
+    #outline;
     #overflows = new Set();
     #recipe;
     #scheduler;
@@ -35,6 +38,9 @@ export class DockIntegration {
     }) {
         this.#scheduler = scheduler;
         this.#onUrgentChanged = onUrgentChanged;
+        this.#outline = new DockOutline({
+            interfaceSettings: new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}),
+        });
     }
 
     enable(recipe) {
@@ -66,6 +72,7 @@ export class DockIntegration {
         this.#cancelScheduledAttach();
         this.#handBackWiggles();
         this.#detachManager();
+        this.#outline.destroy();
         this.#surface.dispose();
         this.#surface = null;
     }
@@ -88,6 +95,10 @@ export class DockIntegration {
 
     refreshStyles() {
         this.#surface?.refreshStyles();
+    }
+
+    setOutline(name) {
+        this.#outline.setOutline(name);
     }
 
     getController(appIcon) {
@@ -160,6 +171,7 @@ export class DockIntegration {
     }
 
     #disposeVisibilities() {
+        this.#outline.dispose();
         for (const overflow of [...this.#overflows])
             overflow.dispose();
         for (const visibility of this.#visibilities)
@@ -224,6 +236,8 @@ export class DockIntegration {
                 visibility.dispose();
                 continue;
             }
+            if (dock.dash._background)
+                this.#outline.track(dock.dash._background);
             this.#visibilities.push(visibility);
             visibility.subscribe(state => {
                 if (state !== DockState.SHOWN)

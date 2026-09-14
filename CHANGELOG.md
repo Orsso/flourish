@@ -24,6 +24,8 @@
   during launch and attention.
 - The dash and dock background widens with the wave.
 - Retuned the Subtle, Lively and Expressive presets.
+- Added an optional outline around the Dash to Dock background, light, dark,
+  or following the color scheme.
 
 ## 1.1.0
 

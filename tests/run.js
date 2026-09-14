@@ -27,6 +27,7 @@ const modules = [
     './iconFollower.test.js',
     './demoSequence.test.js',
     './dockVisibility.test.js',
+    './dockOutline.test.js',
     './dockOverflow.test.js',
     './iconMotionController.test.js',
     './iconTexture.test.js',

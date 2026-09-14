@@ -39,6 +39,13 @@
     <value nick="wiggle" value="3"/>
   </enum>
 
+  <enum id="org.gnome.shell.extensions.flourish.dock-outline">
+    <value nick="none" value="0"/>
+    <value nick="light" value="1"/>
+    <value nick="dark" value="2"/>
+    <value nick="auto" value="3"/>
+  </enum>
+
   <schema id="org.gnome.shell.extensions.flourish"
           path="/org/gnome/shell/extensions/flourish/">
     <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
@@ -206,6 +213,12 @@
       <default>false</default>
       <summary>Show the focused app background</summary>
       <description>Mark the app that owns the focused window in the dash or dock.</description>
+    </key>
+
+    <key name="dock-outline" enum="org.gnome.shell.extensions.flourish.dock-outline">
+      <default>'none'</default>
+      <summary>Dock outline</summary>
+      <description>Draw a thin edge around the dock background. Auto follows the color scheme.</description>
     </key>
 
   </schema>

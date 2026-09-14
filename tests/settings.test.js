@@ -5,6 +5,7 @@ import {
     resetCustom,
     selectPreset,
     setBooleanCommitted,
+    setStringCommitted,
     switchToPresetFromCustom,
     writeCustomRecipe,
 } from '../flourish@orsso.github.io/lib/motion/settings.js';
@@ -156,6 +157,13 @@ test('background visibility writes through after a custom edit', () => {
 
     assertEqual(settings.committed['show-hover-background'], true);
     assertEqual(settings.committed['show-focused-app-background'], true);
+});
+
+test('the dock outline writes through without touching the preset', () => {
+    const settings = new DelayedSettings(Preset.BALANCED);
+    setStringCommitted(settings, 'dock-outline', 'dark');
+    assertEqual(settings.committed['dock-outline'], 'dark');
+    assertEqual(settings.committed['motion-profile'], Preset.BALANCED);
 });
 
 test('editing a preset copies it to custom before applying the edit', () => {
