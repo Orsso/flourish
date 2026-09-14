@@ -120,6 +120,14 @@ test('dim press keeps geometry identity and darkens with intensity', () => {
     assertClose(press.dim, 0.36);
 });
 
+test('explicit startup-notification opt-out plays once, missing metadata keeps repeat', () => {
+    const launch = {wasLaunching: true, appRunning: false, repeat: true, elapsed: 100, maxDuration: 5000};
+    assertEqual(shouldRepeatLaunch({...launch, startupNotify: 'false'}), false);
+    for (const startupNotify of [null, 'true'])
+        assertEqual(shouldRepeatLaunch({...launch, startupNotify}), true);
+    assertEqual(shouldRepeatLaunch({...launch, appRunning: true}), false);
+});
+
 test('pulse segments scale without translation', () => {
     const segments = buildLaunchSegments(LaunchEffect.PULSE, {
         intensity: 0.5,

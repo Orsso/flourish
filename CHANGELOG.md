@@ -26,6 +26,8 @@
 - Retuned the Subtle, Lively and Expressive presets.
 - Added an optional outline around the Dash to Dock background, light, dark,
   or following the color scheme.
+- Apps that opt out of startup notification no longer repeat the launch
+  animation, and Kiwi's Launchpad plays none.
 
 ## 1.1.0
 

@@ -313,12 +313,13 @@ export function nextReminderDelay({now, anchor, period}) {
 
 export function shouldRepeatLaunch({
     wasLaunching,
+    startupNotify = null,
     appRunning,
     repeat,
     elapsed,
     maxDuration,
 }) {
-    return wasLaunching && repeat && !appRunning && elapsed < maxDuration;
+    return wasLaunching && startupNotify !== 'false' && repeat && !appRunning && elapsed < maxDuration;
 }
 
 export function shouldRetreatOnHandoff({

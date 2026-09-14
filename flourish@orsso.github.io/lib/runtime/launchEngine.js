@@ -23,6 +23,10 @@ import {setIconDim} from './iconDim.js';
 import {anchoredPlacement, followIcon} from './iconFollower.js';
 
 const HANDOFF_DURATION = 80;
+// Desktop entries that open a shell view instead of starting an app.
+const OVERVIEW_ACTIONS = new Set([
+    'org.gnome.Shell.Extensions.Kiwi.Launchpad.desktop',
+]);
 
 export class LaunchEngine {
     #beforeLaunch;
@@ -70,6 +74,8 @@ export class LaunchEngine {
     }
 
     #play(appIcon, controller, playStock) {
+        if (OVERVIEW_ACTIONS.has(appIcon.app?.get_id()))
+            return;
         this.#beforeLaunch(appIcon);
 
         const {launch, press} = controller.recipe;
@@ -148,6 +154,7 @@ export class LaunchEngine {
             wasLaunching: appIcon.app
                 ? appIcon.app.state !== Shell.AppState.RUNNING
                 : false,
+            startupNotify: appIcon.app?.get_app_info()?.get_string('StartupNotify'),
         };
         target.connectObject('destroy',
             () => this.#finish(session, {targetDestroyed: true}), session);
@@ -205,6 +212,7 @@ export class LaunchEngine {
         // A mapped window does not end STARTING; the startup sequence does.
         return shouldRepeatLaunch({
             wasLaunching: session.wasLaunching,
+            startupNotify: session.startupNotify,
             appRunning: session.appSeenRunning || !session.app ||
                 session.app.state === Shell.AppState.RUNNING ||
                 session.app.get_n_windows() > 0,
