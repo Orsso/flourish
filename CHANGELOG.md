@@ -28,6 +28,8 @@
   or following the color scheme.
 - Apps that opt out of startup notification no longer repeat the launch
   animation, and Kiwi's Launchpad plays none.
+- With Blur My Shell's dynamic dock blur, the blur follows the magnified
+  background.
 
 ## 1.1.0
 

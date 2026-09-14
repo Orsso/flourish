@@ -34,6 +34,12 @@ the dock manager's settings, and the dash's `iconAnimator`, whose urgent
 wiggle Flourish replaces with its own attention animation.
 Everything is restored when the extension is disabled.
 
+For Blur My Shell's dynamic dock blur, Flourish adjusts the existing blur
+group's scale and position to match the native background in the same frame.
+It uses `background` and `background_group` from the matching entry in
+`global.blur_my_shell._dash_to_dock_blur.dashes`. These are private internals.
+The transforms are restored on disable; the blur effect and layout are unchanged.
+
 ## Compatibility
 
 Flourish declares support for GNOME Shell 46 to 50.
@@ -45,6 +51,10 @@ This release was tested with:
 - Ubuntu Dock on Ubuntu 24.04 and 26.04
 
 Other setups may work, but I have not tested them for this release.
+
+Adaptive backgrounds work with Blur My Shell's dynamic dock blur, tested with
+version 72. Static blur does not reliably follow magnification and is not
+covered by this integration.
 
 ## Install
 

@@ -20,6 +20,7 @@ const DASH_TO_DOCK_BUILDS = [
 
 export class DockIntegration {
     #attachIdleId = 0;
+    #blurBackgrounds = new Map();
     #generation = 0;
     #injections = null;
     #manager = null;
@@ -172,6 +173,8 @@ export class DockIntegration {
 
     #disposeVisibilities() {
         this.#outline.dispose();
+        for (const background of this.#blurBackgrounds.keys())
+            this.#untrackBlur(background);
         for (const overflow of [...this.#overflows])
             overflow.dispose();
         for (const visibility of this.#visibilities)
@@ -236,6 +239,8 @@ export class DockIntegration {
                 visibility.dispose();
                 continue;
             }
+            if (context.background)
+                this.#trackBlur(dock.dash);
             if (dock.dash._background)
                 this.#outline.track(dock.dash._background);
             this.#visibilities.push(visibility);
@@ -249,6 +254,65 @@ export class DockIntegration {
             this.#stopWiggles(dock);
         }
         this.refreshStyles();
+    }
+
+    #trackBlur(dash) {
+        const background = dash._background;
+        this.#blurBackgrounds.set(background, null);
+        background.connectObject('notify::allocation', () => this.#syncBlur(dash),
+            'destroy', () => this.#untrackBlur(background), this);
+        this.#syncBlur(dash);
+    }
+
+    #syncBlur(dash) {
+        const background = dash._background;
+        const blur = global.blur_my_shell?._dash_to_dock_blur;
+        const info = blur && !blur.is_static
+            ? blur.dashes.find(entry => entry.dash === dash) : null;
+        if (!info) {
+            this.#resetBlur(background);
+            return;
+        }
+        const actor = info.background;
+        const group = info.background_group;
+        if (this.#blurBackgrounds.get(background)?.actor !== actor) {
+            this.#resetBlur(background);
+            this.#blurBackgrounds.set(background, {
+                actor,
+                group,
+                transform: {
+                    scale_x: group.scale_x,
+                    scale_y: group.scale_y,
+                    translation_x: group.translation_x,
+                    translation_y: group.translation_y,
+                },
+            });
+            actor.connectObject('notify::allocation', () => this.#syncBlur(dash),
+                'destroy', () => this.#resetBlur(background, false), this);
+        }
+        if (actor.width <= 0 || actor.height <= 0)
+            return;
+        // Background blur samples transformed screen bounds without a new allocation.
+        group.scale_x = background.width / actor.width;
+        group.scale_y = background.height / actor.height;
+        group.translation_x = background.x - actor.x * group.scale_x;
+        group.translation_y = background.y + dash.y - actor.y * group.scale_y;
+    }
+
+    #resetBlur(background, restore = true) {
+        const state = this.#blurBackgrounds.get(background);
+        if (!state)
+            return;
+        state.actor.disconnectObject(this);
+        if (restore)
+            Object.assign(state.group, state.transform);
+        this.#blurBackgrounds.set(background, null);
+    }
+
+    #untrackBlur(background) {
+        this.#resetBlur(background);
+        background.disconnectObject(this);
+        this.#blurBackgrounds.delete(background);
     }
 
     // The stock wiggle would play on top of the attention motion.
