@@ -5,8 +5,9 @@ import St from 'gi://St';
 import {Easing, ScreenEdge, sampleRamp} from '../motion/catalog.js';
 import {fitHoverLevel, waveFalloff, waveGeometry} from '../motion/continuum.js';
 import {OVERSHOOT_RESERVE} from '../motion/transforms.js';
-import {IconDecorations} from './iconDecorations.js';
 import {IconMotionController} from './iconMotionController.js';
+import {IconDecorations} from './iconDecorations.js';
+import {BackgroundExpansion} from './geometry.js';
 import {LiveRegistry} from './liveRegistry.js';
 
 const IDLE_RAMP = {start: 0, from: 0, to: 0, duration: 0, easing: Easing.LINEAR};
@@ -93,6 +94,7 @@ export class MotionSurface {
             getSpacing: context?.getSpacing ?? (() => null),
             isAvailable: context?.isAvailable ?? (() => true),
             containsPointer: context?.containsPointer ?? (() => true),
+            background: context?.background ?? null,
             decorationContext: context,
         });
         this.#groups.add(group);
@@ -155,6 +157,7 @@ export class MotionSurface {
 }
 
 class NeighborGroup {
+    #background = null;
     #decorationContext;
     #extraDecorations = new Map();
     #animationsEnabled;
@@ -178,7 +181,7 @@ class NeighborGroup {
     #spreadShape = null;
     #translations = new Map();
 
-    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, isAvailable, containsPointer, decorationContext}) {
+    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, isAvailable, containsPointer, background, decorationContext}) {
         this.#scheduler = scheduler;
         this.#box = box;
         this.#pointerActor = pointerActor;
@@ -191,6 +194,8 @@ class NeighborGroup {
         this.#isAvailable = isAvailable;
         this.#containsPointer = containsPointer;
         this.#decorationContext = decorationContext;
+        if (background)
+            this.#background = new BackgroundExpansion(background, edge, decorationContext.getMonitor);
         box.connectObject('notify::mapped', () => {
             if (!box.mapped)
                 this.clearPointer();
@@ -274,6 +279,8 @@ class NeighborGroup {
         this.#pointerActor.disconnectObject(this);
         this.#box.disconnectObject(this);
         this.#restoreSpread();
+        this.#background?.dispose();
+        this.#background = null;
         for (const [actor, decorations] of this.#extraDecorations) {
             actor.disconnectObject(decorations);
             decorations.dispose();
@@ -467,6 +474,7 @@ class NeighborGroup {
             return;
         }
         const {offsets, growth, first} = geometry;
+        this.#background?.setGrowth(-2 * first);
         const horizontal = this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
         const property = horizontal ? 'translation_x' : 'translation_y';
         const axis = horizontal ? 0 : 1;
@@ -514,6 +522,7 @@ class NeighborGroup {
     }
 
     #restoreSpread() {
+        this.#background?.setGrowth(0);
         const property = this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP
             ? 'translation_x' : 'translation_y';
         for (const [actor, original] of this.#translations) {

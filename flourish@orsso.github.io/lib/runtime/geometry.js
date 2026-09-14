@@ -1,4 +1,64 @@
 import Clutter from 'gi://Clutter';
+import GObject from 'gi://GObject';
+
+export const BackgroundExpansion = GObject.registerClass(
+    class BackgroundExpansion extends Clutter.Constraint {
+        _init(actor, edge, getMonitor) {
+            super._init({name: 'flourish-background'});
+            this._horizontal = edge === 'bottom' || edge === 'top';
+            this._growth = 0;
+            this._getMonitor = getMonitor;
+            actor.add_constraint(this);
+        }
+
+        setGrowth(growth) {
+            if (this._growth === growth)
+                return;
+            this._growth = growth;
+            const actor = this.get_actor();
+            if (actor)
+                actor.queue_relayout();
+        }
+
+        vfunc_update_allocation(actor, box) {
+            if (this._growth === 0)
+                return;
+            const monitor = this._getMonitor();
+            if (!monitor)
+                return;
+            const parent = actor.get_parent();
+            const position = parent.get_transformed_position();
+            const size = parent.get_transformed_size();
+            const axis = this._horizontal ? 0 : 1;
+            const scale = size[axis] / (this._horizontal ? parent.width : parent.height);
+            const start = this._horizontal ? box.x1 : box.y1;
+            const end = this._horizontal ? box.x2 : box.y2;
+            const half = fitBackgroundGrowth(this._growth, start, end, position[axis], scale,
+                this._horizontal ? monitor.x : monitor.y,
+                this._horizontal ? monitor.width : monitor.height) / 2;
+            if (this._horizontal) {
+                box.x1 -= half;
+                box.x2 += half;
+            } else {
+                box.y1 -= half;
+                box.y2 += half;
+            }
+        }
+
+        dispose() {
+            const actor = this.get_actor();
+            if (actor)
+                actor.remove_constraint(this);
+        }
+    });
+
+export function fitBackgroundGrowth(growth, start, end, origin, scale, monitorStart, monitorSize) {
+    if (!(scale > 0))
+        return 0;
+    const leading = start + (origin - monitorStart) / scale;
+    const trailing = (monitorStart + monitorSize - origin) / scale - end;
+    return Math.min(growth, 2 * Math.max(0, Math.min(leading, trailing)));
+}
 
 export function pointerOnSurface(actor, x, y, gapActor = null) {
     const picked = global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y);

@@ -200,6 +200,7 @@ export class DockIntegration {
                 scheduler: this.#scheduler,
             });
             const context = {
+                background: this.#manager.settings.extendHeight ? null : dock.dash._background,
                 visibility,
                 pointerActor: slid,
                 isAvailable: () => visibility.state === DockState.SHOWN,

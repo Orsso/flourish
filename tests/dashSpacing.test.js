@@ -1,4 +1,26 @@
-import {dashSpacing, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+
+test('background allocation grows symmetrically without scaling the other axis', () => {
+    for (const horizontal of [true, false]) {
+        const box = {x1: 20, y1: 30, x2: 420, y2: 90};
+        const actor = {get_parent: () => ({width: 500, height: 120,
+            get_transformed_position: () => [100, 100], get_transformed_size: () => [500, 120]})};
+        BackgroundExpansion.prototype.vfunc_update_allocation.call(
+            {_horizontal: horizontal, _growth: 48,
+                _getMonitor: () => ({x: 0, y: 0, width: 1000, height: 800})}, actor, box);
+        assertDeepEqual(box, horizontal
+            ? {x1: -4, y1: 30, x2: 444, y2: 90}
+            : {x1: 20, y1: 6, x2: 420, y2: 114});
+    }
+});
+
+test('background padding fits monitor margins without feeding back into the wave', () => {
+    assertEqual(fitBackgroundGrowth(100, 0, 1260, 10, 1, 0, 1280), 20);
+    assertEqual(fitBackgroundGrowth(100, 0, 1280, 0, 1, 0, 1280), 0);
+    assertEqual(fitBackgroundGrowth(40, 0, 580, 350, 1, 0, 1280), 40);
+    assertEqual(fitBackgroundGrowth(100, 0, 600, 1040, 2, 1000, 1280), 40);
+    assertEqual(fitBackgroundGrowth(100, 0, 600, 0, 0, 0, 1280), 0);
+});
 
 test('tooltips follow the visual icon on every edge and stay on its monitor', () => {
     const icon = {x: 120, y: 140, width: 80, height: 80};

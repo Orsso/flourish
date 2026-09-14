@@ -52,6 +52,7 @@ export class DashIntegration {
             isAvailable: () => Main.overview.visibleTarget,
             containsPointer: (x, y) => pointerOnSurface(dash, x, y, Main.layoutManager.overviewGroup),
             getSpacing: () => dashSpacing(box, Main.layoutManager.primaryMonitor),
+            background: dash._background,
             getMonitor: () => Main.layoutManager.primaryMonitor,
             labelOffset: '-y-offset',
         });

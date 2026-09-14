@@ -22,6 +22,7 @@
   launch clone.
 - Notification badges and app labels now follow the magnified icon, including
   during launch and attention.
+- The dash and dock background widens with the wave.
 
 ## 1.1.0
 
