@@ -113,10 +113,6 @@ test('stock launch never repeats in the preview', () => {
     ]);
 });
 
-test('unknown part sequences are empty', () => {
-    assertDeepEqual(buildPartSequence('nope', getBuiltInRecipe(Preset.BALANCED)), []);
-});
-
 test('hover activity requires the toggle and a visible transform', () => {
     const recipe = getBuiltInRecipe(Preset.BALANCED);
     assertEqual(hoverIsActive(recipe), true);

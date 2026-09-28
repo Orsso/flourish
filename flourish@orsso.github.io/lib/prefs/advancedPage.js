@@ -23,8 +23,7 @@ import {
 } from '../motion/settings.js';
 import {MotionPreview} from './motionPreview.js';
 import {
-    connectSwitch,
-    createBackgroundRow,
+    createBackgroundRows,
     createComboRow,
     createScaleRow,
     createSpinRow,
@@ -66,10 +65,9 @@ export function buildAdvancedPage(page, controls, settings, state) {
     controls.dynamicSpacing = createSwitchRow(
         hover.group, _('Dynamic spacing'),
         _('Move neighboring icons apart as they grow'),
+        enabled => editCustomSetting(settings, 'custom-hover-dynamic-spacing', enabled), state,
         _('When off, icons keep their positions and may overlap at high magnification. ' +
         'Motion still adapts to the available space.'));
-    connectSwitch(controls.dynamicSpacing, enabled =>
-        editCustomSetting(settings, 'custom-hover-dynamic-spacing', enabled), state);
 
     const press = createPartGroup(page, controls, settings, _('Press'), RecipePart.PRESS);
     controls.pressMode = createComboRow(
@@ -111,14 +109,12 @@ export function buildAdvancedPage(page, controls, settings, state) {
         value => editCustomSetting(settings, 'custom-launch-speed', value), state);
     controls.launchRepeat = createSwitchRow(
         launch.group, _('Repeat while starting'),
-        _('Stop when the application is running'));
-    connectSwitch(controls.launchRepeat, enabled =>
-        editCustomSetting(settings, 'custom-launch-repeat', enabled), state);
+        _('Stop when the application is running'),
+        enabled => editCustomSetting(settings, 'custom-launch-repeat', enabled), state);
     controls.launchSoftenRepeats = createSwitchRow(
         launch.group, _('Soften repeated cycles'),
-        _('Reduce the intensity of each repeat'));
-    connectSwitch(controls.launchSoftenRepeats, enabled =>
-        editCustomSetting(settings, 'custom-launch-soften-repeats', enabled), state);
+        _('Reduce the intensity of each repeat'),
+        enabled => editCustomSetting(settings, 'custom-launch-soften-repeats', enabled), state);
     controls.launchRepeatPause = createSpinRow(
         launch.group, _('Repeat pause'), 0, 1000, 50,
         value => editCustomSetting(settings, 'custom-launch-repeat-pause', Math.round(value)),
@@ -180,23 +176,19 @@ export function buildAdvancedPage(page, controls, settings, state) {
         controls.attentionPeek = createSwitchRow(
             attention.group, _('Show when the dock is hidden'),
             _('Slide the icon out from the dock edge'),
+            enabled => editCustomSetting(settings, 'custom-attention-peek', enabled), state,
             _('Useful with IntelliHide or auto-hide: the icon slides out of the ' +
             'hidden dock on its own. For the best effect, turn off ' +
             '"Show dock for urgent notifications" in the Dash to Dock hiding ' +
             'settings, otherwise the whole dock comes out first. Nothing plays in ' +
             'Do Not Disturb, and over a fullscreen window the icon shows only if ' +
             'Dash to Dock may reveal the dock there.'));
-        connectSwitch(controls.attentionPeek, enabled =>
-            editCustomSetting(settings, 'custom-attention-peek', enabled), state);
         holdWhileSliding(controls.attentionIntensity, attention);
         holdWhileSliding(controls.attentionSpeed, attention);
     }
 
     const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
-    controls.advancedHoverBackground = createBackgroundRow(
-        appearanceGroup, 'hover', settings, state);
-    controls.advancedFocusedAppBackground = createBackgroundRow(
-        appearanceGroup, 'focusedApp', settings, state);
+    createBackgroundRows(appearanceGroup, settings, controls, state);
     page.add(appearanceGroup);
 
     const resetGroup = new Adw.PreferencesGroup();
@@ -212,7 +204,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
     page.add(resetGroup);
 }
 
-export function syncAdvancedPage(settings, controls, recipe) {
+export function syncAdvancedPage(controls, recipe) {
     controls.dynamicSpacing.toggle.active = recipe.hover.dynamicSpacing;
     controls.hoverScale.adjustment.value = recipe.hover.scale * 100;
     controls.hoverLift.value = recipe.hover.lift;
@@ -254,10 +246,6 @@ export function syncAdvancedPage(settings, controls, recipe) {
         controls.attentionReminders.value = recipe.attention.reminders;
         controls.attentionPeek.toggle.active = recipe.attention.peekWhenHidden;
     }
-    controls.advancedHoverBackground.active =
-        settings.get_boolean('show-hover-background');
-    controls.advancedFocusedAppBackground.active =
-        settings.get_boolean('show-focused-app-background');
     for (const preview of Object.values(controls.partPreviews))
         preview.updateRecipe(recipe);
 }

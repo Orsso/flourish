@@ -22,13 +22,7 @@ import {
     buildPartSequence,
     DemoPhase,
     hoverIsActive,
-    HOVER_HOLD_MS,
-    NEUTRAL_HOLD_MS,
-    PRE_LAUNCH_PAUSE_MS,
-    REMINDER_PAUSE_MS,
-    SETTLE_MS,
-    SWEEP_MS,
-    SWEEP_SETTLE_MS,
+    PHASE_WAIT_MS,
 } from './demoSequence.js';
 
 const IDENTITY = {
@@ -36,6 +30,7 @@ const IDENTITY = {
     scaleY: 1,
     translationX: 0,
     translationY: 0,
+    rotation: 0,
     dim: 0,
 };
 const BOTTOM_PIVOT = [0.5, 1];
@@ -45,6 +40,8 @@ const IDLE_ANIMATION = {state: Adw.AnimationState.IDLE, reset() {}, skip() {}};
 const INLINE_ICON_SIZE = 24;
 const INLINE_STEP = INLINE_ICON_SIZE + 10;
 const COUNT_GROW_MS = 250;
+const SWEEP_MS = 1500;
+const SWEEP_SETTLE_MS = 480;
 
 // The prefs process has no Clutter; Adw carries the same curves.
 const EASINGS = {
@@ -108,7 +105,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
     _resolveMotion() {
         return resolveIconTransform({
-            edge: ScreenEdge.BOTTOM,
             recipe: this._recipe,
             hoverLevel: this._hovered ? 1 : 0,
             pressLevel: this._pressed ? 1 : 0,
@@ -129,24 +125,14 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const count = hoverIconCount(this._recipe);
         if (count === this._iconCount)
             return;
-        this._iconCount = count;
-        this._animateIconCount();
-    }
-
-    _animateIconCount() {
         // reset() replays the initial value; read the count first.
         const from = this._visibleCount;
         this._countAnimation.reset();
-        const to = this._iconCount;
-        const target = Adw.CallbackAnimationTarget.new(value => {
-            this._visibleCount = from + (to - from) * value;
+        this._countAnimation = animate(this, COUNT_GROW_MS, Adw.Easing.EASE_OUT_CUBIC, value => {
+            this._visibleCount = from + (count - from) * value;
             this.width_request = inlineWidth(this._visibleCount);
             this.queue_draw();
         });
-        this._countAnimation = Adw.TimedAnimation.new(
-            this, 0, 1, COUNT_GROW_MS, target);
-        this._countAnimation.set_easing(Adw.Easing.EASE_OUT_CUBIC);
-        this._countAnimation.play();
     }
 
     setSelected(selected) {
@@ -195,17 +181,13 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             return;
         const generation = GLib.get_monotonic_time();
         this._loop = generation;
-        if (this._part) {
-            this._runSequence(generation,
-                () => buildPartSequence(this._part, this._recipe));
-            return;
-        }
-        if (!hoverIsActive(this._recipe)) {
-            this._runSequence(generation, () => buildDemoSequence(this._recipe));
-            return;
-        }
-        this._runIntroSweep(generation, () => this._runSequence(
-            generation, () => buildDemoSequence(this._recipe)));
+        const run = () => this._runSequence(generation, this._part
+            ? () => buildPartSequence(this._part, this._recipe)
+            : () => buildDemoSequence(this._recipe));
+        if (this._part || !hoverIsActive(this._recipe))
+            run();
+        else
+            this._runIntroSweep(generation, run);
     }
 
     _runIntroSweep(generation, onComplete) {
@@ -224,7 +206,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                         this._hovered = true;
                         this._hoverProgress = 1;
                         this._motionTransform = resolveIconTransform({
-                            edge: ScreenEdge.BOTTOM,
                             recipe: this._recipe,
                             hoverLevel: 1,
                         });
@@ -236,18 +217,13 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
     _playSweepSegment(generation, fromValue, toValue, duration, easing, onDone) {
         this._sweepAnimation.reset();
-        const target = Adw.CallbackAnimationTarget.new(value => {
+        this._sweepAnimation = animate(this, duration, easing, value => {
             this._sweepValue = fromValue + (toValue - fromValue) * value;
             this.queue_draw();
+        }, () => {
+            if (generation === this._loop)
+                onDone();
         });
-        this._sweepAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
-        this._sweepAnimation.set_easing(easing);
-        this._sweepAnimation.connect('done', () => {
-            if (generation !== this._loop)
-                return;
-            onDone();
-        });
-        this._sweepAnimation.play();
     }
 
     stopLoop() {
@@ -296,8 +272,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 phases = getPhases();
                 index = 0;
             }
-            if (!phases.length)
-                return;
             const phase = phases[index++];
             this._runDemoPhase(phase, generation, advance);
         };
@@ -305,6 +279,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _runDemoPhase(phase, generation, done) {
+        if (phase in PHASE_WAIT_MS) {
+            this._wait(PHASE_WAIT_MS[phase], generation, done);
+            return;
+        }
         switch (phase) {
             case DemoPhase.HOVER_IN:
                 this._hovered = true;
@@ -314,20 +292,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                 this._hovered = false;
                 this._animateMotion(this._recipe.hover.duration, done);
                 break;
-            case DemoPhase.HOLD:
-                this._wait(HOVER_HOLD_MS, generation, done);
-                break;
-            case DemoPhase.PRE_LAUNCH_PAUSE:
-                this._wait(PRE_LAUNCH_PAUSE_MS, generation, done);
-                break;
             case DemoPhase.REPEAT_PAUSE:
                 this._wait(this._recipe.launch.repeatPause, generation, done);
-                break;
-            case DemoPhase.SETTLE:
-                this._wait(SETTLE_MS, generation, done);
-                break;
-            case DemoPhase.NEUTRAL_HOLD:
-                this._wait(NEUTRAL_HOLD_MS, generation, done);
                 break;
             case DemoPhase.CLICK:
                 this._demoPlainClick(generation, done);
@@ -341,11 +307,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             case DemoPhase.ATTENTION:
                 this._playAttention(generation, done);
                 break;
-            case DemoPhase.REMINDER_PAUSE:
-                this._wait(REMINDER_PAUSE_MS, generation, done);
-                break;
-            default:
-                done();
         }
     }
 
@@ -380,29 +341,23 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         }
     }
 
-    _animateMotion(duration, onDone = () => {},
-        easing = EASINGS[this._recipe.hover.easing]) {
+    _animateMotion(duration, onDone = () => {}) {
         const from = this._motionTransform;
         const to = this._resolveMotion();
         const hoverFrom = this._hoverProgress;
         const hoverTo = this._hovered ? 1 : 0;
         this._motionAnimation.reset();
         this.queue_draw();
-        const target = Adw.CallbackAnimationTarget.new(value => {
+        this._motionAnimation = animate(this, duration, EASINGS[this._recipe.hover.easing], value => {
             this._hoverProgress = hoverFrom + (hoverTo - hoverFrom) * value;
             this._motionTransform = interpolateTransform(from, to, value);
             this.queue_draw();
-        });
-        this._motionAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
-        this._motionAnimation.set_easing(
-            easing);
-        this._motionAnimation.connect('done', () => {
+        }, () => {
             this._hoverProgress = hoverTo;
             this._motionTransform = this._resolveMotion();
             this.queue_draw();
             onDone();
         });
-        this._motionAnimation.play();
     }
 
     _beginLaunch({onComplete = () => {}} = {}) {
@@ -436,18 +391,14 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const duration = launchDuration(segments);
         const from = this._launchTransform;
         this._launchAnimation.reset();
-        const target = Adw.CallbackAnimationTarget.new(value => {
+        this._launchAnimation = animate(this, duration, Adw.Easing.LINEAR, value => {
             this._launchTransform = sampleLaunchSegments(segments, value * duration, from);
             this.queue_draw();
-        });
-        this._launchAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
-        this._launchAnimation.set_easing(Adw.Easing.LINEAR);
-        this._launchAnimation.connect('done', () => {
+        }, () => {
             this._launchTransform = {...IDENTITY};
             this.queue_draw();
             onDone();
         });
-        this._launchAnimation.play();
     }
 
     _finishLaunch(onComplete = () => {}) {
@@ -486,44 +437,33 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
     _playAttentionBurst(generation, done) {
         let cyclesLeft = this._recipe.attention.cycles;
-        const cycle = () => this._playAttentionCycle(generation, () => {
-            if (generation !== this._loop)
-                return;
-            cyclesLeft -= 1;
-            if (cyclesLeft <= 0) {
-                done();
-                return;
-            }
-            this._wait(this._recipe.attention.cyclePause, generation, cycle);
-        });
+        const cycle = () => this._playSegments(
+            buildAttentionSegments(this._recipe, ScreenEdge.BOTTOM), () => {
+                if (generation !== this._loop)
+                    return;
+                cyclesLeft -= 1;
+                if (cyclesLeft <= 0) {
+                    done();
+                    return;
+                }
+                this._wait(this._recipe.attention.cyclePause, generation, cycle);
+            });
         cycle();
-    }
-
-    _playAttentionCycle(generation, done) {
-        const segments = buildAttentionSegments(this._recipe, ScreenEdge.BOTTOM);
-        this._playSegments(segments, () => {
-            if (generation === this._loop)
-                done();
-        });
     }
 
     _animatePeek(from, to, duration, generation, done) {
         this._peekAnimation.reset();
-        const target = Adw.CallbackAnimationTarget.new(value => {
+        const easing = to > from ? Adw.Easing.EASE_OUT_CUBIC : Adw.Easing.EASE_IN_CUBIC;
+        this._peekAnimation = animate(this, duration, easing, value => {
             this._peek = from + (to - from) * value;
             this.queue_draw();
-        });
-        this._peekAnimation = Adw.TimedAnimation.new(this, 0, 1, duration, target);
-        this._peekAnimation.set_easing(
-            to > from ? Adw.Easing.EASE_OUT_CUBIC : Adw.Easing.EASE_IN_CUBIC);
-        this._peekAnimation.connect('done', () => {
+        }, () => {
             if (generation !== this._loop)
                 return;
             this._peek = to;
             this.queue_draw();
             done();
         });
-        this._peekAnimation.play();
     }
 
     _draw(cr, width, height) {
@@ -604,23 +544,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _iconTransforms(index, middle) {
-        const pointer = this._sweepActive ? this._sweepValue : middle;
-        const level = waveFalloff(Math.abs(index - pointer), this._recipe.hover.neighborRadius) *
-            (this._sweepActive ? 1 : this._hoverProgress);
-        if (this._sweepActive || this._part === RecipePart.HOVER) {
-            return {
-                motion: resolveIconTransform({
-                    edge: ScreenEdge.BOTTOM,
-                    recipe: this._recipe,
-                    hoverLevel: level,
-                }),
-                launch: IDENTITY,
-                launchPivot: BOTTOM_PIVOT,
-                peek: 1,
-            };
-        }
-        const distance = Math.abs(index - middle);
-        if (distance === 0) {
+        if (!this._sweepActive && this._part !== RecipePart.HOVER && index === middle) {
             return {
                 motion: this._motionTransform,
                 launch: this._launchTransform,
@@ -633,9 +557,11 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
                     ? this._peek : 1,
             };
         }
+        const pointer = this._sweepActive ? this._sweepValue : middle;
+        const level = waveFalloff(Math.abs(index - pointer), this._recipe.hover.neighborRadius) *
+            (this._sweepActive ? 1 : this._hoverProgress);
         return {
             motion: resolveIconTransform({
-                edge: ScreenEdge.BOTTOM,
                 recipe: this._recipe,
                 hoverLevel: level,
             }),
@@ -681,18 +607,12 @@ function oddCountFor(value) {
     return 2 * Math.ceil((value - 1) / 2) + 1;
 }
 
-function drawIcon(cr, centerX, top, size, color, {
-    motion,
-    launch,
-    launchPivot,
-    peek = 1,
-}) {
+function drawIcon(cr, centerX, top, size, color, {motion, launch, launchPivot, peek}) {
     const radius = size * 0.28;
     // Scale dock-sized travel to the preview icons.
     const translateScale = size / REFERENCE_ICON_SIZE;
-    const basePivot = motion.pivot ?? BOTTOM_PIVOT;
-    const basePivotX = basePivot[0] * size;
-    const basePivotY = basePivot[1] * size;
+    const basePivotX = BOTTOM_PIVOT[0] * size;
+    const basePivotY = BOTTOM_PIVOT[1] * size;
     const pivotX = launchPivot[0] * size;
     const pivotY = launchPivot[1] * size;
     const translationX =
@@ -702,28 +622,37 @@ function drawIcon(cr, centerX, top, size, color, {
         (motion.translationY + launch.translationY) * translateScale +
         (motion.scaleY - 1) * (pivotY - basePivotY);
     const peekLift = (1 - peek) * (size + 8);
-    const alpha = peek;
     cr.save();
     cr.translate(
         centerX - size / 2 + pivotX + translationX,
         top + pivotY + translationY + peekLift);
     cr.scale(motion.scaleX * launch.scaleX, motion.scaleY * launch.scaleY);
-    cr.rotate((launch.rotation ?? 0) * Math.PI / 180);
+    cr.rotate(launch.rotation * Math.PI / 180);
     roundedRectangle(cr, -pivotX, -pivotY, size, size, radius);
-    cr.setSourceRGBA(...color, alpha);
+    cr.setSourceRGBA(...color, peek);
     cr.fill();
     roundedRectangle(
         cr, -pivotX + 0.5, -pivotY + 0.5, size - 1, size - 1, radius);
-    cr.setSourceRGBA(1, 1, 1, 0.10 * alpha);
+    cr.setSourceRGBA(1, 1, 1, 0.10 * peek);
     cr.setLineWidth(1);
     cr.stroke();
-    const dim = 1 - (1 - (motion.dim ?? 0)) * (1 - (launch.dim ?? 0));
+    const dim = 1 - (1 - motion.dim) * (1 - launch.dim);
     if (dim > 0) {
         roundedRectangle(cr, -pivotX, -pivotY, size, size, radius);
-        cr.setSourceRGBA(0, 0, 0, dim * alpha);
+        cr.setSourceRGBA(0, 0, 0, dim * peek);
         cr.fill();
     }
     cr.restore();
+}
+
+function animate(widget, duration, easing, onValue, onDone = null) {
+    const animation = Adw.TimedAnimation.new(widget, 0, 1, duration,
+        Adw.CallbackAnimationTarget.new(onValue));
+    animation.set_easing(easing);
+    if (onDone)
+        animation.connect('done', onDone);
+    animation.play();
+    return animation;
 }
 
 function roundedRectangle(cr, x, y, width, height, radius) {

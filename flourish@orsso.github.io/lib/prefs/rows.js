@@ -7,65 +7,52 @@ import {setBooleanCommitted} from '../motion/settings.js';
 // xgettext reads N_; the lookup happens where the string is used.
 const N_ = s => s;
 
-export function createSwitchRow(group, title, subtitle = null, help = null) {
+export function createSwitchRow(group, title, subtitle, callback, state, help = null) {
+    let row, toggle;
     // A SwitchRow packs its switch first, so a help button can only follow it.
     if (help) {
-        const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
-        const row = new Adw.ActionRow({title, subtitle, activatable_widget: toggle});
+        toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
+        row = new Adw.ActionRow({title, subtitle, activatable_widget: toggle});
         row.add_suffix(createHelpButton(help));
         row.add_suffix(toggle);
         row.toggle = toggle;
-        group.add(row);
-        return row;
+    } else {
+        row = toggle = new Adw.SwitchRow({title, subtitle});
     }
-    const row = new Adw.SwitchRow({title, subtitle});
-    group.add(row);
-    return row;
-}
-
-export function connectSwitch(row, callback, state) {
-    const toggle = row.toggle ?? row;
     toggle.connect('notify::active', () => {
         if (!state.syncing)
             callback(toggle.active);
     });
-}
-
-const BACKGROUND_ROWS = {
-    hover: ['show-hover-background', N_('Show hover background'),
-        N_('Keep the tile shown under the pointed icon (off hides it)')],
-    focusedApp: ['show-focused-app-background', N_('Show focused app background'),
-        N_('Mark the app that owns the focused window')],
-};
-
-// The same switch lives on both pages.
-export function createBackgroundRow(group, kind, settings, state) {
-    const [key, title, subtitle] = BACKGROUND_ROWS[kind];
-    const row = createSwitchRow(group, _(title), _(subtitle));
-    connectSwitch(row, enabled => setBooleanCommitted(settings, key, enabled), state);
+    group.add(row);
     return row;
 }
 
-export function createSpinRow(
-    group,
-    title,
-    lower,
-    upper,
-    step,
-    callback,
-    state,
-    subtitle = null,
-) {
+const BACKGROUND_ROWS = [
+    ['show-hover-background', N_('Show hover background'),
+        N_('Keep the tile shown under the pointed icon (off hides it)')],
+    ['show-focused-app-background', N_('Show focused app background'),
+        N_('Mark the app that owns the focused window')],
+];
+
+// The same switches live on both pages; syncControls reads controls.backgroundRows.
+export function createBackgroundRows(group, settings, controls, state) {
+    for (const [key, title, subtitle] of BACKGROUND_ROWS) {
+        const row = createSwitchRow(group, _(title), _(subtitle),
+            enabled => setBooleanCommitted(settings, key, enabled), state);
+        controls.backgroundRows.push([row, key]);
+    }
+}
+
+function createAdjustment(lower, upper, step) {
+    return new Gtk.Adjustment({lower, upper, step_increment: step, page_increment: step * 10});
+}
+
+export function createSpinRow(group, title, lower, upper, step, callback, state, subtitle = null) {
     const row = new Adw.SpinRow({
         title,
         subtitle,
         digits: 0,
-        adjustment: new Gtk.Adjustment({
-            lower,
-            upper,
-            step_increment: step,
-            page_increment: step * 10,
-        }),
+        adjustment: createAdjustment(lower, upper, step),
     });
     row.connect('notify::value', () => {
         if (!state.syncing)
@@ -76,12 +63,7 @@ export function createSpinRow(
 }
 
 export function createScaleRow(group, title, lower, upper, step, callback, state) {
-    const adjustment = new Gtk.Adjustment({
-        lower,
-        upper,
-        step_increment: step,
-        page_increment: step * 10,
-    });
+    const adjustment = createAdjustment(lower, upper, step);
     const scale = new Gtk.Scale({
         orientation: Gtk.Orientation.HORIZONTAL,
         adjustment,
@@ -114,12 +96,10 @@ export function createComboRow(group, title, entries, callback, state) {
 }
 
 export function setComboValue(control, value) {
-    const index = control.values.indexOf(value);
-    const row = control.row;
-    row.selected = Math.max(0, index);
+    control.row.selected = Math.max(0, control.values.indexOf(value));
 }
 
-export function createHelpButton(text) {
+function createHelpButton(text) {
     const label = new Gtk.Label({
         label: text,
         wrap: true,

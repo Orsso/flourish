@@ -14,8 +14,7 @@ import {
 import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
 import {
-    connectSwitch,
-    createBackgroundRow,
+    createBackgroundRows,
     createComboRow,
     createSwitchRow,
     setComboValue,
@@ -38,8 +37,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         const settings = this.getSettings();
         const state = {syncing: false};
-        const controls = {};
-        controls.dockPresent = dashToDockEnabled();
+        const controls = {dockPresent: dashToDockEnabled(), backgroundRows: []};
 
         const essentials = new Adw.PreferencesPage({
             name: 'essentials',
@@ -58,7 +56,6 @@ export default class FlourishPreferences extends ExtensionPreferences {
             title: _('Presets'),
             description: _('Hover to preview. Click to apply.'),
         });
-        controls.presetGroup = presetGroup;
         const customBadge = new Gtk.Label({label: _('Custom')});
         customBadge.add_css_class('accent');
         customBadge.add_css_class('caption-heading');
@@ -83,6 +80,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
             button.connect('clicked', () => onPresetClicked({
                 window,
                 preset,
+                title: _(title),
                 state,
                 settings,
                 controls,
@@ -96,20 +94,23 @@ export default class FlourishPreferences extends ExtensionPreferences {
         }
 
         const featureGroup = new Adw.PreferencesGroup({title: _('Motion')});
+        const editor = key => value => editCustomSetting(settings, key, value);
         controls.hoverEnabled = createSwitchRow(
             featureGroup, _('Hover motion'),
-            _('Magnification and elevation around the pointer'));
+            _('Magnification and elevation around the pointer'),
+            editor('custom-hover-enabled'), state);
         controls.pressEnabled = createSwitchRow(
-            featureGroup, _('Press feedback'), _('Squash or dim the pressed icon'));
+            featureGroup, _('Press feedback'), _('Squash or dim the pressed icon'),
+            editor('custom-press-enabled'), state);
         controls.launchEnabled = createSwitchRow(
             featureGroup, _('Launch animation'),
-            _('Animate cold starts and new windows'));
+            _('Animate cold starts and new windows'),
+            editor('custom-launch-enabled'), state);
         if (controls.dockPresent) {
             controls.attentionEnabled = createSwitchRow(
                 featureGroup, _('Attention'),
-                _('Animate icons that ask for attention'));
-            connectSwitch(controls.attentionEnabled, enabled =>
-                editCustomSetting(settings, 'custom-attention-enabled', enabled), state);
+                _('Animate icons that ask for attention'),
+                editor('custom-attention-enabled'), state);
         }
         essentials.add(featureGroup);
 
@@ -120,18 +121,8 @@ export default class FlourishPreferences extends ExtensionPreferences {
                 OUTLINES.map(([label, value]) => [_(label), value]),
                 value => setStringCommitted(settings, 'dock-outline', value), state);
         }
-        controls.hoverBackground = createBackgroundRow(
-            styleGroup, 'hover', settings, state);
-        controls.focusedAppBackground = createBackgroundRow(
-            styleGroup, 'focusedApp', settings, state);
+        createBackgroundRows(styleGroup, settings, controls, state);
         essentials.add(styleGroup);
-
-        connectSwitch(controls.hoverEnabled, enabled =>
-            editCustomSetting(settings, 'custom-hover-enabled', enabled), state);
-        connectSwitch(controls.pressEnabled, enabled =>
-            editCustomSetting(settings, 'custom-press-enabled', enabled), state);
-        connectSwitch(controls.launchEnabled, enabled =>
-            editCustomSetting(settings, 'custom-launch-enabled', enabled), state);
 
         const navigationGroup = new Adw.PreferencesGroup();
         const advancedRow = new Adw.ActionRow({
@@ -174,14 +165,12 @@ function syncControls(settings, controls, state) {
     controls.launchEnabled.active = recipe.launch.enabled;
     if (controls.attentionEnabled)
         controls.attentionEnabled.active = recipe.attention.enabled;
-    controls.hoverBackground.active =
-        settings.get_boolean('show-hover-background');
-    controls.focusedAppBackground.active =
-        settings.get_boolean('show-focused-app-background');
+    for (const [row, key] of controls.backgroundRows)
+        row.active = settings.get_boolean(key);
     if (controls.outline)
         setComboValue(controls.outline, settings.get_string('dock-outline'));
 
-    syncAdvancedPage(settings, controls, recipe);
+    syncAdvancedPage(controls, recipe);
     state.syncing = false;
 }
 
@@ -205,7 +194,7 @@ function createPresetCard(title, recipe) {
     return {button, preview};
 }
 
-function onPresetClicked({window, preset, state, settings, controls}) {
+function onPresetClicked({window, preset, title, state, settings, controls}) {
     if (state.syncing)
         return;
     const current = settings.get_string('motion-profile');
@@ -217,7 +206,6 @@ function onPresetClicked({window, preset, state, settings, controls}) {
         selectPreset(settings, preset);
         return;
     }
-    const title = _(PRESET_DETAILS.find(([id]) => id === preset)[1]);
     const dialog = new Adw.AlertDialog({
         heading: _('Switch to %s?').replace('%s', title),
         body: _('Your Custom recipe will be abandoned and replaced by the %s preset values.').replace('%s', title),

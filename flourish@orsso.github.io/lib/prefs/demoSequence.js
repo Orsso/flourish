@@ -1,14 +1,5 @@
 import {LaunchEffect, PressMode, RecipePart} from '../motion/catalog.js';
 
-export const HOVER_HOLD_MS = 650;
-export const PRE_LAUNCH_PAUSE_MS = 520;
-export const SETTLE_MS = 850;
-export const NEUTRAL_HOLD_MS = 520;
-export const REMINDER_PAUSE_MS = 900;
-
-export const SWEEP_MS = 1500;
-export const SWEEP_SETTLE_MS = 480;
-
 export const DemoPhase = {
     HOVER_IN: 'hover-in',
     HOLD: 'hold',
@@ -22,6 +13,15 @@ export const DemoPhase = {
     NEUTRAL_HOLD: 'neutral-hold',
     ATTENTION: 'attention',
     REMINDER_PAUSE: 'reminder-pause',
+};
+
+// Phases that only wait.
+export const PHASE_WAIT_MS = {
+    [DemoPhase.HOLD]: 650,
+    [DemoPhase.PRE_LAUNCH_PAUSE]: 520,
+    [DemoPhase.SETTLE]: 850,
+    [DemoPhase.NEUTRAL_HOLD]: 520,
+    [DemoPhase.REMINDER_PAUSE]: 900,
 };
 
 export function hoverIsActive(recipe) {
@@ -45,8 +45,6 @@ export function buildPartSequence(part, recipe) {
                 DemoPhase.NEUTRAL_HOLD];
         case RecipePart.ATTENTION:
             return [DemoPhase.ATTENTION, DemoPhase.REMINDER_PAUSE];
-        default:
-            return [];
     }
 }
 
