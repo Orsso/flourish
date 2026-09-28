@@ -6,6 +6,7 @@ import {
     FakeEmitter,
     FakeIcon,
     makeScheduler,
+    surfaceContext,
 } from './fakes.js';
 
 const EXPRESSIVE = getBuiltInRecipe('expressive');
@@ -14,7 +15,7 @@ function makeSurface(recipe = EXPRESSIVE, iconCount = 0) {
     const scheduler = makeScheduler();
     const surface = new MotionSurface({getPointer: () => null, recipe, scheduler});
     const box = new FakeBox(iconCount);
-    surface.addBox(box, 'bottom');
+    surface.addBox(box, 'bottom', surfaceContext(box));
     scheduler.flush();
     const {icons} = box;
     const bins = icons.map(icon => icon.icon._iconBin);
@@ -33,7 +34,7 @@ test('containers without an icon bin are skipped', () => {
     const surface = new MotionSurface({recipe: EXPRESSIVE, scheduler});
     const box = new FakeBox(1);
     box.append(new FakeEmitter());
-    surface.addBox(box, 'bottom');
+    surface.addBox(box, 'bottom', surfaceContext(box));
     assertEqual(surface.controllers.length, 1);
 });
 
@@ -46,7 +47,7 @@ test('child-added registers late containers', () => {
 test('addBox refuses the same box twice', () => {
     const {surface, box} = makeSurface(EXPRESSIVE, 2);
     const handlers = box.handlers.size;
-    surface.addBox(box, 'bottom');
+    surface.addBox(box, 'bottom', surfaceContext(box));
     assertEqual(surface.controllers.length, 2);
     assertEqual(box.handlers.size, handlers);
 });
@@ -107,7 +108,7 @@ test('a box context is served through its icons and dropped with them', () => {
     const scheduler = makeScheduler();
     const surface = new MotionSurface({recipe: EXPRESSIVE, scheduler});
     const box = new FakeBox(2);
-    const context = {edge: 'bottom'};
+    const context = surfaceContext(box);
     assertEqual(surface.addBox(box, 'bottom', context), true);
     assertEqual(surface.addBox(box, 'bottom', context), false);
     const [first, second] = box.icons;
@@ -128,7 +129,7 @@ test('the surface reports urgent icons, including ones already urgent when found
     });
     const box = new FakeBox(1);
     box.icons[0].urgent = true;
-    surface.addBox(box, 'bottom');
+    surface.addBox(box, 'bottom', surfaceContext(box));
     const late = new FakeContainer();
     box.add_child(late);
     late.child.urgent = true;

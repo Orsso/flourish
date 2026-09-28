@@ -105,19 +105,19 @@ export function runSegments(clone, segments, {
         mode: resolveAnimationMode(segment.easing, Clutter.AnimationMode),
     };
     // The frame captures the already-scaled clone, preserving its texture resolution.
-    setIconDim(clone.get_parent(), segment.dim ?? 0, animation);
+    setIconDim(clone.get_parent(), segment.dim, animation);
     clone.ease({
         scale_x: segment.scaleX,
         scale_y: segment.scaleY,
         translation_x: segment.translationX,
         translation_y: segment.translationY,
-        rotation_angle_z: segment.rotation ?? 0,
+        rotation_angle_z: segment.rotation,
         ...animation,
         onComplete: () => {
             // The ease callback can outlive its launch or attention session.
             if (isCancelled())
                 return;
-            setIconDim(clone.get_parent(), segment.dim ?? 0);
+            setIconDim(clone.get_parent(), segment.dim);
             runSegments(clone, segments, {isCancelled, onComplete}, index + 1);
         },
     });

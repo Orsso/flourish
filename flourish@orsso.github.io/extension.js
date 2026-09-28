@@ -11,6 +11,14 @@ import {DockIntegration} from './lib/runtime/dockIntegration.js';
 import {LaunchEngine} from './lib/runtime/launchEngine.js';
 import {BackgroundStyle} from './lib/runtime/backgroundStyle.js';
 
+// In the order of the flags in _syncStyles.
+const STYLESHEETS = [
+    'dock-hover-background-hidden.css',
+    'dash-hover-background-hidden.css',
+    'dock-focused-app-background-hidden.css',
+    'dash-focused-app-background.css',
+];
+
 export default class FlourishExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
@@ -27,6 +35,7 @@ export default class FlourishExtension extends Extension {
 
         this._dockIntegration = new DockIntegration({
             scheduler: this._frameScheduler,
+            // Ubuntu Dock rebuilds its icons while disable() unloads the stylesheets.
             onUrgentChanged: (controller, urgent) =>
                 this._attentionEngine?.onUrgentChanged(controller, urgent),
         });
@@ -34,14 +43,8 @@ export default class FlourishExtension extends Extension {
             scheduler: this._frameScheduler,
         });
 
-        this._hoverStyle = new BackgroundStyle({
-            extension: this, cssFileName: 'dock-hover-background-hidden.css'});
-        this._focusedAppStyle = new BackgroundStyle({
-            extension: this, cssFileName: 'dock-focused-app-background-hidden.css'});
-        this._dashHoverStyle = new BackgroundStyle({
-            extension: this, cssFileName: 'dash-hover-background-hidden.css'});
-        this._dashFocusedStyle = new BackgroundStyle({
-            extension: this, cssFileName: 'dash-focused-app-background.css'});
+        this._styles = STYLESHEETS.map(cssFileName =>
+            new BackgroundStyle({extension: this, cssFileName}));
         this._syncStyles();
 
         this._attentionEngine = new AttentionEngine({
@@ -95,14 +98,9 @@ export default class FlourishExtension extends Extension {
         global.stage.disconnectObject(this);
         this._attentionEngine.disable();
         this._attentionEngine = null;
-        this._hoverStyle.disable();
-        this._hoverStyle = null;
-        this._focusedAppStyle.disable();
-        this._focusedAppStyle = null;
-        this._dashHoverStyle.disable();
-        this._dashHoverStyle = null;
-        this._dashFocusedStyle.disable();
-        this._dashFocusedStyle = null;
+        for (const style of this._styles)
+            style.disable();
+        this._styles = null;
         // Dock widgets restyle through the controllers, so before those go.
         this._refreshStyles();
         this._dashIntegration.disable();
@@ -137,12 +135,9 @@ export default class FlourishExtension extends Extension {
         const showFocused = this._settings.get_boolean('show-focused-app-background');
         this._dockIntegration.setOutline(this._settings.get_string('dock-outline'));
         // No short-circuit: every sheet must sync.
-        return [
-            this._hoverStyle.setEnabled(hideHover),
-            this._dashHoverStyle.setEnabled(hideHover),
-            this._focusedAppStyle.setEnabled(!showFocused),
-            this._dashFocusedStyle.setEnabled(showFocused),
-        ].includes(true);
+        return [hideHover, hideHover, !showFocused, showFocused]
+            .map((enabled, index) => this._styles[index].setEnabled(enabled))
+            .includes(true);
     }
 
     _refreshStyles() {

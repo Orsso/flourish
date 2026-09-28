@@ -24,6 +24,7 @@ import {
     interpolateTransform,
     launchDuration,
     nextReminderDelay,
+    pressStarts,
     launchIconRect,
     projectIconRect,
     resolveIconTransform,
@@ -276,7 +277,7 @@ test('wave lift follows the same falloff as the wave scale', () => {
         hoverLevel: 1,
     });
     assertClose(atPeak.translationY, -recipe.hover.lift);
-    assertEqual(resolveIconTransform({edge: 'bottom', recipe}).translationY, 0);
+    assertClose(resolveIconTransform({edge: 'bottom', recipe}).translationY, 0);
 });
 
 test('disabled system animations return the identity transform', () => {
@@ -709,4 +710,17 @@ test('launch sampling releases a physical dim without repeating the click', () =
     assertEqual(middle.dim > 0 && middle.dim < initial.dim, true);
     assertEqual(middle.scaleX > 1, true);
     assertEqual(sampleLaunchSegments(segments, segments[0].duration, initial).dim, 0);
+});
+
+test('the press mode decides which primary clicks press', () => {
+    const expected = {
+        [PressMode.ALL_PRIMARY_CLICKS]: {plain: true, launching: false},
+        [PressMode.LAUNCHES_ONLY]: {plain: false, launching: false},
+        [PressMode.CLICKS_AND_LAUNCHES]: {plain: true, launching: true},
+    };
+    for (const [mode, {plain, launching}] of Object.entries(expected)) {
+        assertEqual(pressStarts({enabled: true, mode}, false), plain);
+        assertEqual(pressStarts({enabled: true, mode}, true), launching);
+    }
+    assertEqual(pressStarts({enabled: false, mode: PressMode.CLICKS_AND_LAUNCHES}, false), false);
 });

@@ -30,7 +30,7 @@ export class LiveRegistry {
         return controller;
     }
 
-    removeLiveController(actor) {
+    #removeController(actor) {
         const controller = this.#controllers.get(actor);
         if (!controller)
             return;
@@ -62,7 +62,7 @@ export class LiveRegistry {
 
     disable() {
         for (const actor of [...this.#controllers.keys()])
-            this.removeLiveController(actor);
+            this.#removeController(actor);
         for (const box of [...this.#boxes.keys()])
             this.removeLiveBox(box);
     }

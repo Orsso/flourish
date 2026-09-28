@@ -81,21 +81,16 @@ export class MotionSurface {
                 group.clearPointer();
     }
 
-    addBox(box, edge, context = null) {
+    addBox(box, edge, context) {
         const group = new NeighborGroup({
             scheduler: this.#scheduler,
             box,
-            pointerActor: context?.pointerActor ?? box,
             edge,
             recipe: this.#recipe,
             clock: this.#clock,
             getPointer: this.#getPointer,
             animationsEnabled: this.#animationsEnabled,
-            getSpacing: context?.getSpacing ?? (() => null),
-            isAvailable: context?.isAvailable ?? (() => true),
-            containsPointer: context?.containsPointer ?? (() => true),
-            background: context?.background ?? null,
-            decorationContext: context,
+            context,
         });
         this.#groups.add(group);
         const release = () => {
@@ -137,7 +132,7 @@ export class MotionSurface {
             recipe: this.#recipe,
             clock: this.#clock,
             onAnimate: () => group.touch(controller),
-            decorations: container.label && context
+            decorations: container.label
                 ? {container, getMonitor: context.getMonitor, labelOffset: context.labelOffset} : null,
             onHoverChanged: changed => group.refreshPointer(changed),
             onDestroyed: destroyed => {
@@ -147,8 +142,7 @@ export class MotionSurface {
             onUrgentChanged: (changed, urgent) => this.#onUrgentChanged(changed, urgent),
         });
         group.add(controller, container, boxChildren(container));
-        if (context)
-            this.#contexts.set(controller, context);
+        this.#contexts.set(controller, context);
         this.#registry.addController(icon, controller);
         // An icon can be urgent before Flourish finds it.
         if (controller.urgent)
@@ -158,12 +152,11 @@ export class MotionSurface {
 
 class NeighborGroup {
     #background = null;
-    #decorationContext;
+    #context;
     #extraDecorations = new Map();
     #animationsEnabled;
     #box;
     #clock;
-    #containsPointer;
     #dirty = new Set();
     #edge;
     #entries = [];
@@ -171,8 +164,7 @@ class NeighborGroup {
     #envRamp = IDLE_RAMP;
     #flushId = 0;
     #getPointer;
-    #isAvailable;
-    #getSpacing;
+    #horizontal;
     #peak = null;
     #pointer = null;
     #pointerActor;
@@ -181,21 +173,20 @@ class NeighborGroup {
     #spreadShape = null;
     #translations = new Map();
 
-    constructor({scheduler, box, pointerActor, edge, recipe, clock, getPointer, animationsEnabled, getSpacing, isAvailable, containsPointer, background, decorationContext}) {
+    constructor({scheduler, box, edge, recipe, clock, getPointer, animationsEnabled, context}) {
+        const {pointerActor, background} = context;
         this.#scheduler = scheduler;
         this.#box = box;
         this.#pointerActor = pointerActor;
         this.#edge = edge;
+        this.#horizontal = edge === ScreenEdge.BOTTOM || edge === ScreenEdge.TOP;
         this.#recipe = recipe;
         this.#clock = clock;
         this.#getPointer = getPointer;
         this.#animationsEnabled = animationsEnabled;
-        this.#getSpacing = getSpacing;
-        this.#isAvailable = isAvailable;
-        this.#containsPointer = containsPointer;
-        this.#decorationContext = decorationContext;
+        this.#context = context;
         if (background)
-            this.#background = new BackgroundExpansion(background, edge, decorationContext.getMonitor);
+            this.#background = new BackgroundExpansion(background, edge, context.getMonitor);
         box.connectObject('notify::mapped', () => {
             if (!box.mapped)
                 this.clearPointer();
@@ -331,7 +322,7 @@ class NeighborGroup {
         if (this.#peak !== null)
             return this.#peak;
         const {hover} = this.#recipe;
-        const room = this.#entries[0].controller.measure(this.#decorationContext?.getMonitor());
+        const room = this.#entries[0].controller.measure(this.#context.getMonitor());
         const overshoot = hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
         this.#peak = room
             ? fitHoverLevel(hover, room.iconNormalSize, room.budgetPx, overshoot)
@@ -359,15 +350,14 @@ class NeighborGroup {
     // Row geometry under the pointer, or null.
     #waveShape() {
         // The overview dash keeps its allocation while hidden.
-        if (this.#pointer === null || !this.#box.mapped || !this.#isAvailable())
+        if (this.#pointer === null || !this.#box.mapped || !this.#context.isAvailable())
             return null;
         // Native hover notification can precede the pointer coordinate update.
         this.#pointer = this.#getPointer() ?? this.#pointer;
         const count = this.#entries.length;
         if (count === 0)
             return null;
-        const horizontal =
-            this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
+        const horizontal = this.#horizontal;
         const [valid, localX, localY] = this.#box.transform_stage_point(...this.#pointer);
         if (!valid)
             return null;
@@ -400,7 +390,7 @@ class NeighborGroup {
         const reach = this.#recipe.hover.neighborRadius * pitch;
         if (!(pitch > 0) || pointer < first - reach || pointer > last + reach)
             return null;
-        if (!this.#containsPointer(...this.#pointer))
+        if (!this.#context.containsPointer(...this.#pointer))
             return null;
         const centers = new Array(count);
         for (let index = 0; index < count; index++)
@@ -456,7 +446,7 @@ class NeighborGroup {
     }
 
     #applyWave(levels) {
-        const spacing = this.#getSpacing();
+        const spacing = this.#context.getSpacing();
         const {centers} = this.#spreadShape;
         if (centers.length !== this.#entries.length) {
             this.#releaseWave();
@@ -475,16 +465,14 @@ class NeighborGroup {
         }
         const {offsets, growth, first} = geometry;
         this.#background?.setGrowth(-2 * first);
-        const horizontal = this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP;
-        const property = horizontal ? 'translation_x' : 'translation_y';
-        const axis = horizontal ? 0 : 1;
+        const property = this.#horizontal ? 'translation_x' : 'translation_y';
         const actors = spacing.actors;
         const iconOffsets = new Map(this.#entries.map((entry, index) => [entry.container, offsets[index]]));
         for (const actor of actors) {
             if (!iconOffsets.has(actor) && actor.label && actor.icon?._iconBin &&
                 !this.#extraDecorations.has(actor)) {
                 const decorations = new IconDecorations({
-                    ...this.#decorationContext, container: actor, icon: actor,
+                    ...this.#context, container: actor, icon: actor,
                     bin: actor.icon._iconBin, edge: this.#edge,
                     onChanged: () => this.#scheduleFlush(),
                 });
@@ -511,7 +499,7 @@ class NeighborGroup {
             let offset = iconOffsets.get(actor);
             if (offset === undefined) {
                 const [, x, y] = this.#box.transform_stage_point(...actor.get_transformed_position());
-                const position = (axis === 0 ? x : y) - actor[property] + original;
+                const position = (this.#horizontal ? x : y) - actor[property] + original;
                 offset = first;
                 for (let i = 0; i < centers.length && centers[i] < position; i++)
                     offset += growth[i];
@@ -523,8 +511,7 @@ class NeighborGroup {
 
     #restoreSpread() {
         this.#background?.setGrowth(0);
-        const property = this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP
-            ? 'translation_x' : 'translation_y';
+        const property = this.#horizontal ? 'translation_x' : 'translation_y';
         for (const [actor, original] of this.#translations) {
             actor[property] = original;
             actor.disconnectObject(this);

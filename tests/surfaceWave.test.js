@@ -1,7 +1,7 @@
 import {motionRecipe} from './fakes.js';
 import {OVERSHOOT_RESERVE} from '../flourish@orsso.github.io/lib/motion/transforms.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
-import {FakeEmitter, FakeRow, MeasurableBin, makeScheduler} from './fakes.js';
+import {FakeEmitter, FakeRow, MeasurableBin, makeScheduler, surfaceContext} from './fakes.js';
 
 import {fitHoverLevel} from '../flourish@orsso.github.io/lib/motion/continuum.js';
 
@@ -37,8 +37,10 @@ function makeSurface({
         getPointer,
     });
     const overflow = {room: spreadRoom, get actors() { return box.get_children(); }};
-    surface.addBox(box, edge, {getMonitor: () => null,
-        getSpacing: () => spreadRoom ? overflow : null, containsPointer, pointerActor});
+    surface.addBox(box, edge, surfaceContext(box, {
+        getSpacing: () => spreadRoom ? overflow : null, containsPointer,
+        pointerActor: pointerActor ?? box,
+    }));
     scheduler.flush();
     const bins = box.icons.map(icon => icon.icon._iconBin);
     const frame = ms => {

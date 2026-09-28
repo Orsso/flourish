@@ -22,9 +22,11 @@ tried in a real session.
 - `lib/runtime/` wires them into the shell:
 - `DockIntegration` talks to Dash to Dock and Ubuntu Dock; `DashIntegration`
   hooks the built-in overview dash. Both hand their icon box to `MotionSurface`.
-- `MotionSurface` turns one box of icons into controllers.
+- `MotionSurface` turns one box of icons into controllers and runs the hover wave.
 - `IconMotionController` handles one icon.
 - `LaunchEngine` handles launch clones and repeat timing.
+- `AttentionEngine` plays the attention motion on dock icons.
+- `DockOverflow` lets the magnified icons overflow the dock.
 - `prefs.js` builds the settings window.
 
 Prefer plain functions unless something really owns state or cleanup.

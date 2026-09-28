@@ -56,6 +56,8 @@ export function resolveAnimationMode(easing, modes) {
 export function easingProgress(easing, t) {
     const u = t < 0 ? 0 : t > 1 ? 1 : t;
     switch (easing) {
+        case Easing.EASE_IN_QUAD:
+            return u * u;
         case Easing.EASE_OUT_QUAD:
             return 1 - (1 - u) * (1 - u);
         case Easing.EASE_OUT_CUBIC:

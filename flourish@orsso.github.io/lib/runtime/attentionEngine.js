@@ -90,7 +90,6 @@ export class AttentionEngine {
             context,
             controller,
             cyclesLeft: 0,
-            dimmedTarget: false,
             finished: false,
             icon,
             originalOpacity: 0,
@@ -130,14 +129,14 @@ export class AttentionEngine {
             enabled: attention.enabled,
             urgent: icon.urgent,
             focused: icon.focused,
-            dnd: !(this.#notifications?.get_boolean('show-banners') ?? true),
+            dnd: !this.#notifications.get_boolean('show-banners'),
             animationsEnabled: St.Settings.get().enable_animations,
             iconAtRest: controller.atRest,
             dockState: context.visibility.state,
             shownRectKnown: context.visibility.shownRect !== null,
             peekWhenHidden: attention.peekWhenHidden,
             fullscreen: monitor?.inFullscreen ?? false,
-            peekInFullscreen: context.dockSettings?.autohideInFullscreen ?? false,
+            peekInFullscreen: context.dockSettings.autohideInFullscreen,
             reminder: session.reminder,
             reminders: attention.reminders,
         });
@@ -257,7 +256,6 @@ export class AttentionEngine {
         session.clone = clone;
         session.unfollow = followIcon({target, clone, scheduler: this.#scheduler});
         session.originalOpacity = target.opacity;
-        session.dimmedTarget = true;
         target.opacity = 0;
         this.#runBurst(session, clone);
     }
@@ -352,10 +350,6 @@ export class AttentionEngine {
             this.#retractPeek(session, clone, abrupt);
         } else {
             clone.destroy();
-            if (session.dimmedTarget) {
-                session.target.opacity = session.originalOpacity;
-                session.dimmedTarget = false;
-            }
         }
         session.peeking = false;
         this.#releaseOverlay(session);
@@ -378,10 +372,13 @@ export class AttentionEngine {
         this.#rearmIds.add(id);
     }
 
-    #releaseOverlay(session) {
+    // An in-place burst hides the icon under its clone.
+    #releaseOverlay(session, restoreTarget = true) {
         if (!session.overlaid)
             return;
         session.overlaid = false;
+        if (restoreTarget)
+            session.target.opacity = session.originalOpacity;
         session.controller.endOverlay();
     }
 
@@ -391,7 +388,7 @@ export class AttentionEngine {
         session.finished = true;
         this.#clearTimer(session);
         this.#unfollow(session);
-        session.unsubscribe?.();
+        session.unsubscribe();
         session.icon.disconnectObject(session);
         if (session.clone) {
             session.clone.remove_all_transitions();
@@ -403,14 +400,9 @@ export class AttentionEngine {
             session.retreating.destroy();
             session.retreating = null;
         }
-        if (!targetDestroyed) {
-            if (session.dimmedTarget) {
-                session.target.opacity = session.originalOpacity;
-                session.dimmedTarget = false;
-            }
+        if (!targetDestroyed)
             session.target.disconnectObject(session);
-        }
-        this.#releaseOverlay(session);
+        this.#releaseOverlay(session, !targetDestroyed);
         this.#sessions.delete(session.icon);
         const key = session.anchorKey;
         if (![...this.#sessions.values()].some(item => item.anchorKey === key))

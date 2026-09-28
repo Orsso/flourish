@@ -99,14 +99,6 @@ test('the follower observes translation and scale without reallocation', () => {
     assertDeepEqual(clone.sizes, [[60, 48]]);
 });
 
-test('detached placement can freeze the last visible geometry', () => {
-    const {box, clone, scheduler, dispose} = setup(() => null);
-    box.emit('notify::allocation');
-    scheduler.flush();
-    assertEqual(clone.moves.length, 0);
-    dispose();
-});
-
 test('detached placement keeps its anchor while source size retreats', () => {
     let attached = true;
     const place = anchoredPlacement(() => attached, [0.5, 1]);

@@ -34,7 +34,6 @@ const modules = [
     './liveRegistry.test.js',
     './motionHelpers.test.js',
     './motionSurface.test.js',
-    './pressInteraction.test.js',
     './schemaBounds.test.js',
     './settings.test.js',
     './surfaceWave.test.js',

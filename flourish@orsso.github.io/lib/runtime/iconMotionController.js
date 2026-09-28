@@ -3,9 +3,9 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 
 import {ScreenEdge, sampleRamp} from '../motion/catalog.js';
-import {PressInteraction} from '../motion/pressInteraction.js';
 import {
     buildLaunchPressSegments,
+    pressStarts,
     resolveIconTransform,
 } from '../motion/transforms.js';
 import {sharpenIconTexture} from './iconTexture.js';
@@ -36,7 +36,7 @@ export class IconMotionController {
     #original;
     #overlay = null;
     #edge;
-    #press = new PressInteraction();
+    #pressed = false;
     #pressRamp = null;
     #recipe;
     #setDim;
@@ -91,18 +91,17 @@ export class IconMotionController {
             },
             'button-press-event', (_actor, event) => {
                 if (event.get_button() === Clutter.BUTTON_PRIMARY &&
-                    this.#press.beginPrimary(this.#recipe.press,
-                        this.#icon.app?.get_n_windows() === 0))
+                    this.#setPressed(pressStarts(this.#recipe.press,
+                        this.#icon.app?.get_n_windows() === 0)))
                     this.#pressChanged();
                 return Clutter.EVENT_PROPAGATE;
             },
             'notify::pressed', () => {
-                if (this.#press.syncButtonPressed(
-                    this.#icon.pressed))
+                if (!this.#icon.pressed && this.#setPressed(false))
                     this.#pressChanged();
             },
             'clicked', () => {
-                if (this.#press.reset())
+                if (this.#setPressed(false))
                     this.#pressChanged();
             }, GObject.ConnectFlags.AFTER, // after the stock click handler
             this);
@@ -169,7 +168,7 @@ export class IconMotionController {
 
     setRecipe(recipe) {
         this.#recipe = recipe;
-        this.#press.reset();
+        this.#pressed = false;
         this.#pressRamp = null;
         this.#apply();
     }
@@ -204,7 +203,7 @@ export class IconMotionController {
             return {active: false};
 
         const {dim} = resolveIconTransform({recipe: this.#recipe, pressLevel});
-        this.#press.reset();
+        this.#pressed = false;
         this.#pressRamp = null;
         this.beginOverlay({followHover: true});
         this.#apply();
@@ -253,13 +252,20 @@ export class IconMotionController {
         if (this.#hovered === hovered)
             return;
         this.#hovered = hovered;
-        if (!hovered && this.#press.reset())
+        if (!hovered && this.#setPressed(false))
             this.#setPressLevel(0);
         this.#onHoverChanged(this, hovered);
     }
 
+    #setPressed(pressed) {
+        if (this.#pressed === pressed)
+            return false;
+        this.#pressed = pressed;
+        return true;
+    }
+
     #pressChanged() {
-        this.#setPressLevel(this.#press.pressed ? 1 : 0);
+        this.#setPressLevel(this.#pressed ? 1 : 0);
         this.#apply();
         this.#onAnimate();
     }

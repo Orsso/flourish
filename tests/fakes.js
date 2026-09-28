@@ -382,6 +382,19 @@ export class FakeRow extends FakeEmitter {
     }
 }
 
+// What an integration hands MotionSurface.addBox, with neutral defaults.
+export function surfaceContext(box, overrides = {}) {
+    return {
+        pointerActor: box,
+        getSpacing: () => null,
+        isAvailable: () => true,
+        containsPointer: () => true,
+        background: null,
+        getMonitor: () => null,
+        ...overrides,
+    };
+}
+
 export function makeScheduler() {
     return {
         nextId: 1,

@@ -81,11 +81,11 @@ export class DockIntegration {
     setRecipe(recipe) {
         this.#recipe = recipe;
         this.#syncOverflow();
-        this.#surface?.setRecipe(recipe);
+        this.#surface.setRecipe(recipe);
     }
 
     onPointerMotion(x, y) {
-        this.#surface?.onPointerMotion(x, y);
+        this.#surface.onPointerMotion(x, y);
     }
 
     #syncOverflow() {
@@ -95,7 +95,7 @@ export class DockIntegration {
     }
 
     refreshStyles() {
-        this.#surface?.refreshStyles();
+        this.#surface.refreshStyles();
     }
 
     setOutline(name) {
@@ -107,7 +107,7 @@ export class DockIntegration {
     }
 
     getDockContext(appIcon) {
-        return this.#surface?.getContext(appIcon) ?? null;
+        return this.#surface.getContext(appIcon);
     }
 
     // Ubuntu Dock recreates its manager from the same signal; read it after.
@@ -129,11 +129,10 @@ export class DockIntegration {
     }
 
     async #attach(generation) {
+        // No dock is a normal setup; extension-state-changed attaches a late one.
         const extension = lookupDashToDock();
-        if (!extension) {
-            console.warn('[flourish] no active Dash to Dock or Ubuntu Dock; dock motion is off');
+        if (!extension)
             return;
-        }
 
         let module;
         try {
@@ -143,7 +142,8 @@ export class DockIntegration {
             return;
         }
 
-        if (generation !== this.#generation || !this.#surface)
+        // disable() or a newer attach can run during the import.
+        if (generation !== this.#generation)
             return;
         if (!module.dockManager) {
             console.warn('[flourish] Dash to Dock exposes no dock manager; dock motion is off');
@@ -162,7 +162,7 @@ export class DockIntegration {
     #detachManager() {
         // A reloaded Dash to Dock has a new prototype.
         this.#restoreWiggle();
-        this.#disposeVisibilities();
+        this.#disposeDocks();
         if (!this.#manager)
             return;
         for (const id of this.#managerSignals)
@@ -171,7 +171,7 @@ export class DockIntegration {
         this.#manager = null;
     }
 
-    #disposeVisibilities() {
+    #disposeDocks() {
         this.#outline.dispose();
         for (const background of this.#blurBackgrounds.keys())
             this.#untrackBlur(background);
@@ -220,9 +220,8 @@ export class DockIntegration {
                 pointerActor: slid,
                 isAvailable: () => visibility.state === DockState.SHOWN,
                 containsPointer: (x, y) => pointerOnSurface(slid, x, y),
-                edge,
                 getMonitor,
-                dockSettings: this.#manager.settings ?? null,
+                dockSettings: this.#manager.settings,
                 labelOffset: '-x-offset',
             };
             const overflow = new DockOverflow({

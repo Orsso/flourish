@@ -7,6 +7,7 @@ import {
     PressEffect,
     PressMode,
     ScreenEdge,
+    easingProgress,
 } from './catalog.js';
 
 const ORIENTATIONS = {
@@ -41,14 +42,7 @@ const ORIENTATIONS = {
 };
 
 export function getOrientation(edge) {
-    const orientation = ORIENTATIONS[edge];
-    return {
-        horizontal: orientation.horizontal,
-        normalAxis: orientation.normalAxis,
-        tangentAxis: orientation.tangentAxis,
-        pivot: [...orientation.pivot],
-        outward: [...orientation.outward],
-    };
+    return ORIENTATIONS[edge];
 }
 
 export function getLaunchPivot(effect, edge) {
@@ -61,20 +55,27 @@ const PRESS_SQUASH_FACTOR = 0.22;
 const PRESS_DIM_FACTOR = 0.60;
 
 const PRESS_EFFECTS = {
-    [PressEffect.SQUASH]: (intensity, orientation) => {
+    [PressEffect.SQUASH]: (intensity, {horizontal}) => {
         const normalScale = 1 - PRESS_SQUASH_FACTOR * intensity;
-        return pressTransform({
-            scaleX: orientation.horizontal ? 1 : normalScale,
-            scaleY: orientation.horizontal ? normalScale : 1,
-        });
+        return {
+            scaleX: horizontal ? 1 : normalScale,
+            scaleY: horizontal ? normalScale : 1,
+            dim: 0,
+        };
     },
     [PressEffect.DIM]: intensity =>
-        pressTransform({dim: PRESS_DIM_FACTOR * intensity}),
+        ({scaleX: 1, scaleY: 1, dim: PRESS_DIM_FACTOR * intensity}),
 };
 
 export function resolvePressTransform(effect, intensity, orientation) {
     const build = PRESS_EFFECTS[effect];
     return build(clamp(intensity, 0, 1), orientation);
+}
+
+// Whether a primary click presses the icon; launching is known at button press.
+export function pressStarts({enabled, mode}, launching) {
+    return enabled && mode !== PressMode.LAUNCHES_ONLY &&
+        (mode === PressMode.CLICKS_AND_LAUNCHES || !launching);
 }
 
 export function buildLaunchPressSegments(press, edge, pressLevel = 0) {
@@ -92,16 +93,6 @@ export function buildLaunchPressSegments(press, edge, pressLevel = 0) {
     ];
 }
 
-function pressTransform({
-    scaleX = 1,
-    scaleY = 1,
-    translationX = 0,
-    translationY = 0,
-    dim = 0,
-} = {}) {
-    return {scaleX, scaleY, translationX, translationY, dim};
-}
-
 export function composeIconTransform({
     edge = ScreenEdge.BOTTOM,
     hoverScale = 1,
@@ -114,10 +105,8 @@ export function composeIconTransform({
     return {
         scaleX: hoverScale * press.scaleX,
         scaleY: hoverScale * press.scaleY,
-        translationX:
-            multiplyDistance(orientation.outward[0], lift) + press.translationX,
-        translationY:
-            multiplyDistance(orientation.outward[1], lift) + press.translationY,
+        translationX: orientation.outward[0] * lift,
+        translationY: orientation.outward[1] * lift,
         dim: press.dim,
         pivot: orientation.pivot,
     };
@@ -221,7 +210,7 @@ export function wiggleSegments(intensity, speed) {
 }
 
 // The attention effects keep a fixed shape. Repetition comes from cycles.
-export const ATTENTION_SHAPE = {pulseCount: 1, bounceDecay: 0, stretchElasticity: 0.70};
+const ATTENTION_SHAPE = {pulseCount: 1, bounceDecay: 0, stretchElasticity: 0.70};
 
 // One cycle lasts ATTENTION_CYCLE_MS at full speed whatever the effect. The
 // base table holds the natural length of each effect with ATTENTION_SHAPE.
@@ -407,7 +396,7 @@ export function sampleLaunchSegments(segments, elapsed, initial = null) {
     for (const item of segments) {
         if (remaining <= item.duration) {
             const progress = item.duration === 0 ? 1 : remaining / item.duration;
-            return interpolateTransform(previous, item, ease(item.easing, progress));
+            return interpolateTransform(previous, item, easingProgress(item.easing, progress));
         }
         remaining -= item.duration;
         previous = transformFromSegment(item);
@@ -539,8 +528,8 @@ function transformFromSegment(item) {
         scaleY: item.scaleY,
         translationX: item.translationX,
         translationY: item.translationY,
-        rotation: item.rotation ?? 0,
-        dim: item.dim ?? 0,
+        rotation: item.rotation,
+        dim: item.dim,
     };
 }
 
@@ -557,30 +546,6 @@ export function interpolateTransform(from, to, progress) {
 
 function interpolate(from, to, progress) {
     return from + (to - from) * progress;
-}
-
-function ease(mode, progress) {
-    const value = clamp(progress, 0, 1);
-    switch (mode) {
-        case Easing.LINEAR:
-            return value;
-        case Easing.EASE_OUT_QUAD:
-            return 1 - (1 - value) ** 2;
-        case Easing.EASE_IN_QUAD:
-            return value ** 2;
-        case Easing.EASE_OUT_BACK: {
-            const overshoot = 1.70158;
-            return 1 + (overshoot + 1) * (value - 1) ** 3 +
-                overshoot * (value - 1) ** 2;
-        }
-        case Easing.EASE_OUT_CUBIC:
-        default:
-            return 1 - (1 - value) ** 3;
-    }
-}
-
-function multiplyDistance(direction, distance) {
-    return direction === 0 || distance === 0 ? 0 : direction * distance;
 }
 
 function clamp(value, minimum, maximum) {

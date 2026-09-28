@@ -5,7 +5,7 @@ import Clutter from 'gi://Clutter';
 import {easingProgress} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {waveFalloff} from '../flourish@orsso.github.io/lib/motion/continuum.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
-import {FakeRow, MeasurableBin, makeScheduler} from './fakes.js';
+import {FakeRow, MeasurableBin, makeScheduler, surfaceContext} from './fakes.js';
 
 const FRAME = 7;
 const PROPS = ['scale_x', 'scale_y', 'translation_x', 'translation_y'];
@@ -67,7 +67,7 @@ function replay(easing, events) {
         getPointer: () => null,
         recipe, scheduler, clock, animationsEnabled: () => true,
     });
-    surface.addBox(box, 'bottom');
+    surface.addBox(box, 'bottom', surfaceContext(box));
     scheduler.flush();
     const icon = box.children[2].child;
     const bin = icon.icon._iconBin;

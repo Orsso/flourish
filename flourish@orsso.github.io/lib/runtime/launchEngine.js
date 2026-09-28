@@ -74,7 +74,7 @@ export class LaunchEngine {
     }
 
     #play(appIcon, controller, playStock) {
-        if (OVERVIEW_ACTIONS.has(appIcon.app?.get_id()))
+        if (OVERVIEW_ACTIONS.has(appIcon.app.get_id()))
             return;
         this.#beforeLaunch(appIcon);
 
@@ -90,27 +90,14 @@ export class LaunchEngine {
             return;
 
         // Release the press while keeping the shared hover geometry.
-        const visibility = this.#getDockContext(appIcon)?.visibility ?? null;
-        const place = placement(visibility, controller.edge,
-            getLaunchPivot(launch.effect, controller.edge));
-        const before = actorGeometry(target);
-        const visibleGeometry = place(before) ?? before;
-        const preparation = controller.beginLaunch(
-            controller.recipe.launch.enabled);
+        const visibility = this.#getDockContext(appIcon)?.visibility;
+        const launchPivot = getLaunchPivot(launch.effect, controller.edge);
+        const place = placement(visibility, controller.edge, launchPivot);
+        const visibleGeometry = place(actorGeometry(target));
+        const preparation = controller.beginLaunch(launch.enabled);
         if (!preparation.active)
             return;
-        const after = actorGeometry(target);
-        const neutralGeometry = place(after) ?? after;
-        this.#startLaunch(
-            appIcon, controller, target, visibleGeometry,
-            neutralGeometry, preparation, {place, visibility, playStock});
-    }
-
-    #startLaunch(appIcon, controller, target, visibleGeometry,
-        neutralGeometry, preparation, {place, visibility, playStock}) {
-        const recipe = controller.recipe;
-        const launchPivot = getLaunchPivot(
-            recipe.launch.effect, controller.edge);
+        const neutralGeometry = place(actorGeometry(target));
         const introScale = hoverIntroScale(visibleGeometry, neutralGeometry);
         const introLift = hoverIntroLift(
             visibleGeometry, neutralGeometry, launchPivot);
@@ -123,17 +110,17 @@ export class LaunchEngine {
         setIconDim(frame, preparation.dim);
         const clone = createIconClone(target, {
             x: 0, y: 0, width: neutralGeometry.width, height: neutralGeometry.height,
+            x_expand: true, y_expand: true,
         }, frame, {
             badgeBox: appIcon.icon.get_parent(),
             pivot: launchPivot,
             scale: introScale,
             translation: introLift,
         });
-        clone.x_expand = true;
-        clone.y_expand = true;
 
+        const app = appIcon.app;
         const session = {
-            app: appIcon.app,
+            app,
             appSeenRunning: false,
             clone,
             controller,
@@ -142,7 +129,6 @@ export class LaunchEngine {
             finished: false,
             frame,
             originalOpacity: target.opacity,
-            launchPivot,
             playStock,
             repeatSourceId: 0,
             startedAt: GLib.get_monotonic_time() / 1000,
@@ -151,23 +137,19 @@ export class LaunchEngine {
                 target, clone: frame, place, scheduler: this.#scheduler,
             }),
             visibility,
-            wasLaunching: appIcon.app
-                ? appIcon.app.state !== Shell.AppState.RUNNING
-                : false,
-            startupNotify: appIcon.app?.get_app_info()?.get_string('StartupNotify'),
+            wasLaunching: app.state !== Shell.AppState.RUNNING,
+            // Window-backed apps have no desktop entry.
+            startupNotify: app.get_app_info()?.get_string('StartupNotify'),
         };
         target.connectObject('destroy',
             () => this.#finish(session, {targetDestroyed: true}), session);
-        if (session.app) {
-            Shell.AppSystem.get_default().connectObject('app-state-changed',
-                (_system, app) => {
-                    if (app !== session.app ||
-                        app.state !== Shell.AppState.RUNNING)
-                        return;
-                    session.appSeenRunning = true;
-                    Shell.AppSystem.get_default().disconnectObject(session);
-                }, session);
-        }
+        Shell.AppSystem.get_default().connectObject('app-state-changed',
+            (_system, changed) => {
+                if (changed !== app || changed.state !== Shell.AppState.RUNNING)
+                    return;
+                session.appSeenRunning = true;
+                Shell.AppSystem.get_default().disconnectObject(session);
+            }, session);
         this.#sessions.set(target, session);
         target.opacity = 0;
         runSegments(clone, preparation.pressSegments, {
@@ -213,7 +195,7 @@ export class LaunchEngine {
         return shouldRepeatLaunch({
             wasLaunching: session.wasLaunching,
             startupNotify: session.startupNotify,
-            appRunning: session.appSeenRunning || !session.app ||
+            appRunning: session.appSeenRunning ||
                 session.app.state === Shell.AppState.RUNNING ||
                 session.app.get_n_windows() > 0,
             repeat: launch.repeat,
@@ -226,7 +208,7 @@ export class LaunchEngine {
         const launch = session.controller.recipe.launch;
         if (this.#shouldRepeat(session)) {
             session.cycle++;
-            this.#scheduleNextCycle(session, launch.repeatPause);
+            this.#scheduleNextCycle(session);
             return;
         }
         const momentum = launch.effect !== LaunchEffect.PULSE &&
@@ -234,8 +216,9 @@ export class LaunchEngine {
         this.#handoff(session, {momentum});
     }
 
-    #scheduleNextCycle(session, pause) {
+    #scheduleNextCycle(session) {
         this.#clearRepeatTimer(session);
+        const pause = session.controller.recipe.launch.repeatPause;
         session.repeatSourceId = GLib.timeout_add(
             GLib.PRIORITY_DEFAULT, pause, () => {
                 session.repeatSourceId = 0;

@@ -10,7 +10,6 @@ required=(
     extension.js
     lib/motion/catalog.js
     lib/motion/continuum.js
-    lib/motion/pressInteraction.js
     lib/motion/settings.js
     lib/motion/transforms.js
     lib/prefs/advancedPage.js

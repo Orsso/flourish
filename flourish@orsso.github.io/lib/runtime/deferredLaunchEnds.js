@@ -10,13 +10,9 @@ export class DeferredLaunchEnds {
     }
 
     defer(controller) {
-        let sourceId = 0;
-        sourceId = this.#schedule(() => {
-            const pending = this.#pending.get(sourceId);
-            if (!pending)
-                return false;
+        const sourceId = this.#schedule(() => {
             this.#pending.delete(sourceId);
-            pending.endOverlay();
+            controller.endOverlay();
             return false;
         });
         this.#pending.set(sourceId, controller);

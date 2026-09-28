@@ -31,8 +31,6 @@ export function followIcon({target, clone, scheduler, place = rect => rect}) {
     const sync = () => {
         flushId = 0;
         const rect = place(actorGeometry(target));
-        if (!rect)
-            return;
         clone.set_position(rect.x, rect.y);
         clone.set_size(rect.width, rect.height);
     };
