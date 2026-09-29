@@ -1,5 +1,5 @@
 import {DockOutline} from '../flourish@orsso.github.io/lib/runtime/dockOutline.js';
-import {FakeEmitter} from './fakes.js';
+import {FakeEmitter, makeScheduler} from './fakes.js';
 
 class FakeBackground extends FakeEmitter {
     constructor() {
@@ -33,13 +33,14 @@ class FakeInterface extends FakeEmitter {
     }
 }
 
-const outlineWith = interfaceSettings =>
-    new DockOutline({interfaceSettings: interfaceSettings ?? new FakeInterface()});
+const outlineWith = (interfaceSettings, scheduler = makeScheduler()) =>
+    new DockOutline({interfaceSettings: interfaceSettings ?? new FakeInterface(), scheduler});
 
 const DOCK_STYLE = 'background-color: rgba(0,0,0,0); border-color: rgba(0,0,0,0);';
 
 test('the outline follows the dock inline style and outlives its rewrites', () => {
-    const outline = outlineWith();
+    const scheduler = makeScheduler();
+    const outline = outlineWith(null, scheduler);
     const background = new FakeBackground();
     background.style = DOCK_STYLE;
     outline.setOutline('light');
@@ -47,10 +48,13 @@ test('the outline follows the dock inline style and outlives its rewrites', () =
     assertEqual(background.style.startsWith(DOCK_STYLE), true);
     assertEqual(background.style.includes('border: 1px solid'), true);
 
-    // Dash to Dock clears and rewrites the style on every theme update.
+    // Dash to Dock clears the style to read its theme, then rewrites it.
     background.style = null;
+    assertEqual(background.style, null);
+    scheduler.flush();
     assertEqual(background.style.includes('border: 1px solid'), true);
     background.style = DOCK_STYLE;
+    scheduler.flush();
     assertEqual(background.style.endsWith(outline.style), true);
     assertEqual(background.style.split('border: 1px solid').length, 2);
 });
@@ -65,6 +69,7 @@ test('an outline of none and disposal both leave the dock style alone', () => {
     assertEqual(background.style, DOCK_STYLE);
 
     outline.setOutline('dark');
+    background.style = DOCK_STYLE;
     outline.dispose();
     assertEqual(background.style, DOCK_STYLE);
     background.style = null;

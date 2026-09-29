@@ -17,11 +17,14 @@ export class DockOutline {
     #backgrounds = new Set();
     #name = 'none';
     #interfaceSettings;
+    #pending = new Map();
+    #scheduler;
     #style = '';
 
     // interfaceSettings: org.gnome.desktop.interface, read for the color scheme.
-    constructor({interfaceSettings}) {
+    constructor({interfaceSettings, scheduler}) {
         this.#interfaceSettings = interfaceSettings;
+        this.#scheduler = scheduler;
         interfaceSettings.connectObject('changed::color-scheme',
             () => this.setOutline(this.#name), this);
     }
@@ -39,13 +42,18 @@ export class DockOutline {
 
     track(background) {
         this.#backgrounds.add(background);
-        background.connectObject('notify::style', () => this.#apply(background),
-            'destroy', () => this.#backgrounds.delete(background), this);
+        // Dash to Dock clears the style to read its theme node; reapply after that.
+        background.connectObject('notify::style', () => this.#schedule(background),
+            'destroy', () => {
+                this.#cancel(background);
+                this.#backgrounds.delete(background);
+            }, this);
         this.#apply(background);
     }
 
     dispose() {
         for (const background of this.#backgrounds) {
+            this.#cancel(background);
             background.disconnectObject(this);
             this.#write(background, base(background.style));
         }
@@ -56,6 +64,23 @@ export class DockOutline {
         this.dispose();
         this.#interfaceSettings.disconnectObject(this);
         this.#interfaceSettings = null;
+    }
+
+    #schedule(background) {
+        if (this.#pending.has(background))
+            return;
+        this.#pending.set(background, this.#scheduler.schedule(() => {
+            this.#pending.delete(background);
+            this.#apply(background);
+        }));
+    }
+
+    #cancel(background) {
+        const id = this.#pending.get(background);
+        if (!id)
+            return;
+        this.#scheduler.cancel(id);
+        this.#pending.delete(background);
     }
 
     #apply(background) {

@@ -41,6 +41,7 @@ export class DockIntegration {
         this.#onUrgentChanged = onUrgentChanged;
         this.#outline = new DockOutline({
             interfaceSettings: new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}),
+            scheduler,
         });
     }
 
