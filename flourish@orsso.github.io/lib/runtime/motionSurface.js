@@ -26,7 +26,7 @@ export class MotionSurface {
     constructor({
         recipe,
         clock = () => GLib.get_monotonic_time() / 1000,
-        getPointer = () => global.get_pointer(),
+        getPointer = () => global.get_pointer().slice(0, 2),
         animationsEnabled = () => St.Settings.get().enable_animations,
         onUrgentChanged = () => {},
         scheduler,
