@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-28 22:14+0200\n"
+"POT-Creation-Date: 2026-09-30 22:44+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,123 +17,123 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: flourish@orsso.github.io/prefs.js:25
+#: flourish@orsso.github.io/prefs.js:28
 msgid "None"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:26
+#: flourish@orsso.github.io/prefs.js:29
 msgid "Follow theme"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:27
+#: flourish@orsso.github.io/prefs.js:30
 msgid "Light"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:28
+#: flourish@orsso.github.io/prefs.js:31
 msgid "Dark"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:31
+#: flourish@orsso.github.io/prefs.js:34
 msgid "Subtle"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:32
+#: flourish@orsso.github.io/prefs.js:35
 msgid "Lively"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:33
+#: flourish@orsso.github.io/prefs.js:36
 msgid "Expressive"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:44
+#: flourish@orsso.github.io/prefs.js:47
 msgid "Basics"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:49
+#: flourish@orsso.github.io/prefs.js:52
 msgid "More"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:56
+#: flourish@orsso.github.io/prefs.js:59
 msgid "Presets"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:57
+#: flourish@orsso.github.io/prefs.js:60
 msgid "Hover to preview. Click to apply."
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:59
+#: flourish@orsso.github.io/prefs.js:62
 msgid "Custom"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:96
+#: flourish@orsso.github.io/prefs.js:99
 msgid "Motion"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:99
+#: flourish@orsso.github.io/prefs.js:102
 msgid "Hover motion"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:100
+#: flourish@orsso.github.io/prefs.js:103
 msgid "Magnification and elevation around the pointer"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:103
+#: flourish@orsso.github.io/prefs.js:106
 msgid "Press feedback"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:103
+#: flourish@orsso.github.io/prefs.js:106
 msgid "Squash or dim the pressed icon"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:106
+#: flourish@orsso.github.io/prefs.js:109
 msgid "Launch animation"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:107
+#: flourish@orsso.github.io/prefs.js:110
 msgid "Animate cold starts and new windows"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:111
+#: flourish@orsso.github.io/prefs.js:114
 #: flourish@orsso.github.io/lib/prefs/advancedPage.js:138
 msgid "Attention"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:112
+#: flourish@orsso.github.io/prefs.js:115
 msgid "Animate icons that ask for attention"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:117
+#: flourish@orsso.github.io/prefs.js:120
 msgid "Style"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:120
+#: flourish@orsso.github.io/prefs.js:123
 msgid "Dock outline"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:129
+#: flourish@orsso.github.io/prefs.js:132
 msgid "More Settings"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:130
+#: flourish@orsso.github.io/prefs.js:133
 msgid "Timing, effects, and repeats"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:210
+#: flourish@orsso.github.io/prefs.js:213
 #, javascript-format
 msgid "Switch to %s?"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:211
+#: flourish@orsso.github.io/prefs.js:214
 #, javascript-format
 msgid ""
 "Your Custom recipe will be abandoned and replaced by the %s preset values."
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:213
+#: flourish@orsso.github.io/prefs.js:216
 msgid "Cancel"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:214
+#: flourish@orsso.github.io/prefs.js:217
 msgid "Switch"
 msgstr ""
 

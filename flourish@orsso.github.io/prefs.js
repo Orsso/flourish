@@ -1,7 +1,9 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import {ExtensionState} from 'resource:///org/gnome/Shell/Extensions/js/misc/extensionUtils.js';
 
 import {Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
@@ -21,6 +23,7 @@ import {
 } from './lib/prefs/rows.js';
 
 const N_ = s => s;
+const DASH_TO_DOCK_BUILDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com'];
 const OUTLINES = [
     [N_('None'), 'none'],
     [N_('Follow theme'), 'auto'],
@@ -224,9 +227,17 @@ function onPresetClicked({window, preset, title, state, settings, controls}) {
     dialog.present(window);
 }
 
+// Ubuntu enables its dock through the session mode, not enabled-extensions.
 function dashToDockEnabled() {
-    const shellSettings = new Gio.Settings({schema_id: 'org.gnome.shell'});
-    const enabled = shellSettings.get_strv('enabled-extensions');
-    return enabled.includes('dash-to-dock@micxgx.gmail.com') ||
-        enabled.includes('ubuntu-dock@ubuntu.com');
+    return DASH_TO_DOCK_BUILDS.some(uuid => {
+        try {
+            const [info] = Gio.DBus.session.call_sync('org.gnome.Shell', '/org/gnome/Shell',
+                'org.gnome.Shell.Extensions', 'GetExtensionInfo', new GLib.Variant('(s)', [uuid]),
+                null, Gio.DBusCallFlags.NONE, -1, null).recursiveUnpack();
+            return info.state === ExtensionState.ACTIVE;
+        } catch {
+            // No Shell on the bus, as when the preferences run outside a session.
+            return false;
+        }
+    });
 }
