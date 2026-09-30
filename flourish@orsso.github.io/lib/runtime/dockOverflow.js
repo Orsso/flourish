@@ -149,7 +149,8 @@ export class DockOverflow {
         const {horizontal} = getOrientation(this.#edge);
         const size = horizontal ? this.#row.width : this.#row.height;
         const available = horizontal ? this.#viewport.width : this.#viewport.height;
-        if (!this.#hover?.enabled || this.#slider.slide_x !== 1 || size <= 0 || size > available)
+        // The row animates through fractional widths; the viewport width is whole.
+        if (!this.#hover?.enabled || this.#slider.slide_x !== 1 || size <= 0 || Math.round(size) > available)
             return 0;
         const normalSize = horizontal ? this.#row.height : this.#row.width;
         const {scale, lift, neighborRadius} = this.#hover;

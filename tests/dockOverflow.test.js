@@ -84,6 +84,15 @@ test('overflow resizes with icon allocation and restores after scrolling', () =>
     overflow.dispose();
 });
 
+test('a row animating through fractional widths keeps its overflow room', () => {
+    const {overflow, row, viewport} = makeOverflow();
+    row.width = viewport.width + 0.42;
+    row.emit('notify::allocation');
+    assertEqual(overflow.room > 0, true);
+    assertEqual(viewport.hadjustment, null);
+    overflow.dispose();
+});
+
 test('an extended dock fits its content rather than its full-width background', () => {
     const {overflow, dashContainer} = makeOverflow();
     dashContainer.width = 1000;
