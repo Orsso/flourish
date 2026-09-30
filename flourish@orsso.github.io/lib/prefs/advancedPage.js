@@ -73,7 +73,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
     controls.pressMode = createComboRow(
         press.group, _('Trigger'),
         [
-            [_('Clicks only'), PressMode.ALL_PRIMARY_CLICKS],
+            [_('Clicks only'), PressMode.CLICKS_ONLY],
             [_('Launches only'), PressMode.LAUNCHES_ONLY],
             [_('Clicks and launches'), PressMode.CLICKS_AND_LAUNCHES],
         ], value => editCustomSetting(settings, 'custom-press-mode', value), state);

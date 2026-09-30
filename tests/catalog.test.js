@@ -19,7 +19,7 @@ test('built-in recipes match the presets', () => {
     const expressive = getBuiltInRecipe(Preset.EXPRESSIVE);
 
     assertEqual(subtle.hover.enabled, true);
-    assertEqual(subtle.press.mode, PressMode.ALL_PRIMARY_CLICKS);
+    assertEqual(subtle.press.mode, PressMode.CLICKS_ONLY);
     assertEqual(subtle.press.effect, PressEffect.DIM);
     assertEqual(subtle.launch.effect, LaunchEffect.PULSE);
     assertEqual(subtle.launch.speed, 0.65);
@@ -27,7 +27,7 @@ test('built-in recipes match the presets', () => {
     assertEqual(subtle.launch.softenRepeats, true);
     assertEqual(balanced.hover.enabled, true);
     assertEqual(balanced.hover.scale, 1.12);
-    assertEqual(balanced.press.mode, PressMode.ALL_PRIMARY_CLICKS);
+    assertEqual(balanced.press.mode, PressMode.CLICKS_ONLY);
     assertEqual(balanced.launch.effect, LaunchEffect.STRETCH);
     assertEqual(balanced.launch.repeatPause, 400);
     assertEqual(expressive.hover.easing, Easing.EASE_OUT_CUBIC);

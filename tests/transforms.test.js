@@ -689,7 +689,7 @@ test('launches-only presses and releases the clone before the launch', () => {
 });
 
 test('click modes only release a press that is still held', () => {
-    for (const mode of [PressMode.ALL_PRIMARY_CLICKS, PressMode.CLICKS_AND_LAUNCHES]) {
+    for (const mode of [PressMode.CLICKS_ONLY, PressMode.CLICKS_AND_LAUNCHES]) {
         const press = {enabled: true, mode, effect: PressEffect.DIM, intensity: 1, duration: 120};
         assertDeepEqual(buildLaunchPressSegments(press, 'bottom', 0), []);
         const segments = buildLaunchPressSegments(press, 'bottom', 0.4);
@@ -714,7 +714,7 @@ test('launch sampling releases a physical dim without repeating the click', () =
 
 test('the press mode decides which primary clicks press', () => {
     const expected = {
-        [PressMode.ALL_PRIMARY_CLICKS]: {plain: true, launching: false},
+        [PressMode.CLICKS_ONLY]: {plain: true, launching: false},
         [PressMode.LAUNCHES_ONLY]: {plain: false, launching: false},
         [PressMode.CLICKS_AND_LAUNCHES]: {plain: true, launching: true},
     };

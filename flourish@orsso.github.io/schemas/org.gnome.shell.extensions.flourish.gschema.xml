@@ -17,7 +17,7 @@
   <enum id="org.gnome.shell.extensions.flourish.press-mode">
     <value nick="launches-only" value="0"/>
     <value nick="all-primary-clicks" value="1"/>
-    <value nick="clicks-and-launches" value="2"/>
+    <value nick="clicks-only" value="2"/>
   </enum>
 
   <enum id="org.gnome.shell.extensions.flourish.press-effect">
@@ -91,7 +91,7 @@
       <summary>Use press feedback in Custom</summary>
     </key>
     <key name="custom-press-mode" enum="org.gnome.shell.extensions.flourish.press-mode">
-      <default>"all-primary-clicks"</default>
+      <default>"clicks-only"</default>
       <summary>Press feedback trigger</summary>
     </key>
     <key name="custom-press-effect" enum="org.gnome.shell.extensions.flourish.press-effect">

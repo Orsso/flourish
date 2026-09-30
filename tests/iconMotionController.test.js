@@ -321,9 +321,9 @@ test('urgent changes reach the listener with the controller', () => {
 
 test('launch preparation follows the press mode and the held click', () => {
     const modes = {
-        'all-primary-clicks': {plain: 1, launching: 0},
+        'clicks-only': {plain: 1, launching: 0},
         'launches-only': {plain: 2, launching: 2},
-        'clicks-and-launches': {plain: 1, launching: 1},
+        'all-primary-clicks': {plain: 1, launching: 1},
     };
     for (const [mode, expected] of Object.entries(modes)) {
         for (const [kind, launching] of [['plain', false], ['launching', true]]) {
