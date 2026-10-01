@@ -22,11 +22,15 @@ export class IconDecorations {
         this.#getMonitor = getMonitor;
         this.#labelOffset = labelOffset;
         this.#label = container.label;
+        // DashItemContainer destroys its label in its own destroy handler, before ours.
         this.#label.connectObject(
             'notify::visible', onChanged,
             'notify::opacity', () => {
                 if (this.#label.opacity === 0)
                     onChanged();
+            },
+            'destroy', () => {
+                this.#label = null;
             }, this);
         this.#iconBox = icon.icon.get_parent();
         this.#iconBox.connectObject('child-added', (_box, child) => {
@@ -62,8 +66,8 @@ export class IconDecorations {
     }
 
     dispose() {
-        this.#label.disconnectObject(this);
-        this.#label.hide();
+        this.#label?.disconnectObject(this);
+        this.#label?.hide();
         this.#iconBox.disconnectObject(this);
         for (const [badge, original] of this.#badges) {
             badge.disconnectObject(this);

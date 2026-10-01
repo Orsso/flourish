@@ -24,6 +24,7 @@ const modules = [
     './dashSpacing.test.js',
     './deferredLaunchEnds.test.js',
     './focusHighlight.test.js',
+    './iconDecorations.test.js',
     './iconFollower.test.js',
     './demoSequence.test.js',
     './dockVisibility.test.js',
