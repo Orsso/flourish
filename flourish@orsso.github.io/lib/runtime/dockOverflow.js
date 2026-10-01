@@ -7,10 +7,20 @@ import {actorGeometry, expandDockClip} from './geometry.js';
 
 const OverflowVolume = GObject.registerClass(
     class OverflowVolume extends Clutter.Effect {
-        _init(edge, room) {
+        _init(edge, room, raisedBox) {
             super._init();
             this._edge = edge;
+            this._raisedBox = raisedBox;
             this.room = room;
+        }
+
+        // Gaps between raised icons belong to the dock, not to what lies beneath it.
+        vfunc_pick(context) {
+            const actor = this.get_actor();
+            const box = this._raisedBox(actor);
+            if (box)
+                actor.pick_box(context, box);
+            actor.continue_pick(context);
         }
 
         vfunc_modify_paint_volume(volume) {
@@ -141,6 +151,28 @@ export class DockOverflow {
         ];
     }
 
+    // Bounds of the magnified icons, in the coordinates of the given actor.
+    #raisedBox(actor) {
+        let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+        for (const item of this.actors) {
+            const bin = item.icon?._iconBin ?? item.child?.icon?._iconBin;
+            if (!bin?.reactive || bin.scale_x === 1 && bin.scale_y === 1)
+                continue;
+            const extents = bin.get_transformed_extents();
+            for (const [stageX, stageY] of [
+                [extents.get_x(), extents.get_y()],
+                [extents.get_x() + extents.get_width(), extents.get_y() + extents.get_height()],
+            ]) {
+                const [, x, y] = actor.transform_stage_point(stageX, stageY);
+                x1 = Math.min(x1, x);
+                y1 = Math.min(y1, y);
+                x2 = Math.max(x2, x);
+                y2 = Math.max(y2, y);
+            }
+        }
+        return x1 < x2 && y1 < y2 ? new Clutter.ActorBox({x1, y1, x2, y2}) : null;
+    }
+
     #siblings() {
         return [
             ...this.#viewport.get_children().filter(actor => actor !== this.#row),
@@ -175,7 +207,7 @@ export class DockOverflow {
             // StViewport clips picking whenever scroll adjustments are attached.
             this.#viewport.hadjustment = null;
             this.#viewport.vadjustment = null;
-            this.#effect = new OverflowVolume(this.#edge, room);
+            this.#effect = new OverflowVolume(this.#edge, room, actor => this.#raisedBox(actor));
             this.#scroll.add_effect(this.#effect);
         } else if (!room && this.#adjustments) {
             this.#scroll.remove_effect(this.#effect);
