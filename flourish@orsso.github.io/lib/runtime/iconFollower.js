@@ -52,6 +52,7 @@ export function followIcon({target, clone, scheduler, place = rect => rect}) {
         watched.push(node);
         node = node.get_parent();
     }
-    target.connectObject('destroy', dispose, owner);
+    // A reopened overview maps the icon again without moving anything.
+    target.connectObject('notify::mapped', schedule, 'destroy', dispose, owner);
     return dispose;
 }

@@ -49,6 +49,24 @@ function setup(place) {
     return {root, box, target, clone, scheduler, dispose};
 }
 
+test('a detached clone realigns when its icon is shown again without moving', () => {
+    let attached = true;
+    const {target, clone, scheduler} = setup(anchoredPlacement(() => attached, [0.5, 1]));
+    target.emit('notify::allocation');
+    scheduler.flush();
+    // The hover decays while the overview is closed; the anchor stays put.
+    attached = false;
+    target.y = 1026;
+    target.emit('notify::allocation');
+    scheduler.flush();
+    assertDeepEqual(clone.moves.at(-1), [700, 1016]);
+    // The overview reopens: nothing reallocates, the icon only maps again.
+    attached = true;
+    target.emit('notify::mapped');
+    scheduler.flush();
+    assertDeepEqual(clone.moves.at(-1), [700, 1026]);
+});
+
 test('the clone moves to the icon once per frame after any ancestor reallocates', () => {
     const {root, box, target, clone, scheduler} = setup();
     target.x = 652;
