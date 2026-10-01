@@ -7,7 +7,7 @@
 <p align="center"><sub>Formerly D2D Companion.</sub></p>
 
 <p align="center">
-  <a href="#compatibility"><img alt="GNOME Shell 46–50" src="https://img.shields.io/badge/GNOME%20Shell-46--50-4A86CF?style=flat-square&amp;logo=gnome&amp;logoColor=white"></a>
+  <a href="#compatibility"><img alt="GNOME Shell 46–51" src="https://img.shields.io/badge/GNOME%20Shell-46--51-4A86CF?style=flat-square&amp;logo=gnome&amp;logoColor=white"></a>
   <a href="LICENSE"><img alt="License: GPL-2.0-or-later" src="https://img.shields.io/badge/License-GPL--2.0--or--later-E95420?style=flat-square"></a>
 </p>
 
@@ -42,7 +42,7 @@ The transforms are restored on disable; the blur effect and layout are unchanged
 
 ## Compatibility
 
-Flourish declares support for GNOME Shell 46 to 50.
+Flourish declares support for GNOME Shell 46 to 51.
 
 This release was tested with:
 

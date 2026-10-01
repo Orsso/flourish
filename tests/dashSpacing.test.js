@@ -1,4 +1,4 @@
-import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, ownsPick, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
 
 test('background allocation grows symmetrically without scaling the other axis', () => {
     for (const horizontal of [true, false]) {
@@ -74,4 +74,30 @@ test('a clipped native row has no spacing budget despite free monitor margins', 
     const {box} = fixture();
     box.width = 600;
     assertEqual(dashSpacing(box, {x: 0, width: 1000}).room, 0);
+});
+
+test('a gap pick counts when it is an ancestor of the surface inside the gap root', () => {
+    const node = (name, parent = null) => ({
+        name, parent,
+        contains(other) {
+            for (let n = other; n; n = n.parent) {
+                if (n === this)
+                    return true;
+            }
+            return false;
+        },
+    });
+    const stage = node('stage');
+    const overviewGroup = node('overviewGroup', stage);
+    const controls = node('controls', overviewGroup); // reactive since Shell 51
+    const dash = node('dash', controls);
+    const icon = node('icon', dash);
+    const grid = node('grid', controls);
+    assertEqual(ownsPick(dash, icon, overviewGroup), true);
+    assertEqual(ownsPick(dash, overviewGroup, overviewGroup), true);
+    assertEqual(ownsPick(dash, controls, overviewGroup), true);
+    assertEqual(ownsPick(dash, grid, overviewGroup), false);
+    assertEqual(ownsPick(dash, stage, overviewGroup), false);
+    assertEqual(ownsPick(dash, controls, null), false);
+    assertEqual(ownsPick(dash, null, overviewGroup), false);
 });

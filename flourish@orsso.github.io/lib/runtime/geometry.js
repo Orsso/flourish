@@ -60,9 +60,16 @@ export function fitBackgroundGrowth(growth, start, end, origin, scale, monitorSt
     return Math.min(growth, 2 * Math.max(0, Math.min(leading, trailing)));
 }
 
-export function pointerOnSurface(actor, x, y, gapActor = null) {
-    const picked = global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y);
-    return picked !== null && (actor.contains(picked) || picked === gapActor);
+export function pointerOnSurface(actor, x, y, gapRoot = null) {
+    return ownsPick(actor, global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y), gapRoot);
+}
+
+// A gap between icons picks a reactive ancestor: overviewGroup, or ControlsManager since Shell 51.
+export function ownsPick(actor, picked, gapRoot) {
+    if (picked === null)
+        return false;
+    return actor.contains(picked) ||
+        (gapRoot !== null && gapRoot.contains(picked) && picked.contains(actor));
 }
 
 export function tooltipPosition(icon, label, edge, offset, monitor) {

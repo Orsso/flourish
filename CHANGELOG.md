@@ -30,6 +30,7 @@
   animation, and Kiwi's Launchpad plays none.
 - With Blur My Shell's dynamic dock blur, the blur follows the magnified
   background.
+- Added GNOME 51 support.
 
 ## 1.1.0
 

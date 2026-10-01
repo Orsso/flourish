@@ -2,7 +2,7 @@
   "uuid": "flourish@orsso.github.io",
   "name": "Flourish",
   "description": "Hover, press, and launch motion for the GNOME dash, Dash to Dock, and Ubuntu Dock. Formerly D2D Companion.",
-  "shell-version": ["46", "47", "48", "49", "50"],
+  "shell-version": ["46", "47", "48", "49", "50", "51"],
   "url": "https://github.com/Orsso/flourish",
   "settings-schema": "org.gnome.shell.extensions.flourish",
   "gettext-domain": "flourish@orsso.github.io",
