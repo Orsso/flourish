@@ -103,7 +103,7 @@ test('an extended dock fits its content rather than its full-width background', 
 
 test('Show Apps fits its visible icon and ignores its current wave translation', () => {
     const {overflow, dashContainer, scroll} = makeOverflow();
-    const apps = {child: {}, translation_x: 0};
+    const apps = {child: {}, translation_x: 0, visible: true};
     const parent = {width: 48, height: 64,
         get_transformed_position: () => [952 + apps.translation_x, 700],
         get_transformed_size: () => [48, 64]};
@@ -113,6 +113,17 @@ test('Show Apps fits its visible icon and ignores its current wave translation',
     assertEqual(overflow.room, 8);
     apps.translation_x = 6;
     assertEqual(overflow.room, 8);
+    overflow.dispose();
+});
+
+test('a hidden Show Apps button does not take part in the margins', () => {
+    const {overflow, dashContainer, scroll} = makeOverflow();
+    const parent = {width: 0, height: 0,
+        get_transformed_position: () => [NaN, NaN], get_transformed_size: () => [NaN, NaN]};
+    const apps = {child: {}, translation_x: 0, visible: false,
+        icon: {_iconBin: {get_parent: () => parent, get_allocation_box: () => ({x1: 0, y1: 0, x2: 0, y2: 0})}}};
+    dashContainer.get_children = () => [scroll, apps];
+    assertEqual(Number.isFinite(overflow.room), true);
     overflow.dispose();
 });
 

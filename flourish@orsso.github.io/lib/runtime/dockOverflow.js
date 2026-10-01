@@ -113,6 +113,9 @@ export class DockOverflow {
         let end = start + (horizontal ? width : height);
         // Show Apps can sit outside the scroll viewport, even on an extended dock.
         for (const actor of this.#siblings()) {
+            // A hidden Show Apps button reports no transformed size.
+            if (!actor.visible)
+                continue;
             const icon = actor.icon?._iconBin ?? actor.child?.icon?._iconBin;
             const target = icon ?? actor;
             const parent = target.get_parent();
