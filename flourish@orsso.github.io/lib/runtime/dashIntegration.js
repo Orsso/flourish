@@ -92,4 +92,8 @@ export class DashIntegration {
     getController(appIcon) {
         return this.#surface?.getController(appIcon);
     }
+
+    findIcon(app) {
+        return this.#surface?.findIcon(app) ?? null;
+    }
 }

@@ -9,6 +9,8 @@
   yet (#7). Thanks to @7system7 for the suggestion.
 - The focused app can be marked on the overview dash (#6). Thanks to
   @parthib-gaugewalker for the suggestion.
+- Super+number shortcuts now play the launch animation on the overview dash
+  too (#9). Thanks to @reimer-ux for the suggestion.
 - Fixed the launch animation playing off screen when a hidden dock launches
   an app, as with the Super+number hotkeys.
 - The launch and attention animations now follow their icon when the dock or

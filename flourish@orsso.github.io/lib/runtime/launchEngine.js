@@ -5,6 +5,7 @@ import St from 'gi://St';
 import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {AppIcon} from 'resource:///org/gnome/shell/ui/appDisplay.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {WindowManager} from 'resource:///org/gnome/shell/ui/windowManager.js';
 
 import {DockState, LaunchEffect, PressMode} from '../motion/catalog.js';
 import {
@@ -18,11 +19,12 @@ import {
 } from '../motion/transforms.js';
 import {DeferredLaunchEnds} from './deferredLaunchEnds.js';
 import {actorGeometry} from './geometry.js';
-import {createIconClone, retreatClone, runSegments} from './iconClone.js';
+import {OPAQUE, createIconClone, retreatClone, runSegments} from './iconClone.js';
 import {setIconDim} from './iconDim.js';
 import {anchoredPlacement, followIcon} from './iconFollower.js';
 
 const HANDOFF_DURATION = 80;
+const GHOST_FADE_DURATION = 120;
 // Desktop entries that open a shell view instead of starting an app.
 const OVERVIEW_ACTIONS = new Set([
     'org.gnome.Shell.Extensions.Kiwi.Launchpad.desktop',
@@ -31,6 +33,7 @@ const OVERVIEW_ACTIONS = new Set([
 export class LaunchEngine {
     #beforeLaunch;
     #deferredEnds;
+    #findIcon;
     #getController;
     #getDockContext;
     #injections = null;
@@ -38,8 +41,9 @@ export class LaunchEngine {
     #sessions = new Map();
 
     constructor({
-        getController, getDockContext, scheduler, beforeLaunch = () => {},
+        getController, getDockContext, findIcon, scheduler, beforeLaunch = () => {},
     }) {
+        this.#findIcon = findIcon;
         this.#getController = getController;
         this.#getDockContext = getDockContext;
         this.#scheduler = scheduler;
@@ -63,6 +67,14 @@ export class LaunchEngine {
                 return engine.#play(this, controller,
                     () => original.call(this, ...args));
             });
+        // Super+number activates a favorite without going through its icon.
+        this.#injections.overrideMethod(
+            WindowManager.prototype, '_getNthFavoriteApp', original => function (...args) {
+                const app = original.call(this, ...args);
+                if (app?.state === Shell.AppState.STOPPED)
+                    engine.#findIcon(app)?.animateLaunch();
+                return app;
+            });
     }
 
     disable() {
@@ -78,13 +90,18 @@ export class LaunchEngine {
             return;
         this.#beforeLaunch(appIcon);
 
-        const {launch, press} = controller.recipe;
-        if (launch.enabled && launch.effect === LaunchEffect.STOCK &&
-            !(press.enabled && press.mode === PressMode.LAUNCHES_ONLY))
-            return playStock();
-
         // The St.Icon, not its bin: the bin carries the hover transform.
         const target = appIcon.icon.icon;
+        // Super+number with the overview closed: the dash icon is hidden.
+        const ghost = !target.mapped;
+        const {launch, press} = controller.recipe;
+        if (launch.enabled && launch.effect === LaunchEffect.STOCK &&
+            !(press.enabled && press.mode === PressMode.LAUNCHES_ONLY)) {
+            if (!ghost)
+                playStock();
+            return;
+        }
+
         if (this.#sessions.has(target) ||
             !St.Settings.get().enable_animations)
             return;
@@ -108,15 +125,17 @@ export class LaunchEngine {
         });
         Main.uiGroup.add_child(frame);
         setIconDim(frame, preparation.dim);
-        const clone = createIconClone(target, {
-            x: 0, y: 0, width: neutralGeometry.width, height: neutralGeometry.height,
-            x_expand: true, y_expand: true,
-        }, frame, {
-            badgeBox: appIcon.icon.get_parent(),
-            pivot: launchPivot,
-            scale: introScale,
-            translation: introLift,
-        });
+        const clone = ghost
+            ? createGhost(appIcon, frame, launchPivot)
+            : createIconClone(target, {
+                x: 0, y: 0, width: neutralGeometry.width, height: neutralGeometry.height,
+                x_expand: true, y_expand: true,
+            }, frame, {
+                badgeBox: appIcon.icon.get_parent(),
+                pivot: launchPivot,
+                scale: introScale,
+                translation: introLift,
+            });
 
         const app = appIcon.app;
         const session = {
@@ -129,7 +148,8 @@ export class LaunchEngine {
             finished: false,
             frame,
             originalOpacity: target.opacity,
-            playStock,
+            // A ghost skips the stock zoom and goes straight to the retreat.
+            playStock: ghost ? null : playStock,
             repeatSourceId: 0,
             startedAt: GLib.get_monotonic_time() / 1000,
             target,
@@ -162,7 +182,7 @@ export class LaunchEngine {
         if (session.finished)
             return;
         const {launch} = session.controller.recipe;
-        if (launch.enabled && launch.effect === LaunchEffect.STOCK) {
+        if (launch.enabled && launch.effect === LaunchEffect.STOCK && session.playStock) {
             this.#finish(session);
             session.playStock();
         } else if (launch.enabled) {
@@ -293,6 +313,22 @@ export class LaunchEngine {
         session.repeatSourceId = 0;
     }
 
+}
+
+// A clone of a hidden icon draws nothing, so the ghost uses the app icon.
+function createGhost(appIcon, frame, pivot) {
+    const ghost = appIcon.app.create_icon_texture(appIcon.icon.iconSize);
+    ghost.x_expand = true;
+    ghost.y_expand = true;
+    ghost.set_pivot_point(...pivot);
+    ghost.opacity = 0;
+    frame.add_child(ghost);
+    ghost.ease({
+        opacity: OPAQUE,
+        duration: GHOST_FADE_DURATION,
+        mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+    });
+    return ghost;
 }
 
 function placement(visibility, edge, pivot) {

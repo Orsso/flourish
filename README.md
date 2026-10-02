@@ -27,7 +27,9 @@ Flourish listens to the signals the dash icons already emit and animates
 them from there. It overrides the stock launch zoom and loads the dash
 icons at twice their resolution so they stay sharp when magnified.
 It uses the dash's private `_box` and `_background`, each icon's `_iconBin`
-and `_createIconTexture`, and Dash to Dock's `_allDocks` list.
+and `_createIconTexture`, Dash to Dock's `_allDocks` list, and the window
+manager's `_getNthFavoriteApp`, which tells it which favorite a
+Super+number shortcut opens.
 With Dash to Dock it also reads a few public but undocumented members:
 the `urgent` and `focused` flags of each icon, the dock's `monitorIndex`,
 the dock manager's settings, and the dash's `iconAnimator`, whose urgent

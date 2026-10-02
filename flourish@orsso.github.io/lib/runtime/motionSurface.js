@@ -47,6 +47,10 @@ export class MotionSurface {
         return this.#registry.getController(appIcon);
     }
 
+    findIcon(app) {
+        return this.controllers.find(controller => controller.icon.app === app)?.icon ?? null;
+    }
+
     getContext(appIcon) {
         const controller = this.getController(appIcon);
         return controller ? this.#contexts.get(controller) ?? null : null;

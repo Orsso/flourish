@@ -107,6 +107,10 @@ export class DockIntegration {
         return this.#surface.getController(appIcon);
     }
 
+    findIcon(app) {
+        return this.#surface.findIcon(app);
+    }
+
     getDockContext(appIcon) {
         return this.#surface.getContext(appIcon);
     }
