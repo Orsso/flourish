@@ -1,7 +1,7 @@
 import {motionRecipe} from './fakes.js';
 import {OVERSHOOT_RESERVE} from '../flourish@orsso.github.io/lib/motion/continuum.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
-import {FakeEmitter, FakeRow, MeasurableBin, makeScheduler, surfaceContext} from './fakes.js';
+import {FakeEmitter, FakeRow, FakeRowContainer, MeasurableBin, makeScheduler, surfaceContext} from './fakes.js';
 
 import {fitHoverLevel} from '../flourish@orsso.github.io/lib/motion/continuum.js';
 
@@ -394,6 +394,21 @@ test('exit decays the last wave shape and releases ownership', () => {
     surface.onPointerMotion(125, 1000);
     frame(0);
     assertEqual(scheduler.pending.size, 0);
+});
+
+test('an icon added during the exit decay does not cut the decay short', () => {
+    const {surface, box, bins, frame, settle} = makeSurface();
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    surface.onPointerMotion(125, 1000);
+    frame(0);
+    frame(DURATION * 0.15);
+    box.add_child(new FakeRowContainer(5, true, new MeasurableBin({parentY: 900})));
+    frame(1);
+    assertEqual(bins[2].scale_x > 1, true);
+    settle();
+    assertEqual(bins[2].scale_x, 1);
 });
 
 test('re-entering during the exit decay resumes from the decayed amplitude', () => {

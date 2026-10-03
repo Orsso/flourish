@@ -174,7 +174,6 @@ class WaveRow {
     #pointerActor;
     #recipe;
     #scheduler;
-    #shape = null;
     #translations = new Map();
 
     constructor({scheduler, box, edge, recipe, clock, getPointer, animationsEnabled, context}) {
@@ -362,11 +361,6 @@ class WaveRow {
             return null;
         const pointer = horizontal ? localX : localY;
         const cross = horizontal ? localY : localX;
-        // Allocation boxes are parent-relative, like the pointer above.
-        const center = index => {
-            const box = this.#entries[index].container.get_allocation_box();
-            return horizontal ? (box.x1 + box.x2) / 2 : (box.y1 + box.y2) / 2;
-        };
         // The row has no allocation box; the first icon gives its band.
         const band = this.#entries[0].container.get_allocation_box();
         const crossStart = horizontal ? band.y1 : band.x1;
@@ -376,7 +370,7 @@ class WaveRow {
             return null;
         // Another monitor's dock can share the band, so check the reach first.
         let first = horizontal ? (band.x1 + band.x2) / 2 : (band.y1 + band.y2) / 2;
-        let last = count > 1 ? center(count - 1) : first;
+        let last = count > 1 ? this.#center(this.#entries[count - 1]) : first;
         // Spacing follows physical order even when the row is RTL.
         if (first > last) {
             this.#entries.reverse();
@@ -391,10 +385,13 @@ class WaveRow {
             return null;
         if (!this.#context.containsPointer(...this.#pointer))
             return null;
-        const centers = new Array(count);
-        for (let index = 0; index < count; index++)
-            centers[index] = center(index);
-        return {pointer, centers, pitch};
+        return {pointer, centers: this.#entries.map(entry => this.#center(entry)), pitch};
+    }
+
+    // Allocation boxes are parent-relative, like the pointer.
+    #center(entry) {
+        const box = entry.container.get_allocation_box();
+        return this.#horizontal ? (box.x1 + box.x2) / 2 : (box.y1 + box.y2) / 2;
     }
 
     #syncWave() {
@@ -408,7 +405,6 @@ class WaveRow {
             if (this.#envRamp.to !== 1)
                 this.#startEnv(this.#sampleEnv(), 1);
             env = this.#sampleEnv();
-            this.#shape = shape;
             for (let index = 0; index < this.#entries.length; index++)
                 this.#entries[index].level = levels[index];
             this.#applyWave(levels.map(level => level * env));
@@ -434,7 +430,6 @@ class WaveRow {
 
     #releaseWave() {
         this.#restoreSpacing();
-        this.#shape = null;
         this.#pointer = null;
         this.#envRamp = IDLE_RAMP;
         this.#peak = null;
@@ -446,11 +441,6 @@ class WaveRow {
 
     #applyWave(levels) {
         const spacing = this.#context.getSpacing();
-        const {centers} = this.#shape;
-        if (centers.length !== this.#entries.length) {
-            this.#releaseWave();
-            return;
-        }
         const sizes = this.#entries.map(entry => entry.controller.icon.icon.iconSize);
         const geometry = waveGeometry({
             levels, sizes, hover: this.#recipe.hover,
@@ -466,6 +456,7 @@ class WaveRow {
         this.#background?.setGrowth(-2 * first);
         const property = this.#horizontal ? 'translation_x' : 'translation_y';
         const actors = spacing.actors;
+        let centers = null;
         const iconOffsets = new Map(this.#entries.map((entry, index) => [entry.container, offsets[index]]));
         for (const actor of actors) {
             if (!iconOffsets.has(actor) && actor.label && actor.icon?._iconBin &&
@@ -500,6 +491,7 @@ class WaveRow {
                 const [, x, y] = this.#box.transform_stage_point(...actor.get_transformed_position());
                 const position = (this.#horizontal ? x : y) - actor[property] + original;
                 offset = first;
+                centers ??= this.#entries.map(entry => this.#center(entry));
                 for (let i = 0; i < centers.length && centers[i] < position; i++)
                     offset += growth[i];
             }
