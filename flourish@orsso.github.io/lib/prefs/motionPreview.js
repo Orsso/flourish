@@ -34,7 +34,7 @@ const IDENTITY = {
 };
 const BOTTOM_PIVOT = [0.5, 1];
 // Stands in for an animation that never ran.
-const IDLE_ANIMATION = {state: Adw.AnimationState.IDLE, reset() {}, skip() {}};
+const IDLE_ANIMATION = {state: Adw.AnimationState.IDLE, pause() {}, skip() {}};
 
 const INLINE_ICON_SIZE = 24;
 const INLINE_STEP = INLINE_ICON_SIZE + 10;
@@ -117,9 +117,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const count = hoverIconCount(this._recipe);
         if (count === this._iconCount)
             return;
-        // reset() replays the initial value; read the count first.
         const from = this._visibleCount;
-        this._countAnimation.reset();
+        this._countAnimation.pause();
         this._countAnimation = animate(this, COUNT_GROW_MS, Adw.Easing.EASE_OUT_CUBIC, value => {
             this._visibleCount = from + (count - from) * value;
             this.width_request = inlineWidth(this._visibleCount);
@@ -136,7 +135,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._cancelLoop();
         this._countAnimation.skip();
         this._held = false;
-        this._motionAnimation.reset();
+        this._sweepActive = false;
+        this._motionAnimation.pause();
         this._motionAnimation = IDLE_ANIMATION;
         this._hovered = false;
         this._hoverProgress = 0;
@@ -148,13 +148,12 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
     _cancelLoop() {
         this._loop = 0;
-        this._sweepAnimation.reset();
+        this._sweepAnimation.pause();
         this._sweepAnimation = IDLE_ANIMATION;
-        this._sweepActive = false;
-        this._launchAnimation.reset();
+        this._launchAnimation.pause();
         this._launchAnimation = IDLE_ANIMATION;
         this._launchTransform = {...IDENTITY};
-        this._peekAnimation.reset();
+        this._peekAnimation.pause();
         this._peekAnimation = IDLE_ANIMATION;
         this._attending = false;
         this._peek = 0;
@@ -176,31 +175,28 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const run = () => this._runSequence(generation, this._part
             ? () => buildPartSequence(this._part, this._recipe)
             : () => buildDemoSequence(this._recipe));
-        if (this._part || !hoverActive(this._recipe.hover))
+        // Only a preview at rest sweeps in.
+        if (this._part || !hoverActive(this._recipe.hover) ||
+            this._hoverProgress > 0 && !this._sweepActive)
             run();
         else
             this._runIntroSweep(generation, run);
     }
 
     _runIntroSweep(generation, onComplete) {
-        this._sweepActive = true;
         const count = ICON_COLORS.length;
         const middle = (count - 1) / 2;
-        const start = -0.6;
+        const start = this._sweepActive ? this._sweepValue : -0.6;
         const end = (count - 1) + 0.6;
+        this._sweepActive = true;
         this._sweepValue = start;
+        this._hovered = true;
+        this._animateMotion(this._recipe.hover.duration);
         this._playSweepSegment(generation, start, end, SWEEP_MS,
             Adw.Easing.EASE_IN_OUT_CUBIC, () => {
                 this._playSweepSegment(generation, end, middle, SWEEP_SETTLE_MS,
                     Adw.Easing.EASE_OUT_CUBIC, () => {
-                        this._sweepAnimation = IDLE_ANIMATION;
                         this._sweepActive = false;
-                        this._hovered = true;
-                        this._hoverProgress = 1;
-                        this._motionTransform = resolveIconTransform({
-                            recipe: this._recipe,
-                            hoverLevel: 1,
-                        });
                         this.queue_draw();
                         onComplete();
                     });
@@ -208,7 +204,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _playSweepSegment(generation, fromValue, toValue, duration, easing, onDone) {
-        this._sweepAnimation.reset();
+        this._sweepAnimation.pause();
         this._sweepAnimation = animate(this, duration, easing, value => {
             this._sweepValue = fromValue + (toValue - fromValue) * value;
             this.queue_draw();
@@ -221,17 +217,13 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     stopLoop() {
         if (this._held)
             return;
-        if (!this._loop) {
-            this._hovered = false;
-            this._pressed = false;
-            this._animateMotion(this._recipe.hover.duration);
-            return;
-        }
         this._cancelLoop();
         this._pressed = false;
         this._launching = false;
         this._hovered = false;
-        this._animateMotion(this._recipe.hover.duration);
+        this._animateMotion(this._recipe.hover.duration, () => {
+            this._sweepActive = false;
+        });
     }
 
     holdPose() {
@@ -338,7 +330,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const to = this._resolveMotion();
         const hoverFrom = this._hoverProgress;
         const hoverTo = this._hovered ? 1 : 0;
-        this._motionAnimation.reset();
+        this._motionAnimation.pause();
         this.queue_draw();
         this._motionAnimation = animate(this, duration, resolveAnimationMode(this._recipe.hover.easing, Adw.Easing), value => {
             this._hoverProgress = hoverFrom + (hoverTo - hoverFrom) * value;
@@ -362,7 +354,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             this._recipe.press, ScreenEdge.BOTTOM, this._pressed ? 1 : 0);
         this._pressed = false;
         const from = this._motionTransform;
-        this._motionAnimation.reset();
+        this._motionAnimation.pause();
         this._motionAnimation = IDLE_ANIMATION;
         this._motionTransform = this._resolveMotion();
         this._launchTransform = {
@@ -382,7 +374,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     _playSegments(segments, onDone) {
         const duration = launchDuration(segments);
         const from = this._launchTransform;
-        this._launchAnimation.reset();
+        this._launchAnimation.pause();
         this._launchAnimation = animate(this, duration, Adw.Easing.LINEAR, value => {
             this._launchTransform = sampleLaunchSegments(segments, value * duration, from);
             this.queue_draw();
@@ -444,7 +436,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     }
 
     _animatePeek(from, to, duration, generation, done) {
-        this._peekAnimation.reset();
+        this._peekAnimation.pause();
         const easing = to > from ? Adw.Easing.EASE_OUT_CUBIC : Adw.Easing.EASE_IN_CUBIC;
         this._peekAnimation = animate(this, duration, easing, value => {
             this._peek = from + (to - from) * value;
@@ -551,7 +543,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         }
         const pointer = this._sweepActive ? this._sweepValue : middle;
         const level = waveFalloff(Math.abs(index - pointer), this._recipe.hover.reach) *
-            (this._sweepActive ? 1 : this._hoverProgress);
+            this._hoverProgress;
         return {
             motion: resolveIconTransform({
                 recipe: this._recipe,
