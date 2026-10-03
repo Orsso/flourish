@@ -72,10 +72,11 @@ export class DockIntegration {
         Main.extensionManager.disconnectObject(this);
         Main.layoutManager.disconnectObject(this);
         this.#cancelScheduledAttach();
+        // The icons stop reporting to Flourish before the urgent replay reaches Dash to Dock.
+        this.#surface.dispose();
         this.#handBackWiggles();
         this.#detachManager();
         this.#outline.destroy();
-        this.#surface.dispose();
         this.#surface = null;
     }
 
