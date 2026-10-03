@@ -1,3 +1,10 @@
+// EASE_OUT_BACK overshoots by about 10%.
+export const OVERSHOOT_RESERVE = 0.1;
+
+export function hoverActive({enabled, scale, lift}) {
+    return enabled && (scale > 1 || lift > 0);
+}
+
 export function waveFalloff(distance, radius) {
     if (!(distance >= 0) || !(radius > 0))
         return 0;
@@ -17,17 +24,17 @@ export function waveOffsets(sizes, scales) {
     return offsets.map(offset => offset - extra / 2);
 }
 
-export function fitHoverLevel(hover, iconSize, room, overshoot = 0) {
+export function fitHoverLevel(hover, iconSize, outwardRoom, overshoot = 0) {
     const reach = iconSize * (hover.scale - 1) + hover.lift;
-    return reach > 0 ? Math.min(1, Math.max(0, room) / ((1 + overshoot) * reach)) : 1;
+    return reach > 0 ? Math.min(1, Math.max(0, outwardRoom) / ((1 + overshoot) * reach)) : 1;
 }
 
-export function waveGeometry({levels, hover, sizes, room = Infinity}) {
+export function waveGeometry({levels, hover, sizes, sideRoom = Infinity}) {
     const scales = levels.map(level => 1 + (hover.scale - 1) * level);
     let offsets = waveOffsets(sizes, scales);
     let growth = scales.map((scale, i) => sizes[i] * (scale - 1));
     const extent = growth.reduce((sum, value) => sum + value, 0) / 2;
-    const fit = extent > room ? room / extent : 1;
+    const fit = extent > sideRoom ? sideRoom / extent : 1;
     if (fit < 1) {
         offsets = offsets.map(offset => offset * fit);
         growth = growth.map(value => value * fit);

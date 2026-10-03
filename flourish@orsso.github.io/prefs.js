@@ -5,7 +5,7 @@ import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {ExtensionState} from 'resource:///org/gnome/Shell/Extensions/js/misc/extensionUtils.js';
 
-import {Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {DASH_TO_DOCK_BUILDS, Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
@@ -16,14 +16,13 @@ import {
 import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
 import {
+    N_,
     createBackgroundRows,
     createComboRow,
     createSwitchRow,
     setComboValue,
 } from './lib/prefs/rows.js';
 
-const N_ = s => s;
-const DASH_TO_DOCK_BUILDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com'];
 const OUTLINES = [
     [N_('None'), 'none'],
     [N_('Follow theme'), 'auto'],

@@ -113,8 +113,6 @@ export function composeIconTransform({
     };
 }
 
-// EASE_OUT_BACK overshoots by about 10%.
-export const OVERSHOOT_RESERVE = 0.1;
 const MIN_SECONDARY_BOUNCE_PX = 3;
 
 export function resolveIconTransform({
@@ -152,20 +150,20 @@ export function resolveIconTransform({
     });
 }
 
-export function hoverIntroScale(visible, neutral) {
+export function rectScale(rect, base) {
     return {
-        x: neutral.width > 0 ? visible.width / neutral.width : 1,
-        y: neutral.height > 0 ? visible.height / neutral.height : 1,
+        x: base.width > 0 ? rect.width / base.width : 1,
+        y: base.height > 0 ? rect.height / base.height : 1,
     };
 }
 
-export function hoverIntroLift(visible, neutral, pivot) {
+export function pivotOffset(rect, base, pivot) {
     const [pivotX, pivotY] = pivot;
     return {
-        x: (visible.x + pivotX * visible.width) -
-            (neutral.x + pivotX * neutral.width),
-        y: (visible.y + pivotY * visible.height) -
-            (neutral.y + pivotY * neutral.height),
+        x: (rect.x + pivotX * rect.width) -
+            (base.x + pivotX * base.width),
+        y: (rect.y + pivotY * rect.height) -
+            (base.y + pivotY * base.height),
     };
 }
 

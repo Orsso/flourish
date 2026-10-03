@@ -11,8 +11,8 @@ import {DockState, LaunchEffect, PressMode} from '../motion/catalog.js';
 import {
     buildLaunchSegments,
     getLaunchPivot,
-    hoverIntroLift,
-    hoverIntroScale,
+    pivotOffset,
+    rectScale,
     launchIconRect,
     shouldRepeatLaunch,
     shouldRetreatOnHandoff,
@@ -109,17 +109,17 @@ export class LaunchEngine {
         const visibility = this.#getDockContext(appIcon)?.visibility;
         const launchPivot = getLaunchPivot(launch.effect, controller.edge);
         const place = placement(visibility, controller.edge, launchPivot);
-        const visibleGeometry = place(actorGeometry(target));
+        const pressedGeometry = place(actorGeometry(target));
         // Releases the press and keeps the shared hover geometry.
         const preparation = controller.beginLaunch(launch.enabled);
         if (!preparation.active)
             return;
-        const neutralGeometry = place(actorGeometry(target));
-        const introScale = hoverIntroScale(visibleGeometry, neutralGeometry);
-        const introLift = hoverIntroLift(
-            visibleGeometry, neutralGeometry, launchPivot);
+        const releasedGeometry = place(actorGeometry(target));
+        const pressScale = rectScale(pressedGeometry, releasedGeometry);
+        const pressOffset = pivotOffset(
+            pressedGeometry, releasedGeometry, launchPivot);
         const frame = new Clutter.Actor({
-            ...neutralGeometry,
+            ...releasedGeometry,
             layout_manager: new Clutter.BinLayout(),
             reactive: false,
         });
@@ -128,13 +128,13 @@ export class LaunchEngine {
         const clone = ghost
             ? createGhost(appIcon, frame, launchPivot)
             : createIconClone(target, {
-                x: 0, y: 0, width: neutralGeometry.width, height: neutralGeometry.height,
+                x: 0, y: 0, width: releasedGeometry.width, height: releasedGeometry.height,
                 x_expand: true, y_expand: true,
             }, frame, {
                 badgeBox: appIcon.icon.get_parent(),
                 pivot: launchPivot,
-                scale: introScale,
-                translation: introLift,
+                scale: pressScale,
+                translation: pressOffset,
             });
 
         const app = appIcon.app;

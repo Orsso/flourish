@@ -54,8 +54,8 @@ test('monitor fitting uses icon-local units at every edge and parent scale', () 
             const controller = new IconMotionController({icon: new FakeIcon(), bin, edge,
                 recipe: getBuiltInRecipe('expressive')});
             const measured = controller.measure(monitor);
-            assertClose(measured.budgetPx, expected);
-            assertEqual(measured.iconNormalSize, 48);
+            assertClose(measured.outwardRoom, expected);
+            assertEqual(measured.iconSize, 48);
             controller.dispose();
         }
     }
@@ -65,14 +65,14 @@ test('ancestor clipping and monitor bounds both constrain magnification', () => 
     const {controller, bin} = makeMeasuredController();
     bin._parent.has_clip = true;
     bin._parent.get_clip = () => [-1000, -1000, 2000, 2000];
-    assertClose(controller.measure().budgetPx, 120);
-    assertClose(controller.measure({x: 0, y: 910, width: 1000, height: 800}).budgetPx, 10);
+    assertClose(controller.measure().outwardRoom, 120);
+    assertClose(controller.measure({x: 0, y: 910, width: 1000, height: 800}).outwardRoom, 10);
     bin._parent.get_transformed_size = () => [0, 0];
-    assertEqual(controller.measure().budgetPx, 0);
+    assertEqual(controller.measure().outwardRoom, 0);
     controller.dispose();
 });
 
-test('hover changes notify the neighbor group', () => {
+test('hover changes notify the wave row', () => {
     const {icon, hoverEvents} = makeController();
     icon.setHover(true);
     icon.setHover(false);
@@ -114,14 +114,14 @@ test('a recipe change clears an in-flight press level', () => {
     controller.dispose();
 });
 
-test('beginLaunch leaves the neighbor group hover in place', () => {
+test('beginLaunch leaves the wave row hover in place', () => {
     const {controller, icon, hoverEvents} = makeController();
     icon.setHover(true);
     controller.beginLaunch(true);
     assertDeepEqual(hoverEvents, [true]);
 });
 
-test('hover changes mid-launch still reach the neighbor group', () => {
+test('hover changes mid-launch still reach the wave row', () => {
     const {controller, icon, hoverEvents} = makeController();
     icon.setHover(true);
     controller.beginLaunch(true);

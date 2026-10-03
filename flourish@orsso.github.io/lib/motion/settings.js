@@ -7,7 +7,7 @@ const DEFINITIONS = [
     ['custom-hover-lift', 'int', RecipePart.HOVER, 'lift'],
     ['custom-hover-duration', 'int', RecipePart.HOVER, 'duration'],
     ['custom-hover-easing', 'string', RecipePart.HOVER, 'easing'],
-    ['custom-neighbor-radius', 'int', RecipePart.HOVER, 'neighborRadius'],
+    ['custom-neighbor-radius', 'int', RecipePart.HOVER, 'reach'],
     ['custom-press-enabled', 'boolean', RecipePart.PRESS, 'enabled'],
     ['custom-press-mode', 'string', RecipePart.PRESS, 'mode'],
     ['custom-press-effect', 'string', RecipePart.PRESS, 'effect'],

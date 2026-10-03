@@ -3,8 +3,8 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 
-import {Easing, PressMode, RecipePart, ScreenEdge} from '../motion/catalog.js';
-import {waveOffsets, waveFalloff} from '../motion/continuum.js';
+import {PressMode, RecipePart, ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
+import {hoverActive, waveOffsets, waveFalloff} from '../motion/continuum.js';
 import {
     ATTENTION_SLIDE_DURATION,
     buildAttentionSegments,
@@ -21,7 +21,6 @@ import {
     buildDemoSequence,
     buildPartSequence,
     DemoPhase,
-    hoverIsActive,
     PHASE_WAIT_MS,
 } from './demoSequence.js';
 
@@ -42,14 +41,6 @@ const INLINE_STEP = INLINE_ICON_SIZE + 10;
 const COUNT_GROW_MS = 250;
 const SWEEP_MS = 1500;
 const SWEEP_SETTLE_MS = 480;
-
-// The prefs process has no Clutter; Adw carries the same curves.
-const EASINGS = {
-    [Easing.LINEAR]: Adw.Easing.LINEAR,
-    [Easing.EASE_OUT_QUAD]: Adw.Easing.EASE_OUT_QUAD,
-    [Easing.EASE_OUT_CUBIC]: Adw.Easing.EASE_OUT_CUBIC,
-    [Easing.EASE_OUT_BACK]: Adw.Easing.EASE_OUT_BACK,
-};
 
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
     _init({recipe, part = null, ...params}) {
@@ -185,7 +176,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const run = () => this._runSequence(generation, this._part
             ? () => buildPartSequence(this._part, this._recipe)
             : () => buildDemoSequence(this._recipe));
-        if (this._part || !hoverIsActive(this._recipe))
+        if (this._part || !hoverActive(this._recipe.hover))
             run();
         else
             this._runIntroSweep(generation, run);
@@ -349,7 +340,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const hoverTo = this._hovered ? 1 : 0;
         this._motionAnimation.reset();
         this.queue_draw();
-        this._motionAnimation = animate(this, duration, EASINGS[this._recipe.hover.easing], value => {
+        this._motionAnimation = animate(this, duration, resolveAnimationMode(this._recipe.hover.easing, Adw.Easing), value => {
             this._hoverProgress = hoverFrom + (hoverTo - hoverFrom) * value;
             this._motionTransform = interpolateTransform(from, to, value);
             this.queue_draw();
@@ -559,7 +550,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             };
         }
         const pointer = this._sweepActive ? this._sweepValue : middle;
-        const level = waveFalloff(Math.abs(index - pointer), this._recipe.hover.neighborRadius) *
+        const level = waveFalloff(Math.abs(index - pointer), this._recipe.hover.reach) *
             (this._sweepActive ? 1 : this._hoverProgress);
         return {
             motion: resolveIconTransform({
@@ -590,7 +581,7 @@ const PART_COLOR_INDEX = {
 };
 
 function hoverIconCount(recipe) {
-    return 2 * recipe.hover.neighborRadius + 1;
+    return 2 * recipe.hover.reach + 1;
 }
 
 function inlineWidth(count) {

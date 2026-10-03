@@ -47,7 +47,7 @@ const ANIMATION_MODE_NAMES = {
     [Easing.EASE_OUT_BACK]: 'EASE_OUT_BACK',
 };
 
-// modes is Clutter.AnimationMode; the prefs process has no Clutter.
+// modes is Clutter.AnimationMode, or Adw.Easing in the prefs process.
 export function resolveAnimationMode(easing, modes) {
     return modes[ANIMATION_MODE_NAMES[easing]];
 }
@@ -114,13 +114,16 @@ export const RecipePart = {
 };
 
 // The gschema ranges mirror these bounds; keep them in sync.
-export const NeighborRadius = {MIN: 1, MAX: 3};
+export const Reach = {MIN: 1, MAX: 3};
 export const AttentionCycles = {MIN: 1, MAX: 10};
 export const AttentionCyclePause = {MIN: 0, MAX: 1000};
 export const AttentionInterval = {MIN: 2, MAX: 60};
 export const AttentionReminders = {MIN: 1, MAX: 30};
 
 export const DEFAULT_PRESET = Preset.SUBTLE;
+
+// Ubuntu Dock is Ubuntu's build of Dash to Dock.
+export const DASH_TO_DOCK_BUILDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com'];
 
 const COMMON_LAUNCH = {
     enabled: true,
@@ -146,7 +149,7 @@ const BUILTIN_RECIPES = {
             lift: 0,
             duration: 160,
             easing: Easing.EASE_OUT_CUBIC,
-            neighborRadius: 1,
+            reach: 1,
             dynamicSpacing: false,
         },
         press: {
@@ -185,7 +188,7 @@ const BUILTIN_RECIPES = {
             lift: 3,
             duration: 180,
             easing: Easing.EASE_OUT_CUBIC,
-            neighborRadius: 2,
+            reach: 2,
             dynamicSpacing: false,
         },
         press: {
@@ -222,7 +225,7 @@ const BUILTIN_RECIPES = {
             lift: 10,
             duration: 280,
             easing: Easing.EASE_OUT_CUBIC,
-            neighborRadius: 3,
+            reach: 3,
             dynamicSpacing: true,
         },
         press: {

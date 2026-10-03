@@ -11,7 +11,7 @@ import {
     AttentionReminders,
     Easing,
     LaunchEffect,
-    NeighborRadius,
+    Reach,
     PressEffect,
     PressMode,
     RecipePart,
@@ -57,8 +57,8 @@ export function buildAdvancedPage(page, controls, settings, state) {
             [_('Ease out (cubic)'), Easing.EASE_OUT_CUBIC],
             [_('Ease out (back)'), Easing.EASE_OUT_BACK],
         ], value => editCustomSetting(settings, 'custom-hover-easing', value), state);
-    controls.neighborRadius = createSpinRow(
-        hover.group, _('Reach'), NeighborRadius.MIN, NeighborRadius.MAX, 1,
+    controls.reach = createSpinRow(
+        hover.group, _('Reach'), Reach.MIN, Reach.MAX, 1,
         value => editCustomSetting(settings, 'custom-neighbor-radius', Math.round(value)), state,
         _('Reach on each side of the pointer, in icon steps'));
     holdWhileSliding(controls.hoverScale, hover);
@@ -210,7 +210,7 @@ export function syncAdvancedPage(controls, recipe) {
     controls.hoverLift.value = recipe.hover.lift;
     controls.hoverDuration.value = recipe.hover.duration;
     setComboValue(controls.hoverEasing, recipe.hover.easing);
-    controls.neighborRadius.value = recipe.hover.neighborRadius;
+    controls.reach.value = recipe.hover.reach;
     setComboValue(controls.pressMode, recipe.press.mode);
     setComboValue(controls.pressEffect, recipe.press.effect);
     controls.pressIntensity.adjustment.value = recipe.press.intensity;

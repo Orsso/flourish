@@ -4,8 +4,8 @@ import {getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.j
 export function motionRecipe(preset = 'expressive') {
     const recipe = getBuiltInRecipe(preset);
     Object.assign(recipe.hover, preset === 'expressive'
-        ? {scale: 1.22, lift: 5, duration: 280, easing: 'ease-out-back', neighborRadius: 2}
-        : {enabled: preset !== 'subtle', scale: 1.10, lift: 0, duration: 190, neighborRadius: 1});
+        ? {scale: 1.22, lift: 5, duration: 280, easing: 'ease-out-back', reach: 2}
+        : {enabled: preset !== 'subtle', scale: 1.10, lift: 0, duration: 190, reach: 1});
     Object.assign(recipe.press, {intensity: 0.85, duration: 170, effect: preset === 'subtle' ? 'dim' : 'squash'});
     return recipe;
 }
@@ -386,7 +386,7 @@ export class FakeRow extends FakeEmitter {
 export function surfaceContext(box, overrides = {}) {
     return {
         pointerActor: box,
-        getSpacing: () => null,
+        getSpacing: () => ({sideRoom: Infinity, actors: []}),
         isAvailable: () => true,
         containsPointer: () => true,
         background: null,

@@ -48,10 +48,10 @@ test('presets declare their press effects', () => {
     assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).press.mode, PressMode.CLICKS_AND_LAUNCHES);
 });
 
-test('presets carry the neighbor radius', () => {
-    assertEqual(getBuiltInRecipe(Preset.SUBTLE).hover.neighborRadius, 1);
-    assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.neighborRadius, 2);
-    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).hover.neighborRadius, 3);
+test('presets carry the hover reach', () => {
+    assertEqual(getBuiltInRecipe(Preset.SUBTLE).hover.reach, 1);
+    assertEqual(getBuiltInRecipe(Preset.BALANCED).hover.reach, 2);
+    assertEqual(getBuiltInRecipe(Preset.EXPRESSIVE).hover.reach, 3);
 });
 
 test('only Expressive spreads its wave by default', () => {

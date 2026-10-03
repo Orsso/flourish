@@ -5,7 +5,7 @@ import {
     AttentionCycles,
     AttentionInterval,
     AttentionReminders,
-    NeighborRadius,
+    Reach,
     Preset,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
@@ -41,7 +41,7 @@ function rangeOf(key) {
 }
 
 const BOUNDED_KEYS = [
-    ['custom-neighbor-radius', NeighborRadius],
+    ['custom-neighbor-radius', Reach],
     ['custom-attention-cycles', AttentionCycles],
     ['custom-attention-cycle-pause', AttentionCyclePause],
     ['custom-attention-interval', AttentionInterval],

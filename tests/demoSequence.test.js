@@ -3,7 +3,6 @@ import {
     buildDemoSequence,
     buildPartSequence,
     DemoPhase,
-    hoverIsActive,
 } from '../flourish@orsso.github.io/lib/prefs/demoSequence.js';
 
 test('click feedback shows a plain click before the launch click', () => {
@@ -111,18 +110,6 @@ test('stock launch never repeats in the preview', () => {
         DemoPhase.SETTLE,
         DemoPhase.NEUTRAL_HOLD,
     ]);
-});
-
-test('hover activity requires the toggle and a visible transform', () => {
-    const recipe = getBuiltInRecipe(Preset.BALANCED);
-    assertEqual(hoverIsActive(recipe), true);
-    recipe.hover.scale = 1;
-    recipe.hover.lift = 0;
-    assertEqual(hoverIsActive(recipe), false);
-    recipe.hover.lift = 3;
-    assertEqual(hoverIsActive(recipe), true);
-    recipe.hover.enabled = false;
-    assertEqual(hoverIsActive(recipe), false);
 });
 
 test('the attention sequence plays one cycle and pauses', () => {

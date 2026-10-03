@@ -1,4 +1,6 @@
+import {getBuiltInRecipe, Preset} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
+    hoverActive,
     waveFalloff,
     fitHoverLevel,
     waveGeometry,
@@ -12,7 +14,7 @@ test('200 percent fits dense waves at small, fractional and large icon sizes', (
             const peak = fitHoverLevel(hover, size, room, 0.1);
             assertEqual(peak * (size + 16) * 1.1 <= room + 0.0001, true);
             const levels = [0.25, 0.75, 1, 0.75, 0.25].map(level => level * peak * 1.1);
-            const geometry = waveGeometry({levels, hover, sizes: Array(5).fill(size), room});
+            const geometry = waveGeometry({levels, hover, sizes: Array(5).fill(size), sideRoom: room});
             assertEqual(geometry.growth.reduce((sum, growth) => sum + growth, 0) <= 2 * room + 0.0001, true);
             assertEqual(geometry.levels.every(level => Number.isFinite(level) && level >= 0), true);
         }
@@ -76,7 +78,7 @@ test('room limits preserve independent zoom and elevation', () => {
 test('geometry returns fitted levels without mutating the sampled wave', () => {
     const levels = [0.5, 1, 0.5];
     const hover = {scale: 1.5, lift: 5};
-    const geometry = waveGeometry({levels, hover, sizes: [48, 48, 48], room: 12});
+    const geometry = waveGeometry({levels, hover, sizes: [48, 48, 48], sideRoom: 12});
     assertDeepEqual(levels, [0.5, 1, 0.5]);
     assertDeepEqual(geometry.levels, [0.25, 0.5, 0.25]);
     assertClose(geometry.first, -12);
@@ -94,4 +96,16 @@ test('uniform sweeps do not ripple the row anchor at any supported radius', () =
             assertClose(geometry.offsets[0], first);
         }
     }
+});
+
+test('hover activity requires the toggle and a visible transform', () => {
+    const recipe = getBuiltInRecipe(Preset.BALANCED);
+    assertEqual(hoverActive(recipe.hover), true);
+    recipe.hover.scale = 1;
+    recipe.hover.lift = 0;
+    assertEqual(hoverActive(recipe.hover), false);
+    recipe.hover.lift = 3;
+    assertEqual(hoverActive(recipe.hover), true);
+    recipe.hover.enabled = false;
+    assertEqual(hoverActive(recipe.hover), false);
 });

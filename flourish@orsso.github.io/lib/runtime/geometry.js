@@ -1,11 +1,14 @@
 import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 
+import {ScreenEdge} from '../motion/catalog.js';
+import {getOrientation} from '../motion/transforms.js';
+
 export const BackgroundExpansion = GObject.registerClass(
     class BackgroundExpansion extends Clutter.Constraint {
         _init(actor, edge, getMonitor) {
             super._init({name: 'flourish-background'});
-            this._horizontal = edge === 'bottom' || edge === 'top';
+            this._horizontal = getOrientation(edge).horizontal;
             this._growth = 0;
             this._getMonitor = getMonitor;
             actor.add_constraint(this);
@@ -75,9 +78,9 @@ export function tooltipPosition(icon, label, edge, offset, monitor) {
     let x = icon.x + (icon.width - label.width) / 2;
     let y = icon.y + (icon.height - label.height) / 2;
     switch (edge) {
-        case 'top': y = icon.y + icon.height + offset; break;
-        case 'left': x = icon.x + icon.width + offset; break;
-        case 'right': x = icon.x - label.width - offset; break;
+        case ScreenEdge.TOP: y = icon.y + icon.height + offset; break;
+        case ScreenEdge.LEFT: x = icon.x + icon.width + offset; break;
+        case ScreenEdge.RIGHT: x = icon.x - label.width - offset; break;
         default: y = icon.y - label.height - offset;
     }
     return {
@@ -98,7 +101,7 @@ export function dashSpacing(box, monitor) {
     const margin = Math.min(x - monitor.x, monitor.x + monitor.width - x - width);
     const [, naturalWidth] = box.get_preferred_width(-1);
     return {
-        room: width > 0 && naturalWidth <= box.width
+        sideRoom: width > 0 && naturalWidth <= box.width
             ? Math.max(0, margin) * container.width / width : 0,
         actors: [
             ...box.get_children(),
@@ -107,15 +110,15 @@ export function dashSpacing(box, monitor) {
     };
 }
 
-export function expandDockClip([x, y, width, height], edge, room) {
+export function expandDockClip([x, y, width, height], edge, reserve) {
     switch (edge) {
-        case 'top':
-            return [x - room, y, width + 2 * room, height + room];
-        case 'left':
-            return [x, y - room, width + room, height + 2 * room];
-        case 'right':
-            return [x - room, y - room, width + room, height + 2 * room];
+        case ScreenEdge.TOP:
+            return [x - reserve, y, width + 2 * reserve, height + reserve];
+        case ScreenEdge.LEFT:
+            return [x, y - reserve, width + reserve, height + 2 * reserve];
+        case ScreenEdge.RIGHT:
+            return [x - reserve, y - reserve, width + reserve, height + 2 * reserve];
         default:
-            return [x - room, y - room, width + 2 * room, height + room];
+            return [x - reserve, y - reserve, width + 2 * reserve, height + reserve];
     }
 }

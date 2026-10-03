@@ -1,5 +1,5 @@
 import {motionRecipe} from './fakes.js';
-import {OVERSHOOT_RESERVE} from '../flourish@orsso.github.io/lib/motion/transforms.js';
+import {OVERSHOOT_RESERVE} from '../flourish@orsso.github.io/lib/motion/continuum.js';
 import {MotionSurface} from '../flourish@orsso.github.io/lib/runtime/motionSurface.js';
 import {FakeEmitter, FakeRow, MeasurableBin, makeScheduler, surfaceContext} from './fakes.js';
 
@@ -36,9 +36,9 @@ function makeSurface({
         animationsEnabled,
         getPointer,
     });
-    const overflow = {room: spreadRoom, get actors() { return box.get_children(); }};
+    const overflow = {sideRoom: spreadRoom, get actors() { return box.get_children(); }};
     surface.addBox(box, edge, surfaceContext(box, {
-        getSpacing: () => spreadRoom ? overflow : null, containsPointer,
+        getSpacing: () => spreadRoom ? overflow : {sideRoom: Infinity, actors: []}, containsPointer,
         pointerActor: pointerActor ?? box,
     }));
     scheduler.flush();
@@ -167,7 +167,7 @@ test('spacing can toggle under a stationary wave and restores foreign translatio
     assertEqual(box.children[1].translation_x, 7);
 });
 
-test('fixed spacing keeps the zoom budget during entry and retreat', () => {
+test('fixed spacing keeps the zoom fit during entry and retreat', () => {
     for (const dynamicSpacing of [true, false]) {
         const {surface, box, bins, frame, settle, overflow} = makeSurface({spreadRoom: 2});
         const recipe = motionRecipe('expressive');
@@ -185,7 +185,7 @@ test('fixed spacing keeps the zoom budget during entry and retreat', () => {
         surface.onPointerMotion(125, 1000);
         frame(1);
         assertClose(bins[2].scale_x, fitted);
-        overflow.room = 0;
+        overflow.sideRoom = 0;
         frame(10);
         for (const bin of bins)
             assertEqual(bin.scale_x, 1);
@@ -213,11 +213,11 @@ test('spacing restores on hover exit, mode change and overflow closure', () => {
     const {surface, box, frame, settle, overflow} = makeSurface({spreadRoom: 64});
     for (const stop of [
         () => { surface.onPointerMotion(125, 1000); settle(); },
-        () => { overflow.room = 0; surface.invalidateGeometry(); frame(0); },
+        () => { overflow.sideRoom = 0; surface.invalidateGeometry(); frame(0); },
         () => { const recipe = motionRecipe('expressive'); recipe.hover.enabled = false; surface.setRecipe(recipe); },
     ]) {
         surface.setRecipe(motionRecipe('expressive'));
-        overflow.room = 64;
+        overflow.sideRoom = 64;
         surface.onPointerMotion(125, 25);
         frame(0);
         settle();
@@ -261,7 +261,7 @@ test('a surface with no remaining spacing room reduces its wave to rest', () => 
     frame(0);
     settle();
     assertEqual(box.children[1].translation_x < 0, true);
-    overflow.room = 0;
+    overflow.sideRoom = 0;
     surface.invalidateGeometry();
     frame(0);
     settle();
@@ -808,7 +808,7 @@ test('an unmapped row ignores the pointer', () => {
     assertEqual(scheduler.pending.size, 0);
 });
 
-test('the wave fits its peak to the row budget once per sweep', () => {
+test('the wave fits its peak to the outward room once per sweep', () => {
     // 10 px of room: the expressive peak and lift do not fit.
     const {surface, bins, frame, settle} = makeSurface({room: 10});
     surface.onPointerMotion(125, 25);

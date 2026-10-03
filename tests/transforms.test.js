@@ -19,8 +19,8 @@ import {
     getAttentionPivot,
     getLaunchPivot,
     getOrientation,
-    hoverIntroLift,
-    hoverIntroScale,
+    pivotOffset,
+    rectScale,
     interpolateTransform,
     launchDuration,
     nextReminderDelay,
@@ -425,29 +425,29 @@ test('launch segment sampling uses the shared timeline', () => {
     assertEqual(sampleLaunchSegments(segments, segments[0].duration).scaleX > 1, true);
 });
 
-test('hover intro scale recovers the magnification ratio from geometry', () => {
+test('rect scale recovers the ratio between two geometries', () => {
     const neutral = {x: 100, y: 200, width: 50, height: 50};
     const visible = {x: 95, y: 188, width: 60, height: 60};
-    assertDeepEqual(hoverIntroScale(visible, neutral), {x: 1.2, y: 1.2});
+    assertDeepEqual(rectScale(visible, neutral), {x: 1.2, y: 1.2});
 });
 
-test('hover intro scale is neutral when geometry is unchanged', () => {
+test('rect scale is neutral when geometry is unchanged', () => {
     const neutral = {x: 10, y: 20, width: 48, height: 48};
-    assertDeepEqual(hoverIntroScale(neutral, neutral), {x: 1, y: 1});
+    assertDeepEqual(rectScale(neutral, neutral), {x: 1, y: 1});
 });
 
-test('hover intro lift isolates the bottom-dock lift from the scale', () => {
+test('pivot offset isolates the bottom-dock lift from the scale', () => {
     const neutral = {x: 100, y: 200, width: 50, height: 50};
     const visible = {x: 95, y: 188, width: 60, height: 60};
-    const lift = hoverIntroLift(visible, neutral, getOrientation('bottom').pivot);
+    const lift = pivotOffset(visible, neutral, getOrientation('bottom').pivot);
     assertClose(lift.x, 0);
     assertClose(lift.y, -2);
 });
 
-test('hover intro lift isolates the side-dock lift from the scale', () => {
+test('pivot offset isolates the side-dock lift from the scale', () => {
     const neutral = {x: 10, y: 200, width: 50, height: 50};
     const visible = {x: 13, y: 195, width: 60, height: 60};
-    const lift = hoverIntroLift(visible, neutral, getOrientation('left').pivot);
+    const lift = pivotOffset(visible, neutral, getOrientation('left').pivot);
     assertClose(lift.x, 3);
     assertClose(lift.y, 0);
 });

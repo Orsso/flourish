@@ -1,4 +1,5 @@
 import {LaunchEffect, PressMode, RecipePart} from '../motion/catalog.js';
+import {hoverActive} from '../motion/continuum.js';
 
 export const DemoPhase = {
     HOVER_IN: 'hover-in',
@@ -24,11 +25,6 @@ export const PHASE_WAIT_MS = {
     [DemoPhase.REMINDER_PAUSE]: 900,
 };
 
-export function hoverIsActive(recipe) {
-    return recipe.hover.enabled &&
-        (recipe.hover.scale > 1 || recipe.hover.lift > 0);
-}
-
 // One part at a time; a repeating launch paces the loop on its own pause.
 export function buildPartSequence(part, recipe) {
     switch (part) {
@@ -49,7 +45,7 @@ export function buildPartSequence(part, recipe) {
 }
 
 export function buildDemoSequence(recipe) {
-    const hover = hoverIsActive(recipe);
+    const hover = hoverActive(recipe.hover);
     const phases = hover ? [DemoPhase.HOVER_IN, DemoPhase.HOLD] : [];
     if (recipe.press.enabled && recipe.press.mode !== PressMode.LAUNCHES_ONLY)
         phases.push(DemoPhase.CLICK);

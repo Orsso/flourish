@@ -71,16 +71,16 @@ test('overflow resizes with icon allocation and restores after scrolling', () =>
     row.height = 160;
     row.emit('notify::allocation');
     assertEqual(-slid.get_clip()[0] > initial, true);
-    assertEqual(overflow.room <= 400, true);
+    assertEqual(overflow.sideRoom <= 400, true);
     row.width = viewport.width + 1;
     row.emit('notify::allocation');
-    assertEqual(overflow.room, 0);
+    assertEqual(overflow.sideRoom, 0);
     assertDeepEqual(slid.get_clip(), [0, 0, 200, 80]);
     row.width = viewport.width;
     row.emit('notify::allocation');
-    assertEqual(overflow.room > 0, true);
+    assertEqual(overflow.sideRoom > 0, true);
     overflow.setHover(null);
-    assertEqual(overflow.room, 0);
+    assertEqual(overflow.sideRoom, 0);
     overflow.dispose();
 });
 
@@ -88,7 +88,7 @@ test('a row animating through fractional widths keeps its overflow room', () => 
     const {overflow, row, viewport} = makeOverflow();
     row.width = viewport.width + 0.42;
     row.emit('notify::allocation');
-    assertEqual(overflow.room > 0, true);
+    assertEqual(overflow.sideRoom > 0, true);
     assertEqual(viewport.hadjustment, null);
     overflow.dispose();
 });
@@ -97,7 +97,7 @@ test('an extended dock fits its content rather than its full-width background', 
     const {overflow, dashContainer} = makeOverflow();
     dashContainer.width = 1000;
     dashContainer.get_transformed_position = () => [0, 700];
-    assertEqual(overflow.room > 64, true);
+    assertEqual(overflow.sideRoom > 64, true);
     overflow.dispose();
 });
 
@@ -110,9 +110,9 @@ test('Show Apps fits its visible icon and ignores its current wave translation',
     apps.icon = {_iconBin: {get_parent: () => parent,
         get_allocation_box: () => ({x1: 8, y1: 16, x2: 40, y2: 48})}};
     dashContainer.get_children = () => [scroll, apps];
-    assertEqual(overflow.room, 8);
+    assertEqual(overflow.sideRoom, 8);
     apps.translation_x = 6;
-    assertEqual(overflow.room, 8);
+    assertEqual(overflow.sideRoom, 8);
     overflow.dispose();
 });
 
@@ -123,7 +123,7 @@ test('a hidden Show Apps button does not take part in the margins', () => {
     const apps = {child: {}, translation_x: 0, visible: false,
         icon: {_iconBin: {get_parent: () => parent, get_allocation_box: () => ({x1: 0, y1: 0, x2: 0, y2: 0})}}};
     dashContainer.get_children = () => [scroll, apps];
-    assertEqual(Number.isFinite(overflow.room), true);
+    assertEqual(Number.isFinite(overflow.sideRoom), true);
     overflow.dispose();
 });
 
@@ -133,6 +133,6 @@ test('a dying dash releases ownership without restoring dying scroll resources',
     assertEqual(viewport.hadjustment, null);
     assertEqual(scroll.styles.length, 1);
     assertEqual(scroll.effects.length, 0);
-    assertEqual(overflow.room, 0);
+    assertEqual(overflow.sideRoom, 0);
     assertEqual(disposed(), 1);
 });

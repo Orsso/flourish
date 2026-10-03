@@ -2,16 +2,17 @@ import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import Graphene from 'gi://Graphene';
 
-import {getOrientation, OVERSHOOT_RESERVE} from '../motion/transforms.js';
+import {OVERSHOOT_RESERVE} from '../motion/continuum.js';
+import {getOrientation} from '../motion/transforms.js';
 import {actorGeometry, expandDockClip} from './geometry.js';
 
 const OverflowVolume = GObject.registerClass(
     class OverflowVolume extends Clutter.Effect {
-        _init(edge, room, raisedBox) {
+        _init(edge, reserve, raisedBox) {
             super._init();
             this._edge = edge;
             this._raisedBox = raisedBox;
-            this.room = room;
+            this.reserve = reserve;
         }
 
         // Gaps between raised icons belong to the dock, not to what lies beneath it.
@@ -26,7 +27,7 @@ const OverflowVolume = GObject.registerClass(
         vfunc_modify_paint_volume(volume) {
             const actor = this.get_actor();
             const [x, y, width, height] = expandDockClip(
-                [0, 0, actor.width, actor.height], this._edge, this.room);
+                [0, 0, actor.width, actor.height], this._edge, this.reserve);
             volume.set_origin(new Graphene.Point3D({x, y, z: 0}));
             volume.set_width(width);
             volume.set_height(height);
@@ -47,7 +48,7 @@ export class DockOverflow {
     #onChanged;
     #onDisposed;
     #ownClip;
-    #appliedRoom = 0;
+    #appliedReserve = 0;
     #row;
     #scroll;
     #style;
@@ -74,7 +75,7 @@ export class DockOverflow {
         this.#clip = this.#actor.has_clip ? this.#actor.get_clip() : null;
         this.#injections.overrideMethod(this.#actor, 'set_clip', original => (...clip) => {
             this.#clip = clip;
-            original.call(this.#actor, ...expandDockClip(clip, this.#edge, this.#room()));
+            original.call(this.#actor, ...expandDockClip(clip, this.#edge, this.#reserve()));
         });
         this.#slider.connectObject('notify::slide-x', () => this.#sync(), this);
         this.#viewport.connectObject('notify::allocation', () => this.#sync(), this);
@@ -110,7 +111,7 @@ export class DockOverflow {
         this.#sync();
     }
 
-    get room() {
+    get sideRoom() {
         const monitor = this.#getMonitor();
         if (!this.#adjustments || !monitor)
             return 0;
@@ -141,7 +142,7 @@ export class DockOverflow {
         const margin = horizontal
             ? Math.min(start - monitor.x, monitor.x + monitor.width - end)
             : Math.min(start - monitor.y, monitor.y + monitor.height - end);
-        return Math.min(this.#appliedRoom, Math.max(0, margin) / scale);
+        return Math.min(this.#appliedReserve, Math.max(0, margin) / scale);
     }
 
     get actors() {
@@ -180,7 +181,7 @@ export class DockOverflow {
         ];
     }
 
-    #room() {
+    #reserve() {
         const {horizontal} = getOrientation(this.#edge);
         const size = horizontal ? this.#row.width : this.#row.height;
         const available = horizontal ? this.#viewport.width : this.#viewport.height;
@@ -188,18 +189,18 @@ export class DockOverflow {
         if (!this.#hover?.enabled || this.#slider.slide_x !== 1 || size <= 0 || Math.round(size) > available)
             return 0;
         const normalSize = horizontal ? this.#row.height : this.#row.width;
-        const {scale, lift, neighborRadius} = this.#hover;
-        // The padded row bounds both outward growth and the widest neighbor wave.
-        return Math.ceil((normalSize * (scale - 1) * neighborRadius + lift) * (1 + OVERSHOOT_RESERVE));
+        const {scale, lift, reach} = this.#hover;
+        // Room for the widest wave plus the back overshoot.
+        return Math.ceil((normalSize * (scale - 1) * reach + lift) * (1 + OVERSHOOT_RESERVE));
     }
 
     #sync() {
-        const room = this.#room();
+        const reserve = this.#reserve();
         this.#onChanged();
-        if (room === this.#appliedRoom)
+        if (reserve === this.#appliedReserve)
             return;
-        this.#appliedRoom = room;
-        if (room && !this.#adjustments) {
+        this.#appliedReserve = reserve;
+        if (reserve && !this.#adjustments) {
             this.#adjustments = [this.#viewport.hadjustment, this.#viewport.vadjustment];
             // ScrollViewFade can retain an offscreen crop after its scroll range shrinks.
             const base = this.#style ? `${this.#style}; ` : '';
@@ -207,16 +208,16 @@ export class DockOverflow {
             // StViewport clips picking whenever scroll adjustments are attached.
             this.#viewport.hadjustment = null;
             this.#viewport.vadjustment = null;
-            this.#effect = new OverflowVolume(this.#edge, room, actor => this.#raisedBox(actor));
+            this.#effect = new OverflowVolume(this.#edge, reserve, actor => this.#raisedBox(actor));
             this.#scroll.add_effect(this.#effect);
-        } else if (!room && this.#adjustments) {
+        } else if (!reserve && this.#adjustments) {
             this.#scroll.remove_effect(this.#effect);
             this.#effect = null;
             [this.#viewport.hadjustment, this.#viewport.vadjustment] = this.#adjustments;
             this.#adjustments = null;
             this.#scroll.set_style(this.#style);
         } else
-            this.#effect.room = room;
+            this.#effect.reserve = reserve;
         this.#viewport.invalidate_transform();
         // StScrollable setters leave cached ancestor paint volumes intact.
         for (let actor = this.#viewport; actor; actor = actor.get_parent())

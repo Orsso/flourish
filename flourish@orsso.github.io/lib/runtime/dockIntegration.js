@@ -5,18 +5,13 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {DockState, ScreenEdge} from '../motion/catalog.js';
+import {DASH_TO_DOCK_BUILDS, DockState, ScreenEdge} from '../motion/catalog.js';
 import {DockVisibility} from './dockVisibility.js';
 import {DockOutline} from './dockOutline.js';
 import {DockOverflow} from './dockOverflow.js';
 import {pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
 
-// Ubuntu Dock is Ubuntu's build of Dash to Dock.
-const DASH_TO_DOCK_BUILDS = [
-    'dash-to-dock@micxgx.gmail.com',
-    'ubuntu-dock@ubuntu.com',
-];
 
 export class DockIntegration {
     #attachIdleId = 0;

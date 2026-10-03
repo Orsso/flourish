@@ -5,6 +5,7 @@ import St from 'gi://St';
 import {ScreenEdge, sampleRamp} from '../motion/catalog.js';
 import {
     buildLaunchPressSegments,
+    getOrientation,
     pressStarts,
     resolveIconTransform,
 } from '../motion/transforms.js';
@@ -212,7 +213,7 @@ export class IconMotionController {
             return false;
         const [left, top] = this.#bin.get_transformed_position();
         const [width, height] = this.#bin.get_transformed_size();
-        return this.#edge === ScreenEdge.BOTTOM || this.#edge === ScreenEdge.TOP
+        return getOrientation(this.#edge).horizontal
             ? y >= top && y <= top + height
             : x >= left && x <= left + width;
     }
@@ -349,7 +350,7 @@ export class IconMotionController {
         const scaleX = parentWidth / parent.width;
         const scaleY = parentHeight / parent.height;
         if (!(scaleX > 0 && scaleY > 0))
-            return {budgetPx: 0, iconNormalSize: 0};
+            return {outwardRoom: 0, iconSize: 0};
         const [parentX, parentY] = parent.get_transformed_position();
         const top = parentY + box.y1 * scaleY;
         const bottom = parentY + box.y2 * scaleY;
@@ -359,7 +360,7 @@ export class IconMotionController {
         let clipBottom = monitor ? monitor.y + monitor.height : Infinity;
         let clipLeft = monitor ? monitor.x : -Infinity;
         let clipRight = monitor ? monitor.x + monitor.width : Infinity;
-        // Compare clips in stage coordinates, then return a budget in icon-local units.
+        // Compare clips in stage coordinates, then return the room in icon-local units.
         for (let node = parent; node; node = node.get_parent()) {
             if (!node.has_clip)
                 continue;
@@ -376,14 +377,14 @@ export class IconMotionController {
 
         switch (this.#edge) {
             case ScreenEdge.TOP:
-                return {budgetPx: (clipBottom - bottom) / scaleY, iconNormalSize: box.y2 - box.y1};
+                return {outwardRoom: (clipBottom - bottom) / scaleY, iconSize: box.y2 - box.y1};
             case ScreenEdge.LEFT:
-                return {budgetPx: (clipRight - right) / scaleX, iconNormalSize: box.x2 - box.x1};
+                return {outwardRoom: (clipRight - right) / scaleX, iconSize: box.x2 - box.x1};
             case ScreenEdge.RIGHT:
-                return {budgetPx: (left - clipLeft) / scaleX, iconNormalSize: box.x2 - box.x1};
+                return {outwardRoom: (left - clipLeft) / scaleX, iconSize: box.x2 - box.x1};
             case ScreenEdge.BOTTOM:
             default:
-                return {budgetPx: (top - clipTop) / scaleY, iconNormalSize: box.y2 - box.y1};
+                return {outwardRoom: (top - clipTop) / scaleY, iconSize: box.y2 - box.y1};
         }
     }
 

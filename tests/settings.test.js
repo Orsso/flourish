@@ -247,12 +247,12 @@ test('switching from custom to a preset overwrites custom values', () => {
     assertEqual(settings.applyCount, 1);
 });
 
-test('neighbor radius round-trips through custom settings', () => {
+test('hover reach round-trips through custom settings', () => {
     const settings = new ImmediateSettings(Preset.BALANCED);
     editCustomSetting(settings, 'custom-neighbor-radius', 2);
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
     assertEqual(settings.values['custom-neighbor-radius'], 2);
-    assertEqual(readActiveRecipe(settings).hover.neighborRadius, 2);
+    assertEqual(readActiveRecipe(settings).hover.reach, 2);
 });
 
 test('dynamic spacing edits preserve the preset and round-trip through Custom', () => {

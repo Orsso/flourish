@@ -5,7 +5,7 @@ import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions
 import {setBooleanCommitted} from '../motion/settings.js';
 
 // xgettext reads N_; the lookup happens where the string is used.
-const N_ = s => s;
+export const N_ = s => s;
 
 export function createSwitchRow(group, title, subtitle, callback, state, help = null) {
     let row, toggle;
