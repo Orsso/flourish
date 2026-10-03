@@ -89,6 +89,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         this._sweepAnimation = IDLE_ANIMATION;
         this.set_draw_func((_area, cr, width, height) => {
             this._draw(cr, width, height);
+            cr.$dispose();
         });
 
         this.connect('unmap', () => this.stop());

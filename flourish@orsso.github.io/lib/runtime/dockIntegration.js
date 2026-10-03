@@ -151,10 +151,6 @@ export class DockIntegration {
         // disable() or a newer attach can run during the import.
         if (generation !== this.#generation)
             return;
-        if (!module.dockManager) {
-            console.warn('[flourish] Dash to Dock exposes no dock manager; dock motion is off');
-            return;
-        }
 
         this.#manager = module.dockManager;
         // DockManager uses Signals.addSignalMethods: no connectObject there.
@@ -191,25 +187,12 @@ export class DockIntegration {
     #scanDocks() {
         // Nothing public lists the docks.
         const docks = this.#manager._allDocks;
-        if (!docks) {
-            console.warn('[flourish] Dash to Dock exposes no dock list; dock motion is off');
-            return;
-        }
-
-        this.#overrideWiggle(docks[0]?.dash?.iconAnimator);
+        this.#overrideWiggle(docks[0]?.dash.iconAnimator);
 
         for (const dock of docks) {
             const box = dock.dash._box;
-            if (!box) {
-                console.warn('[flourish] a Dash to Dock instance has no icon box');
-                continue;
-            }
             // The dash's parent is the actor the slider moves.
             const slid = dock.dash.get_parent();
-            if (!slid) {
-                console.warn('[flourish] a Dash to Dock instance has no slid actor');
-                continue;
-            }
             const edge = edgeFromSide(dock.position);
             const getMonitor = () =>
                 Main.layoutManager.monitors[dock.monitorIndex] ?? null;
@@ -324,13 +307,8 @@ export class DockIntegration {
     #overrideWiggle(animator) {
         if (this.#injections || !animator)
             return;
-        const prototype = Object.getPrototypeOf(animator);
-        if (typeof prototype?.addAnimation !== 'function') {
-            console.warn('[flourish] Dash to Dock exposes no icon animator; its wiggle stays on');
-            return;
-        }
         this.#injections = new InjectionManager();
-        this.#injections.overrideMethod(prototype, 'addAnimation',
+        this.#injections.overrideMethod(Object.getPrototypeOf(animator), 'addAnimation',
             original => function (target, name) {
                 if (name === 'wiggle')
                     return undefined;
@@ -345,15 +323,11 @@ export class DockIntegration {
 
     // Dash to Dock keeps a wiggle registered for the whole urgency.
     #stopWiggles(dock) {
-        const animator = dock.dash.iconAnimator;
-        if (!this.#injections || !animator)
+        if (!this.#injections)
             return;
         for (const icon of urgentIcons(dock)) {
-            const bin = icon.icon?._iconBin;
-            if (!bin)
-                continue;
-            animator.removeAnimation(bin, 'wiggle');
-            bin.rotation_angle_z = 0;
+            dock.dash.iconAnimator.removeAnimation(icon.icon._iconBin, 'wiggle');
+            icon.icon._iconBin.rotation_angle_z = 0;
         }
     }
 
@@ -362,12 +336,11 @@ export class DockIntegration {
         if (!this.#injections)
             return;
         this.#restoreWiggle();
-        for (const dock of this.#manager?._allDocks ?? []) {
+        for (const dock of this.#manager._allDocks) {
             for (const icon of urgentIcons(dock))
                 icon.notify('urgent');
         }
     }
-
 }
 
 // Both builds can be installed at once; only an active one has a dock.
@@ -377,10 +350,11 @@ function lookupDashToDock() {
         .find(extension => extension?.state === ExtensionState.ACTIVE) ?? null;
 }
 
+// Drag placeholders have no child.
 function urgentIcons(dock) {
-    return dock.dash?._box?.get_children()
+    return dock.dash._box.get_children()
         .map(container => container.child)
-        .filter(icon => icon?.urgent) ?? [];
+        .filter(icon => icon?.urgent);
 }
 
 function edgeFromSide(side) {

@@ -6,7 +6,7 @@ export function motionRecipe(preset = 'expressive') {
     Object.assign(recipe.hover, preset === 'expressive'
         ? {scale: 1.22, lift: 5, duration: 280, easing: 'ease-out-back', neighborRadius: 2}
         : {enabled: preset !== 'subtle', scale: 1.10, lift: 0, duration: 190, neighborRadius: 1});
-    Object.assign(recipe.press, {intensity: 0.85, duration: 170, effect: preset === 'subtle' ? 'dim' : 'squash', launchEffect: 'none'});
+    Object.assign(recipe.press, {intensity: 0.85, duration: 170, effect: preset === 'subtle' ? 'dim' : 'squash'});
     return recipe;
 }
 

@@ -1,4 +1,4 @@
-import {sharpenIconTexture} from '../flourish@orsso.github.io/lib/runtime/iconTexture.js';
+import {sharpenIconTexture} from '../flourish@orsso.github.io/lib/runtime/iconMotionController.js';
 import {FakeBaseIcon} from './fakes.js';
 
 test('sharpening renders the texture at twice the icon size', () => {

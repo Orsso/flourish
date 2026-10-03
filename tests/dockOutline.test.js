@@ -55,7 +55,7 @@ test('the outline follows the dock inline style and outlives its rewrites', () =
     assertEqual(background.style.includes('border: 1px solid'), true);
     background.style = DOCK_STYLE;
     scheduler.flush();
-    assertEqual(background.style.endsWith(outline.style), true);
+    assertEqual(background.style.endsWith('border: 1px solid rgba(255, 255, 255, 0.18);'), true);
     assertEqual(background.style.split('border: 1px solid').length, 2);
 });
 

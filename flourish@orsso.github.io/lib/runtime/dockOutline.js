@@ -10,9 +10,7 @@ function outlineFor(name, scheme) {
     return scheme === 'prefer-dark' ? OUTLINES.light : OUTLINES.dark;
 }
 
-// Dash to Dock rewrites the background's inline style on every theme update
-// and ties its border alpha to the dock opacity. Inline beats every
-// stylesheet, so the outline rides behind that style and comes last.
+// Dash to Dock rewrites the inline style, so the outline is appended to it.
 export class DockOutline {
     #backgrounds = new Set();
     #name = 'none';
@@ -21,16 +19,11 @@ export class DockOutline {
     #scheduler;
     #style = '';
 
-    // interfaceSettings: org.gnome.desktop.interface, read for the color scheme.
     constructor({interfaceSettings, scheduler}) {
         this.#interfaceSettings = interfaceSettings;
         this.#scheduler = scheduler;
         interfaceSettings.connectObject('changed::color-scheme',
             () => this.setOutline(this.#name), this);
-    }
-
-    get style() {
-        return this.#style;
     }
 
     setOutline(name) {

@@ -9,7 +9,6 @@ export class DockVisibility {
     #flushId = 0;
     #getMonitor;
     #listeners = new Set();
-    #rect = null;
     #scheduler;
     #shownRect = null;
     #state = null;
@@ -20,8 +19,7 @@ export class DockVisibility {
         this.#edge = edge;
         this.#getMonitor = getMonitor;
         this.#scheduler = scheduler;
-        // The slider moves a bottom or right dock through its own size and the
-        // dock's translation, so the slid actor's allocation never changes there.
+        // A bottom or right dock slides through ancestor translations, not its own allocation.
         let node = actor;
         while (node) {
             node.connectObject(
@@ -42,14 +40,9 @@ export class DockVisibility {
         return this.#state;
     }
 
-    // As of the last frame sync.
-    get rect() {
-        return this.#rect;
-    }
-
     // Fresh, for a caller that may run before the sync of the same frame.
     measure() {
-        return this.#actor ? actorGeometry(this.#actor) : this.#rect;
+        return this.#actor ? actorGeometry(this.#actor) : null;
     }
 
     // Where the slid actor was the last time the dock was fully shown.
@@ -69,7 +62,6 @@ export class DockVisibility {
             node.disconnectObject(this);
         this.#watched = [];
         this.#actor = null;
-        this.#rect = null;
         this.#state = null;
     }
 
@@ -91,15 +83,13 @@ export class DockVisibility {
     }
 
     #sync() {
-        if (!this.#actor)
-            return;
         const monitor = this.#getMonitor();
         if (!monitor)
             return;
-        this.#rect = actorGeometry(this.#actor);
-        const state = dockVisibilityState(this.#rect, monitor, this.#edge);
+        const rect = actorGeometry(this.#actor);
+        const state = dockVisibilityState(rect, monitor, this.#edge);
         if (state === DockState.SHOWN)
-            this.#shownRect = this.#rect;
+            this.#shownRect = rect;
         if (state === this.#state)
             return;
         this.#state = state;

@@ -425,12 +425,12 @@ test('a stationary pointer settles and schedules no work', () => {
     assertEqual(scheduler.pending.size, 0);
 });
 
-test('beginLaunch keeps the measured wave rather than the discrete neighbor scale', () => {
+test('beginLaunch keeps the wave level of a neighbor icon', () => {
     const {surface, bins, icons, frame, settle} = makeSurface();
     surface.onPointerMotion(75, 25);
     frame(0);
     settle();
-    // Icon 2 is one pitch from the pointer: 1.11, not the 1.08 discrete.
+    // Icon 2 is one pitch from the pointer.
     const result = surface.getController(icons[2]).beginLaunch(true);
     assertEqual(result.active, true);
     assertClose(bins[2].scale_x, 1.11);

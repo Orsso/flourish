@@ -223,8 +223,7 @@ export class AttentionEngine {
             session.controller.recipe.attention.effect, session.controller.edge);
     }
 
-    // An in-place burst waits the length of a peek slide so the icons of one
-    // app on two docks move together.
+    // Waits one peek slide so an app's icons on two docks move together.
     #leadIn(session) {
         this.#clearTimer(session);
         session.timerId = GLib.timeout_add(

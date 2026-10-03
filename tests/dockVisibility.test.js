@@ -79,10 +79,10 @@ test('allocation changes are coalesced through the scheduler', () => {
 test('measure reads the actor ahead of the frame sync', () => {
     const {actor, scheduler, visibility} = makeVisibility(1000);
     actor.moveTo(1040);
-    assertEqual(visibility.rect.y, 1000);
     assertEqual(visibility.measure().y, 1040);
-    scheduler.flush();
-    assertEqual(visibility.rect.y, 1040);
+    assertEqual(scheduler.pending.size, 1);
+    visibility.dispose();
+    assertEqual(visibility.measure(), null);
 });
 
 test('the shown rect survives a hide and refreshes on the next show', () => {
@@ -90,7 +90,6 @@ test('the shown rect survives a hide and refreshes on the next show', () => {
     actor.moveTo(1080);
     scheduler.flush();
     assertDeepEqual(visibility.shownRect, {x: 600, y: 1000, width: 720, height: 80});
-    assertDeepEqual(visibility.rect, {x: 600, y: 1080, width: 720, height: 80});
     actor.height = 96;
     actor.moveTo(984);
     scheduler.flush();
@@ -139,7 +138,6 @@ test('a missing monitor leaves the state untouched', () => {
         scheduler,
     });
     assertEqual(visibility.state, null);
-    assertEqual(visibility.rect, null);
     assertEqual(visibility.shownRect, null);
     const seen = [];
     visibility.subscribe(state => seen.push(state));

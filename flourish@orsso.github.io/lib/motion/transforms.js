@@ -69,7 +69,8 @@ const PRESS_EFFECTS = {
 
 export function resolvePressTransform(effect, intensity, orientation) {
     const build = PRESS_EFFECTS[effect];
-    return build(clamp(intensity, 0, 1), orientation);
+    // An ease-out-back press ramp overshoots past full intensity.
+    return build(Math.min(1, intensity), orientation);
 }
 
 // Whether a primary click presses the icon; launching is known at button press.
@@ -170,11 +171,8 @@ export function hoverIntroLift(visible, neutral, pivot) {
 
 export function buildLaunchSegments(effect, launch, edge, cycleIndex = 0) {
     const orientation = getOrientation(edge);
-    const intensity = clamp(launch.intensity, 0, 1);
-    const speed = clamp(launch.speed, 0.3, 1);
-    const cycleScale = launch.softenRepeats === false
-        ? 1
-        : 0.85 ** Math.max(0, cycleIndex);
+    const {intensity, speed} = launch;
+    const cycleScale = launch.softenRepeats ? 0.85 ** cycleIndex : 1;
 
     switch (effect) {
         case LaunchEffect.PULSE:
@@ -194,7 +192,7 @@ const WIGGLE_BASE_DEGREES = 6;
 const WIGGLE_RANGE_DEGREES = 18;
 
 export function wiggleSegments(intensity, speed) {
-    const amplitude = WIGGLE_BASE_DEGREES + WIGGLE_RANGE_DEGREES * clamp(intensity, 0, 1);
+    const amplitude = WIGGLE_BASE_DEGREES + WIGGLE_RANGE_DEGREES * intensity;
     const swing = (rotation, base) => segment({
         duration: duration(base, speed),
         easing: Easing.EASE_OUT_QUAD,
@@ -212,8 +210,7 @@ export function wiggleSegments(intensity, speed) {
 // The attention effects keep a fixed shape. Repetition comes from cycles.
 const ATTENTION_SHAPE = {pulseCount: 1, bounceDecay: 0, stretchElasticity: 0.70};
 
-// One cycle lasts ATTENTION_CYCLE_MS at full speed whatever the effect. The
-// base table holds the natural length of each effect with ATTENTION_SHAPE.
+// A full-speed cycle lasts ATTENTION_CYCLE_MS; the table holds each effect's natural length.
 export const ATTENTION_CYCLE_MS = 360;
 const ATTENTION_BASE_CYCLE_MS = {
     [AttentionEffect.PULSE]: 380,
@@ -234,12 +231,8 @@ export function attentionPeriod({segments, cycles, cyclePause, interval}) {
 export function buildAttentionSegments(recipe, edge) {
     const {attention} = recipe;
     const orientation = getOrientation(edge);
-    const intensity = clamp(attention.intensity, 0, 1);
-    const effect = ATTENTION_BASE_CYCLE_MS[attention.effect] === undefined
-        ? AttentionEffect.BOUNCE
-        : attention.effect;
-    const speed = clamp(attention.speed, 0.3, 1) *
-        ATTENTION_BASE_CYCLE_MS[effect] / ATTENTION_CYCLE_MS;
+    const {effect, intensity} = attention;
+    const speed = attention.speed * ATTENTION_BASE_CYCLE_MS[effect] / ATTENTION_CYCLE_MS;
 
     switch (effect) {
         case AttentionEffect.PULSE:
@@ -292,8 +285,7 @@ export function shouldPlayAttention({
     return AttentionPlay.PEEK;
 }
 
-// Reminders fall on multiples of the period from the anchor. Sessions of one
-// app share the anchor and stay in step.
+// Sessions of one app share the anchor, so their reminders stay in step.
 export function nextReminderDelay({now, anchor, period}) {
     const elapsed = Math.max(0, now - anchor);
     const remainder = elapsed % period;
@@ -369,8 +361,7 @@ export function projectIconRect(shownRect, slidRect, iconRect, edge) {
     };
 }
 
-// A launch clone stays where the icon sits with the dock out, whatever the
-// dock does meanwhile. With the dock out the projection is the identity.
+// A launch clone stays where the icon sits with the dock out.
 export function launchIconRect(iconRect, {shownRect, slidRect, edge}) {
     if (!shownRect || !slidRect)
         return iconRect;
@@ -405,7 +396,7 @@ export function sampleLaunchSegments(segments, elapsed, initial = null) {
 }
 
 function pulseSegments(part, intensity, speed) {
-    const count = Math.round(clamp(part.pulseCount, 1, 4));
+    const count = part.pulseCount;
     const scale = 1 + 0.14 * intensity;
     const segments = [];
     for (let index = 0; index < count; index++) {
@@ -425,7 +416,7 @@ function pulseSegments(part, intensity, speed) {
 
 function bounceSegments(part, orientation, intensity, speed) {
     const height = (12 + 36 * intensity);
-    const decay = clamp(part.bounceDecay, 0, 1);
+    const decay = part.bounceDecay;
     const segments = [];
     for (let index = 0; index < 3; index++) {
         const distance = height * decay ** index;
@@ -446,7 +437,7 @@ function bounceSegments(part, orientation, intensity, speed) {
 }
 
 function stretchSegments(part, orientation, intensity, speed) {
-    const elasticity = clamp(part.stretchElasticity, 0, 1);
+    const elasticity = part.stretchElasticity;
     const tangentScale = 1 + 0.18 * intensity;
     const compressedScale = 1 - 0.25 * intensity;
     const extendedScale = 1 + (0.18 + 0.18 * elasticity) * intensity;
@@ -546,11 +537,4 @@ export function interpolateTransform(from, to, progress) {
 
 function interpolate(from, to, progress) {
     return from + (to - from) * progress;
-}
-
-function clamp(value, minimum, maximum) {
-    const number = Number(value);
-    if (!Number.isFinite(number))
-        return minimum;
-    return Math.min(maximum, Math.max(minimum, number));
 }

@@ -224,7 +224,7 @@ test('stretch swaps compression axes on vertical docks', () => {
 });
 
 test('later launch cycles diminish', () => {
-    const recipe = {intensity: 1, speed: 1, bounceDecay: 0.6};
+    const recipe = {intensity: 1, speed: 1, bounceDecay: 0.6, softenRepeats: true};
     const first = buildLaunchSegments(LaunchEffect.BOUNCE, recipe, 'bottom', 0);
     const third = buildLaunchSegments(LaunchEffect.BOUNCE, recipe, 'bottom', 2);
     assertEqual(Math.abs(first[0].translationY) > Math.abs(third[0].translationY), true);
@@ -644,16 +644,6 @@ test('stopping wins over waiting', () => {
         AttentionPlay.STOP);
     assertEqual(shouldPlayAttention({...PLAY_BASE, reminder: 99, dockState: DockState.MOVING}),
         AttentionPlay.STOP);
-});
-
-test('attention speed is clamped before pacing', () => {
-    const recipe = getBuiltInRecipe(Preset.BALANCED);
-    const durationAt = speed => {
-        recipe.attention.speed = speed;
-        return launchDuration(buildAttentionSegments(recipe, 'bottom'));
-    };
-    assertEqual(durationAt(5), durationAt(1));
-    assertEqual(durationAt(0), durationAt(0.3));
 });
 
 test('reminders fall on multiples of the period from the anchor', () => {

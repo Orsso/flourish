@@ -106,11 +106,11 @@ export class LaunchEngine {
             !St.Settings.get().enable_animations)
             return;
 
-        // Release the press while keeping the shared hover geometry.
         const visibility = this.#getDockContext(appIcon)?.visibility;
         const launchPivot = getLaunchPivot(launch.effect, controller.edge);
         const place = placement(visibility, controller.edge, launchPivot);
         const visibleGeometry = place(actorGeometry(target));
+        // Releases the press and keeps the shared hover geometry.
         const preparation = controller.beginLaunch(launch.enabled);
         if (!preparation.active)
             return;
@@ -312,7 +312,6 @@ export class LaunchEngine {
         GLib.source_remove(session.repeatSourceId);
         session.repeatSourceId = 0;
     }
-
 }
 
 // A clone of a hidden icon draws nothing, so the ghost uses the app icon.

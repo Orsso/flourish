@@ -25,10 +25,6 @@ export class DashIntegration {
             return;
         // No public accessor for the icon row.
         const box = dash._box;
-        if (!box) {
-            console.warn('[flourish] the overview dash has no icon box; dash motion is off');
-            return;
-        }
 
         this.#surface = new MotionSurface({
             recipe,

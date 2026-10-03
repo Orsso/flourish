@@ -2,14 +2,6 @@ export class LiveRegistry {
     #boxes = new Map();
     #controllers = new Map();
 
-    get boxCount() {
-        return this.#boxes.size;
-    }
-
-    get controllerCount() {
-        return this.#controllers.size;
-    }
-
     get controllers() {
         return [...this.#controllers.values()];
     }
@@ -19,15 +11,11 @@ export class LiveRegistry {
     }
 
     addController(actor, controller) {
-        if (this.#controllers.has(actor))
-            return this.#controllers.get(actor);
-
         actor.connectObject('destroy', () => {
             this.#controllers.delete(actor);
             controller.onTargetDestroyed();
         }, this);
         this.#controllers.set(actor, controller);
-        return controller;
     }
 
     #removeController(actor) {
@@ -39,7 +27,7 @@ export class LiveRegistry {
         controller.dispose();
     }
 
-    addBox(box, cleanup, onDestroyed = () => {}) {
+    addBox(box, cleanup, onDestroyed) {
         if (this.#boxes.has(box))
             return false;
 
@@ -51,7 +39,7 @@ export class LiveRegistry {
         return true;
     }
 
-    removeLiveBox(box) {
+    #removeBox(box) {
         const cleanup = this.#boxes.get(box);
         if (!cleanup)
             return;
@@ -64,6 +52,6 @@ export class LiveRegistry {
         for (const actor of [...this.#controllers.keys()])
             this.#removeController(actor);
         for (const box of [...this.#boxes.keys()])
-            this.removeLiveBox(box);
+            this.#removeBox(box);
     }
 }

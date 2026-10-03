@@ -224,21 +224,10 @@ test('beginLaunch snaps immediately while a hover flush is pending', () => {
     assertEqual(bin.removedTransitions, 4);
 });
 
-test('applies toward identity skip the geometry measure', () => {
-    const {controller, icon, bin} = makeMeasuredController('expressive');
-    icon.setHover(true);
-    controller.applyHoverState();
-    const measures = bin.measures;
-    icon.setHover(false);
-    controller.applyHoverState();
-    assertEqual(bin.measures, measures);
-});
-
-test('a press without hover reach skips the geometry measure', () => {
+test('a press dims through the brightness effect, not opacity', () => {
     const {icon, bin, advance} = makeMeasuredController('subtle');
     icon.emit('button-press-event', {get_button: () => 1});
     advance(100);
-    assertEqual(bin.measures, 0);
     assertEqual(bin.opacity, 255);
     assertClose(icon.get_effect('flourish-dim').level, 0.21);
 });

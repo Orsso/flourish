@@ -48,7 +48,7 @@ test('destroy callbacks prune controller records without actor access', () => {
     const controller = new FakeController();
     registry.addController(actor, controller);
     actor.destroy();
-    assertEqual(registry.controllerCount, 0);
+    assertEqual(registry.getController(actor), undefined);
     assertEqual(controller.destroyedCount, 1);
     assertEqual(controller.disposeCount, 0);
     assertEqual(actor.postDestroyTouches, 0);
@@ -62,29 +62,29 @@ test('explicit disable disposes only live controller records once', () => {
     registry.disable();
     registry.disable();
     assertEqual(controller.disposeCount, 1);
-    assertEqual(registry.controllerCount, 0);
+    assertEqual(registry.controllers.length, 0);
 });
 
 test('destroy callbacks prune box records without cleanup access', () => {
     const registry = new LiveRegistry();
     const box = new FakeActor();
     let cleanupCount = 0;
-    registry.addBox(box, () => cleanupCount++);
+    registry.addBox(box, () => cleanupCount++, () => {});
     box.destroy();
-    assertEqual(registry.boxCount, 0);
     assertEqual(cleanupCount, 0);
     assertEqual(box.postDestroyTouches, 0);
 });
 
-test('explicit box removal runs cleanup once while the box is live', () => {
+test('disable runs box cleanup once while the box is live', () => {
     const registry = new LiveRegistry();
     const box = new FakeActor();
     let cleanupCount = 0;
-    registry.addBox(box, () => cleanupCount++);
-    registry.removeLiveBox(box);
-    registry.removeLiveBox(box);
+    registry.addBox(box, () => cleanupCount++, () => {});
+    assertEqual(registry.addBox(box, () => {}, () => {}), false);
+    registry.disable();
+    registry.disable();
     assertEqual(cleanupCount, 1);
-    assertEqual(registry.boxCount, 0);
+    assertEqual(registry.addBox(box, () => {}, () => {}), true);
 });
 
 test('box destruction runs only the target-free ownership callback', () => {

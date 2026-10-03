@@ -45,10 +45,9 @@ export const BackgroundExpansion = GObject.registerClass(
             }
         }
 
-        dispose() {
-            const actor = this.get_actor();
-            if (actor)
-                actor.remove_constraint(this);
+        // Dash to Dock can destroy the background before its dock.
+        detach() {
+            this.get_actor()?.remove_constraint(this);
         }
     });
 

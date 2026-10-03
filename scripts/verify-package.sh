@@ -31,7 +31,6 @@ required=(
     lib/runtime/iconDecorations.js
     lib/runtime/iconFollower.js
     lib/runtime/iconMotionController.js
-    lib/runtime/iconTexture.js
     lib/runtime/launchEngine.js
     lib/runtime/liveRegistry.js
     lib/runtime/motionSurface.js

@@ -274,7 +274,7 @@ class NeighborGroup {
         this.#pointerActor.disconnectObject(this);
         this.#box.disconnectObject(this);
         this.#restoreSpread();
-        this.#background?.dispose();
+        this.#background?.detach();
         this.#background = null;
         for (const [actor, decorations] of this.#extraDecorations) {
             actor.disconnectObject(decorations);
