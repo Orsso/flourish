@@ -2,6 +2,13 @@
 
 ## 1.2.0
 
+- Rebuilt hover magnification. Icons now grow and lift as one wave that
+  follows the pointer, up to 200 % in Custom.
+- Added dynamic spacing, which moves neighboring icons apart as they grow.
+- The dash and dock background now follows the wave, including Blur My
+  Shell's dynamic dock blur.
+- Notification badges and app labels now stay with magnified icons.
+- Retuned the presets for the new hover.
 - Added an attention animation for Dash to Dock and Ubuntu Dock: an icon
   whose app asks for attention pulses, bounces, stretches, or wiggles, and
   slides out of the edge when the dock is hidden. It replaces the dock's
@@ -11,27 +18,17 @@
   @parthib-gaugewalker for the suggestion.
 - Super+number shortcuts now play the launch animation on the overview dash
   too (#9). Thanks to @reimer-ux for the suggestion.
+- Added a Clicks only trigger for press feedback. All primary clicks is now
+  called Clicks and launches.
+- The Dim press effect now darkens the icon instead of fading it.
+- Added an optional outline around the Dash to Dock background.
+- Apps that opt out of startup notification no longer repeat the launch
+  animation.
+- Kiwi's Launchpad no longer plays a launch animation.
 - Fixed the launch animation playing off screen when a hidden dock launches
   an app, as with the Super+number hotkeys.
 - The launch and attention animations now follow their icon when the dock or
   dash lays out around it during a cycle.
-- Fixed the hover room on left and right docks, which was measured on the
-  wrong side.
-- Custom magnification now goes up to 200 %.
-- Added a Clicks only trigger for press feedback. All primary clicks is now
-  called Clicks and launches.
-- The Dim press effect darkens the icon instead of fading it, and follows the
-  launch clone.
-- Notification badges and app labels now follow the magnified icon, including
-  during launch and attention.
-- The dash and dock background widens with the wave.
-- Retuned the Subtle, Lively and Expressive presets.
-- Added an optional outline around the Dash to Dock background, light, dark,
-  or following the color scheme.
-- Apps that opt out of startup notification no longer repeat the launch
-  animation, and Kiwi's Launchpad plays none.
-- With Blur My Shell's dynamic dock blur, the blur follows the magnified
-  background.
 - Added GNOME 51 support.
 
 ## 1.1.0

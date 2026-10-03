@@ -31,9 +31,12 @@ and `_createIconTexture`, Dash to Dock's `_allDocks` list, and the window
 manager's `_getNthFavoriteApp`, which tells it which favorite a
 Super+number shortcut opens.
 With Dash to Dock it also reads a few public but undocumented members:
-the `urgent` and `focused` flags of each icon, the dock's `monitorIndex`,
-the dock manager's settings, and the dash's `iconAnimator`, whose urgent
-wiggle Flourish replaces with its own attention animation.
+the `urgent` and `focused` flags of each icon, the dock's `monitorIndex`
+and `position`, the dock manager's settings, and the dash's `iconAnimator`,
+whose urgent wiggle Flourish replaces with its own attention animation.
+To let magnified icons overflow the dock, it also widens the clip of the
+sliding dock actor and detaches the icon row's scroll adjustments while
+the row fits.
 Everything is restored when the extension is disabled.
 
 For Blur My Shell's dynamic dock blur, Flourish adjusts the existing blur
@@ -48,8 +51,8 @@ Flourish declares support for GNOME Shell 46 to 51.
 
 This release was tested with:
 
-- GNOME Shell 46, 47, 48, 49, and 50
-- Dash to Dock 90 to 105
+- GNOME Shell 46, 50, and 51
+- Dash to Dock 109
 - Ubuntu Dock on Ubuntu 24.04 and 26.04
 
 Other setups may work, but I have not tested them for this release.
