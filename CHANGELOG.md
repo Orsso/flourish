@@ -2,8 +2,8 @@
 
 ## 1.2.0
 
-- Rebuilt hover magnification. Icons now grow and lift as one wave that
-  follows the pointer, up to 200 % in Custom.
+- Rebuilt hover magnification as one wave that follows the pointer, up to
+  200% in Custom. Neighbor scale is gone and Neighbor radius is now Reach.
 - Added dynamic spacing, which moves neighboring icons apart as they grow.
 - The dash and dock background now follows the wave, including Blur My
   Shell's dynamic dock blur.

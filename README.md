@@ -11,8 +11,9 @@
   <a href="LICENSE"><img alt="License: GPL-2.0-or-later" src="https://img.shields.io/badge/License-GPL--2.0--or--later-E95420?style=flat-square"></a>
 </p>
 
-A small extension that adds a bit of motion to the GNOME dash. Icons respond
-to hover and press, and animate when an app launches. It also works with
+An extension that adds motion to the GNOME dash. Icons magnify as the
+pointer moves along it, react to clicks, and animate when an app launches
+or asks for attention. It also works with
 [Dash to Dock](https://extensions.gnome.org/extension/307/dash-to-dock/) and
 Ubuntu Dock.
 
@@ -23,27 +24,24 @@ https://github.com/user-attachments/assets/2a218e67-96bf-4272-882a-71b7be4305e0
 
 ## How it works
 
-Flourish listens to the signals the dash icons already emit and animates
-them from there. It overrides the stock launch zoom and loads the dash
-icons at twice their resolution so they stay sharp when magnified.
-It uses the dash's private `_box` and `_background`, each icon's `_iconBin`
-and `_createIconTexture`, Dash to Dock's `_allDocks` list, and the window
-manager's `_getNthFavoriteApp`, which tells it which favorite a
-Super+number shortcut opens.
-With Dash to Dock it also reads a few public but undocumented members:
-the `urgent` and `focused` flags of each icon, the dock's `monitorIndex`
-and `position`, the dock manager's settings, and the dash's `iconAnimator`,
-whose urgent wiggle Flourish replaces with its own attention animation.
-To let magnified icons overflow the dock, it also widens the clip of the
-sliding dock actor and detaches the icon row's scroll adjustments while
-the row fits.
-Everything is restored when the extension is disabled.
+Flourish animates the dash icons from the signals they already emit and
+replaces the stock launch zoom. Icons load at twice their resolution so
+they stay sharp when magnified. Everything is restored on disable.
 
-For Blur My Shell's dynamic dock blur, Flourish adjusts the existing blur
-group's scale and position to match the native background in the same frame.
-It uses `background` and `background_group` from the matching entry in
-`global.blur_my_shell._dash_to_dock_blur.dashes`. These are private internals.
-The transforms are restored on disable; the blur effect and layout are unchanged.
+It relies on a few private or undocumented members:
+
+- GNOME Shell: the dash's `_box` and `_background`, each icon's `_iconBin`
+  and `_createIconTexture`, and the window manager's `_getNthFavoriteApp`.
+- Dash to Dock: `_allDocks`, each dock's `monitorIndex` and `position`, the
+  slider's `slide-x`, the manager's settings, the icons' `urgent` and
+  `focused` flags, and `iconAnimator.addAnimation`, overridden to replace
+  the urgent wiggle.
+- Blur My Shell: `is_static`, and `dash`, `background` and
+  `background_group` in `global.blur_my_shell._dash_to_dock_blur.dashes`.
+
+On a dock, magnified icons overflow through a wider clip, a paint and pick
+effect on the scroll view, and detached scroll adjustments while the row
+fits. The background follows the wave through a layout constraint.
 
 ## Compatibility
 
@@ -57,14 +55,10 @@ This release was tested with:
 
 Other setups may work, but I have not tested them for this release.
 
-Adaptive backgrounds work with Blur My Shell's dynamic dock blur, tested with
-version 72. Static blur does not reliably follow magnification and is not
-covered by this integration.
+With Blur My Shell, only the dynamic dock blur follows magnification
+(tested with version 72).
 
 ## Install
-
-If you used a D2D Companion beta, remove it before installing.
-Flourish uses a new UUID, so the old settings will **not** carry over.
 
 Download the `.shell-extension.zip` file from the
 [GitHub release](https://github.com/Orsso/flourish/releases), then run:
@@ -79,8 +73,8 @@ To try the development version instead, clone the repository and run
 `make install` before logging out. Copying the source folder by hand leaves
 the settings schema uncompiled.
 
-With Dash to Dock or Ubuntu Dock enabled, the motion goes to the dock; without them, to the
-overview dash.
+With Dash to Dock or Ubuntu Dock enabled, the motion goes to the dock;
+without them, to the overview dash.
 
 ## Development
 
