@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.1
+
+- Blur My Shell's dynamic dock blur no longer stays misaligned with the dock
+  after an icon is added, until the next hover.
+- The hover wave now settles when an icon menu or the window previews open,
+  or when an icon is dragged, instead of staying frozen.
+
 ## 1.2.0
 
 - Rebuilt hover magnification as one wave that follows the pointer, up to
