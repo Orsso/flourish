@@ -3,6 +3,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {readActiveRecipe} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
@@ -99,6 +100,7 @@ export default class FlourishExtension extends Extension {
         this._launchEngine.disable();
         this._launchEngine = null;
         global.stage.disconnectObject(this);
+        Main.overview.disconnectObject(this);
         this._attentionEngine.disable();
         this._attentionEngine = null;
         for (const style of this._styles)
@@ -131,6 +133,13 @@ export default class FlourishExtension extends Extension {
             this._dashIntegration.onPointerMotion(x, y);
             return Clutter.EVENT_PROPAGATE;
         }, this);
+        const holdDrag = held => {
+            this._dockIntegration.holdPointer(Main.overview, held);
+            this._dashIntegration.holdPointer(Main.overview, held);
+        };
+        Main.overview.connectObject(
+            'item-drag-begin', () => holdDrag(true),
+            'item-drag-end', () => holdDrag(false), this);
     }
 
     _syncStyles() {

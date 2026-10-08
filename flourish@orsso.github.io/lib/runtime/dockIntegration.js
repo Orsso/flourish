@@ -85,6 +85,10 @@ export class DockIntegration {
         this.#surface.onPointerMotion(x, y);
     }
 
+    holdPointer(owner, held) {
+        this.#surface.holdPointer(owner, held);
+    }
+
     #syncOverflow() {
         const {hover} = this.#recipe;
         for (const overflow of this.#overflows)

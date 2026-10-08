@@ -79,6 +79,11 @@ export class MotionSurface {
             row.onPointerMotion(x, y);
     }
 
+    holdPointer(owner, held) {
+        for (const row of this.#rows)
+            row.holdPointer(owner, held);
+    }
+
     clearPointer(box = null) {
         for (const row of this.#rows)
             if (!box || row.box === box)
@@ -139,6 +144,7 @@ export class MotionSurface {
             decorations: container.label
                 ? {container, getMonitor: context.getMonitor, labelOffset: context.labelOffset} : null,
             onHoverChanged: changed => row.refreshPointer(changed),
+            onMenuChanged: (changed, open) => row.holdPointer(changed, open),
             onDestroyed: destroyed => {
                 this.#contexts.delete(destroyed);
                 row.remove(destroyed);
@@ -168,6 +174,7 @@ class WaveRow {
     #envRamp = IDLE_RAMP;
     #flushId = 0;
     #getPointer;
+    #holds = new Set();
     #horizontal;
     #peak = null;
     #pointer = null;
@@ -218,6 +225,19 @@ class WaveRow {
         if (index === -1)
             return;
         this.#entries.splice(index, 1);
+        this.#holds.delete(controller);
+        this.#scheduleFlush();
+    }
+
+    // Menus and drags grab the pointer: no motion would end the wave.
+    holdPointer(owner, held) {
+        if (held) {
+            this.#holds.add(owner);
+        } else {
+            this.#holds.delete(owner);
+            if (hoverActive(this.#recipe.hover))
+                this.#pointer = this.#getPointer() ?? this.#pointer;
+        }
         this.#scheduleFlush();
     }
 
@@ -348,7 +368,8 @@ class WaveRow {
     // Row geometry under the pointer, or null.
     #waveShape() {
         // The overview dash keeps its allocation while hidden.
-        if (this.#pointer === null || !this.#box.mapped || !this.#context.isAvailable())
+        if (this.#pointer === null || this.#holds.size > 0 || !this.#box.mapped ||
+            !this.#context.isAvailable())
             return null;
         // Native hover notification can precede the pointer coordinate update.
         this.#pointer = this.#getPointer() ?? this.#pointer;

@@ -55,6 +55,7 @@ export class IconMotionController {
     #onAnimate;
     #onDestroyed;
     #onHoverChanged;
+    #onMenuChanged;
     #onUrgentChanged;
     #original;
     #overlay = null;
@@ -77,6 +78,7 @@ export class IconMotionController {
         decorations = null,
         onAnimate = () => {},
         onHoverChanged = () => {},
+        onMenuChanged = () => {},
         onDestroyed = () => {},
         onUrgentChanged = () => {},
     }) {
@@ -88,6 +90,7 @@ export class IconMotionController {
         this.#setDim = setDim;
         this.#onAnimate = onAnimate;
         this.#onHoverChanged = onHoverChanged;
+        this.#onMenuChanged = onMenuChanged;
         this.#onDestroyed = onDestroyed;
         this.#onUrgentChanged = onUrgentChanged;
         this.#urgent = icon.urgent;
@@ -128,6 +131,11 @@ export class IconMotionController {
                     this.#pressChanged();
             }, GObject.ConnectFlags.AFTER,
             this);
+        // Show Apps has no app and no menu-state-changed signal.
+        if (icon.app) {
+            icon.connectObject('menu-state-changed',
+                (_icon, open) => this.#onMenuChanged(this, open), this);
+        }
         this.#syncHover();
         if (decorations)
             this.#decorations = new IconDecorations({

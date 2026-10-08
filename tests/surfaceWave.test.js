@@ -18,6 +18,7 @@ function makeSurface({
     containsPointer = () => true,
     pointerActor = null,
     clock = null,
+    apps = false,
 } = {}) {
     const horizontal = edge === 'bottom' || edge === 'top';
     const scheduler = makeScheduler();
@@ -28,6 +29,10 @@ function makeSurface({
     const box = new FakeRow(5, {
         horizontal, position, makeBin: () => new MeasurableBin(parent),
     });
+    if (apps) {
+        for (const icon of box.icons)
+            icon.app = {get_n_windows: () => 1};
+    }
     let now = 0;
     const surface = new MotionSurface({
         recipe: motionRecipe(preset),
@@ -394,6 +399,33 @@ test('exit decays the last wave shape and releases ownership', () => {
     surface.onPointerMotion(125, 1000);
     frame(0);
     assertEqual(scheduler.pending.size, 0);
+});
+
+test('an open menu or a drag lowers the wave, then the pointer raises it again', () => {
+    const {surface, icons, bins, frame, settle, scheduler} = makeSurface({
+        apps: true, getPointer: () => [125, 25],
+    });
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    for (const hold of [
+        held => icons[2].emit('menu-state-changed', held),
+        held => surface.holdPointer('drag', held),
+    ]) {
+        hold(true);
+        frame(0);
+        frame(1);
+        assertEqual(bins[2].scale_x > 1 && bins[2].scale_x < 1.22, true);
+        settle();
+        for (const bin of bins)
+            assertEqual(bin.scale_x, 1);
+        assertEqual(scheduler.pending.size, 0);
+        hold(false);
+        frame(0);
+        settle();
+        assertClose(bins[2].scale_x, 1.22);
+    }
 });
 
 test('an icon added during the exit decay does not cut the decay short', () => {

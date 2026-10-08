@@ -61,6 +61,10 @@ export class DashIntegration {
         this.#surface?.onPointerMotion(x, y);
     }
 
+    holdPointer(owner, held) {
+        this.#surface?.holdPointer(owner, held);
+    }
+
     disable() {
         if (!this.#surface)
             return;
