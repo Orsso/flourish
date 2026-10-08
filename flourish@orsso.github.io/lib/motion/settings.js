@@ -75,6 +75,11 @@ export function setBooleanCommitted(settings, key, value) {
     settings.apply();
 }
 
+export function setIntCommitted(settings, key, value) {
+    settings.set_int(key, value);
+    settings.apply();
+}
+
 export function setStringCommitted(settings, key, value) {
     settings.set_string(key, value);
     settings.apply();

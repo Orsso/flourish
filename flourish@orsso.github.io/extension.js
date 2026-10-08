@@ -5,6 +5,7 @@ import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
+import {IconSpacing} from './lib/motion/catalog.js';
 import {readActiveRecipe} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
@@ -18,6 +19,7 @@ const STYLESHEETS = [
     'dash-hover-background-hidden.css',
     'dock-focused-app-background-hidden.css',
     'dash-focused-app-background.css',
+    'icon-spacing.css',
 ];
 
 export default class FlourishExtension extends Extension {
@@ -44,6 +46,7 @@ export default class FlourishExtension extends Extension {
             scheduler: this._frameScheduler,
         });
 
+        this._spacingClass = null;
         this._styles = STYLESHEETS.map(cssFileName =>
             new BackgroundStyle({extension: this, cssFileName}));
         this._syncStyles();
@@ -103,6 +106,7 @@ export default class FlourishExtension extends Extension {
         Main.overview.disconnectObject(this);
         this._attentionEngine.disable();
         this._attentionEngine = null;
+        this._syncSpacing(null);
         for (const style of this._styles)
             style.disable();
         this._styles = null;
@@ -145,11 +149,35 @@ export default class FlourishExtension extends Extension {
     _syncStyles() {
         const hideHover = !this._settings.get_boolean('show-hover-background');
         const showFocused = this._settings.get_boolean('show-focused-app-background');
-        this._dockIntegration.setOutline(this._settings.get_string('dock-outline'));
+        const outline = [
+            this._settings.get_string('dock-outline'),
+            this._settings.get_int('outline-intensity'),
+            this._settings.get_string('outline-light'),
+        ];
+        this._dockIntegration.setOutline(...outline);
+        this._dashIntegration.setOutline(...outline);
+        const spacing = this._settings.get_int('icon-spacing');
+        const customSpacing = spacing !== IconSpacing.THEME;
         // No short-circuit: every sheet must sync.
-        return [hideHover, hideHover, !showFocused, showFocused]
+        const changed = [hideHover, hideHover, !showFocused, showFocused, customSpacing]
             .map((enabled, index) => this._styles[index].setEnabled(enabled))
             .includes(true);
+        // After the sheets: the icon size pass needs the spacing rules loaded.
+        this._syncSpacing(customSpacing ? `flourish-spacing-${spacing}` : null);
+        return changed;
+    }
+
+    // One class on uiGroup selects the spacing rules of the dash and every dock.
+    _syncSpacing(name) {
+        if (this._spacingClass === name)
+            return;
+        const group = Main.layoutManager.uiGroup;
+        if (this._spacingClass)
+            group.remove_style_class_name(this._spacingClass);
+        if (name)
+            group.add_style_class_name(name);
+        this._spacingClass = name;
+        this._dashIntegration.refreshIconSize();
     }
 
     _refreshStyles() {

@@ -5,6 +5,7 @@ import {
     AttentionCycles,
     AttentionInterval,
     AttentionReminders,
+    IconSpacing,
     Reach,
     Preset,
     getBuiltInRecipe,
@@ -19,7 +20,7 @@ const SCHEMA_PATH = GLib.build_filenamev([
 ]);
 
 const KEY_PATTERN = new RegExp(
-    '<key name="(custom-[a-z-]+)" type="[id]">\\s*<default>([^<]+)</default>' +
+    '<key name="([a-z-]+)" type="[id]">\\s*<default>([^<]+)</default>' +
     '\\s*<range min="([^"]+)" max="([^"]+)"/>', 'g');
 
 function readRanges() {
@@ -47,6 +48,10 @@ const BOUNDED_KEYS = [
     ['custom-attention-interval', AttentionInterval],
     ['custom-attention-reminders', AttentionReminders],
 ];
+
+test('icon spacing spans the theme value and the catalog gaps', () => {
+    assertDeepEqual(rangeOf('icon-spacing'), {min: IconSpacing.THEME, max: IconSpacing.MAX});
+});
 
 test('custom magnification spans 100 to 200 percent', () => {
     assertDeepEqual(rangeOf('custom-hover-scale'), {min: 1, max: 2});

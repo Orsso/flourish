@@ -1,0 +1,295 @@
+.flourish-spacing-0 #dash .dash-item-container .overview-tile,
+.flourish-spacing-0 #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-0 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-0 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-0 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-0 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-0 #dash .dash-item-container .overview-tile .overview-icon,
+.flourish-spacing-0 #dash .dash-item-container .show-apps .overview-icon {
+    padding: 0 0 0 0 !important;
+}
+
+.flourish-spacing-0 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-0 #dashtodockContainer.top #dash .dash-item-container {
+    margin: 6px 0 6px 0 !important;
+}
+
+.flourish-spacing-0 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-0 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 6px !important;
+}
+
+.flourish-spacing-2 #dash .dash-item-container .overview-tile,
+.flourish-spacing-2 #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-2 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-2 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-2 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-2 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-2 #dash .dash-item-container .overview-tile .overview-icon,
+.flourish-spacing-2 #dash .dash-item-container .show-apps .overview-icon {
+    padding: 0 0 2px 0 !important;
+}
+
+.flourish-spacing-2 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-2 #dashtodockContainer.top #dash .dash-item-container {
+    margin: 6px 0 4px 0 !important;
+}
+
+.flourish-spacing-2 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-2 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 5px !important;
+}
+
+.flourish-spacing-4 #dash .dash-item-container .overview-tile,
+.flourish-spacing-4 #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-4 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-4 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-4 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-4 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-4 #dash .dash-item-container .overview-tile .overview-icon,
+.flourish-spacing-4 #dash .dash-item-container .show-apps .overview-icon {
+    padding: 0 0 4px 0 !important;
+}
+
+.flourish-spacing-4 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-4 #dashtodockContainer.top #dash .dash-item-container {
+    margin: 6px 0 2px 0 !important;
+}
+
+.flourish-spacing-4 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-4 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 4px !important;
+}
+
+.flourish-spacing-6 #dash .dash-item-container .overview-tile,
+.flourish-spacing-6 #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-6 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-6 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-6 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-6 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-6 #dash .dash-item-container .overview-tile .overview-icon,
+.flourish-spacing-6 #dash .dash-item-container .show-apps .overview-icon {
+    padding: 0 0 6px 0 !important;
+}
+
+.flourish-spacing-6 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-6 #dashtodockContainer.top #dash .dash-item-container {
+    margin: 6px 0 0 0 !important;
+}
+
+.flourish-spacing-6 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-6 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 3px !important;
+}
+
+.flourish-spacing-8 #dash .dash-item-container .overview-tile,
+.flourish-spacing-8 #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-8 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-8 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-8 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-8 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-8 #dash .dash-item-container .overview-tile .overview-icon,
+.flourish-spacing-8 #dash .dash-item-container .show-apps .overview-icon {
+    padding: 2px 0 6px 0 !important;
+}
+
+.flourish-spacing-8 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-8 #dashtodockContainer.top #dash .dash-item-container {
+    margin: 4px 0 0 0 !important;
+}
+
+.flourish-spacing-8 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-8 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 2px !important;
+}
+
+.flourish-spacing-10 #dash .dash-item-container .overview-tile,
+.flourish-spacing-10 #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-10 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-10 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-10 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-10 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-10 #dash .dash-item-container .overview-tile .overview-icon,
+.flourish-spacing-10 #dash .dash-item-container .show-apps .overview-icon {
+    padding: 4px 0 6px 0 !important;
+}
+
+.flourish-spacing-10 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-10 #dashtodockContainer.top #dash .dash-item-container {
+    margin: 2px 0 0 0 !important;
+}
+
+.flourish-spacing-10 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-10 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 1px !important;
+}
+
+.flourish-spacing-12 #dash .dash-item-container .overview-tile,
+.flourish-spacing-12 #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-12 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-12 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-12 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-12 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 0 0 !important;
+}
+
+.flourish-spacing-12 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-12 #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-12 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-12 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
+.flourish-spacing-14 #dash .dash-item-container .overview-tile,
+.flourish-spacing-14 #dash .dash-item-container .show-apps {
+    margin: 0 1px !important;
+}
+
+.flourish-spacing-14 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-14 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-14 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-14 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 1px 0 !important;
+}
+
+.flourish-spacing-14 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-14 #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-14 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-14 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
+.flourish-spacing-16 #dash .dash-item-container .overview-tile,
+.flourish-spacing-16 #dash .dash-item-container .show-apps {
+    margin: 0 2px !important;
+}
+
+.flourish-spacing-16 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-16 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-16 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-16 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 2px 0 !important;
+}
+
+.flourish-spacing-16 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-16 #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-16 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-16 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
+.flourish-spacing-18 #dash .dash-item-container .overview-tile,
+.flourish-spacing-18 #dash .dash-item-container .show-apps {
+    margin: 0 3px !important;
+}
+
+.flourish-spacing-18 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-18 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-18 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-18 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 3px 0 !important;
+}
+
+.flourish-spacing-18 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-18 #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-18 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-18 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
+.flourish-spacing-20 #dash .dash-item-container .overview-tile,
+.flourish-spacing-20 #dash .dash-item-container .show-apps {
+    margin: 0 4px !important;
+}
+
+.flourish-spacing-20 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-20 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-20 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-20 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 4px 0 !important;
+}
+
+.flourish-spacing-20 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-20 #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-20 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-20 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
+.flourish-spacing-22 #dash .dash-item-container .overview-tile,
+.flourish-spacing-22 #dash .dash-item-container .show-apps {
+    margin: 0 5px !important;
+}
+
+.flourish-spacing-22 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-22 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-22 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-22 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 5px 0 !important;
+}
+
+.flourish-spacing-22 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-22 #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-22 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-22 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
+.flourish-spacing-24 #dash .dash-item-container .overview-tile,
+.flourish-spacing-24 #dash .dash-item-container .show-apps {
+    margin: 0 6px !important;
+}
+
+.flourish-spacing-24 #dashtodockContainer.left #dash .dash-item-container .overview-tile,
+.flourish-spacing-24 #dashtodockContainer.left #dash .dash-item-container .show-apps,
+.flourish-spacing-24 #dashtodockContainer.right #dash .dash-item-container .overview-tile,
+.flourish-spacing-24 #dashtodockContainer.right #dash .dash-item-container .show-apps {
+    margin: 6px 0 !important;
+}
+
+.flourish-spacing-24 #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-24 #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-24 #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-24 #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+

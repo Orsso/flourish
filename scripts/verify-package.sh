@@ -13,6 +13,7 @@ required=(
     lib/motion/settings.js
     lib/motion/transforms.js
     lib/prefs/advancedPage.js
+    lib/prefs/appearancePage.js
     lib/prefs/demoSequence.js
     lib/prefs/motionPreview.js
     lib/prefs/rows.js
@@ -22,7 +23,7 @@ required=(
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
     lib/runtime/dockVisibility.js
-    lib/runtime/dockOutline.js
+    lib/runtime/surfaceOutline.js
     lib/runtime/dockOverflow.js
     lib/runtime/focusHighlight.js
     lib/runtime/geometry.js
@@ -41,6 +42,7 @@ required=(
     dock-focused-app-background-hidden.css
     dash-hover-background-hidden.css
     dash-focused-app-background.css
+    icon-spacing.css
 )
 
 for path in "${required[@]}"; do

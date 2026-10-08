@@ -7,10 +7,10 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DASH_TO_DOCK_BUILDS, DockState, ScreenEdge} from '../motion/catalog.js';
 import {DockVisibility} from './dockVisibility.js';
-import {DockOutline} from './dockOutline.js';
 import {DockOverflow} from './dockOverflow.js';
 import {pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
+import {SurfaceOutline} from './surfaceOutline.js';
 
 
 export class DockIntegration {
@@ -34,9 +34,8 @@ export class DockIntegration {
     }) {
         this.#scheduler = scheduler;
         this.#onUrgentChanged = onUrgentChanged;
-        this.#outline = new DockOutline({
+        this.#outline = new SurfaceOutline({
             interfaceSettings: new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}),
-            scheduler,
         });
     }
 
@@ -99,8 +98,8 @@ export class DockIntegration {
         this.#surface.refreshStyles();
     }
 
-    setOutline(name) {
-        this.#outline.setOutline(name);
+    setOutline(style, intensity, light) {
+        this.#outline.setStyle(style, intensity, light);
     }
 
     getController(appIcon) {
@@ -229,7 +228,7 @@ export class DockIntegration {
             if (context.background)
                 this.#trackBlur(dock.dash);
             if (dock.dash._background)
-                this.#outline.track(dock.dash._background);
+                this.#outline.track(dock.dash._background, () => this.#outlineRadius(dock.dash));
             this.#visibilities.push(visibility);
             visibility.subscribe(state => {
                 if (state !== DockState.SHOWN)
@@ -241,6 +240,12 @@ export class DockIntegration {
             this.#stopWiggles(dock);
         }
         this.refreshStyles();
+    }
+
+    // Blur My Shell rounds its dynamic blur itself; the outline follows that corner.
+    #outlineRadius(dash) {
+        return this.#blurBackgrounds.get(dash._background)?.rounded?.corner_radius ??
+            dash._background.get_theme_node().get_border_radius(St.Corner.TOPLEFT);
     }
 
     #trackBlur(dash) {
@@ -264,9 +269,12 @@ export class DockIntegration {
         const group = info.background_group;
         if (this.#blurBackgrounds.get(background)?.actor !== actor) {
             this.#resetBlur(background);
+            const rounded = actor.get_effects()
+                .find(effect => effect.constructor.supports_corner_radius);
             this.#blurBackgrounds.set(background, {
                 actor,
                 group,
+                rounded,
                 transform: {
                     scale_x: group.scale_x,
                     scale_y: group.scale_y,
@@ -276,6 +284,9 @@ export class DockIntegration {
             });
             actor.connectObject('notify::allocation', () => this.#syncBlur(dash),
                 'destroy', () => this.#resetBlur(background, false), this);
+            rounded?.connectObject('notify::corner-radius',
+                () => this.#outline.refresh(background), this);
+            this.#outline.refresh(background);
         }
         // Width and height fall back to the preferred size while a relayout is pending.
         const source = actor.get_allocation_box();
@@ -294,9 +305,11 @@ export class DockIntegration {
         if (!state)
             return;
         state.actor.disconnectObject(this);
+        state.rounded?.disconnectObject(this);
         if (restore)
             Object.assign(state.group, state.transform);
         this.#blurBackgrounds.set(background, null);
+        this.#outline.refresh(background);
     }
 
     #untrackBlur(background) {

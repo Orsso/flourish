@@ -23,7 +23,6 @@ import {
 } from '../motion/settings.js';
 import {MotionPreview} from './motionPreview.js';
 import {
-    createBackgroundRows,
     createComboRow,
     createScaleRow,
     createSpinRow,
@@ -186,10 +185,6 @@ export function buildAdvancedPage(page, controls, settings, state) {
         holdWhileSliding(controls.attentionIntensity, attention);
         holdWhileSliding(controls.attentionSpeed, attention);
     }
-
-    const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
-    createBackgroundRows(appearanceGroup, settings, controls, state);
-    page.add(appearanceGroup);
 
     const resetGroup = new Adw.PreferencesGroup();
     const resetRow = new Adw.ActionRow({

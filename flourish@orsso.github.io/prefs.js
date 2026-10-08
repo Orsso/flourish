@@ -10,25 +10,13 @@ import {
     editCustomSetting,
     readActiveRecipe,
     selectPreset,
-    setStringCommitted,
     switchToPresetFromCustom,
 } from './lib/motion/settings.js';
 import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
+import {buildAppearancePage, syncAppearancePage} from './lib/prefs/appearancePage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
-import {
-    N_,
-    createBackgroundRows,
-    createComboRow,
-    createSwitchRow,
-    setComboValue,
-} from './lib/prefs/rows.js';
+import {N_, createSwitchRow} from './lib/prefs/rows.js';
 
-const OUTLINES = [
-    [N_('None'), 'none'],
-    [N_('Follow theme'), 'auto'],
-    [N_('Light'), 'light'],
-    [N_('Dark'), 'dark'],
-];
 const PRESET_DETAILS = [
     [Preset.SUBTLE, N_('Subtle')],
     [Preset.BALANCED, N_('Lively')],
@@ -43,16 +31,22 @@ export default class FlourishPreferences extends ExtensionPreferences {
 
         const essentials = new Adw.PreferencesPage({
             name: 'essentials',
-            title: _('Basics'),
+            title: _('General'),
             icon_name: 'applications-graphics-symbolic',
         });
         const advanced = new Adw.PreferencesPage({
             name: 'advanced',
-            title: _('More'),
+            title: _('Animations'),
             icon_name: 'preferences-system-symbolic',
+        });
+        const appearance = new Adw.PreferencesPage({
+            name: 'appearance',
+            title: _('Appearance'),
+            icon_name: 'preferences-desktop-appearance-symbolic',
         });
         window.add(essentials);
         window.add(advanced);
+        window.add(appearance);
 
         const presetGroup = new Adw.PreferencesGroup({
             title: _('Presets'),
@@ -116,19 +110,9 @@ export default class FlourishPreferences extends ExtensionPreferences {
         }
         essentials.add(featureGroup);
 
-        const styleGroup = new Adw.PreferencesGroup({title: _('Style')});
-        if (controls.dockPresent) {
-            controls.outline = createComboRow(
-                styleGroup, _('Dock outline'),
-                OUTLINES.map(([label, value]) => [_(label), value]),
-                value => setStringCommitted(settings, 'dock-outline', value), state);
-        }
-        createBackgroundRows(styleGroup, settings, controls, state);
-        essentials.add(styleGroup);
-
         const navigationGroup = new Adw.PreferencesGroup();
         const advancedRow = new Adw.ActionRow({
-            title: _('More Settings'),
+            title: _('Animation Settings'),
             subtitle: _('Timing, effects, and repeats'),
             activatable: true,
         });
@@ -139,6 +123,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         navigationGroup.add(advancedRow);
         essentials.add(navigationGroup);
 
+        buildAppearancePage(appearance, controls, settings, state);
         buildAdvancedPage(advanced, controls, settings, state);
 
         const sync = () => syncControls(settings, controls, state);
@@ -169,8 +154,7 @@ function syncControls(settings, controls, state) {
         controls.attentionEnabled.active = recipe.attention.enabled;
     for (const [row, key] of controls.backgroundRows)
         row.active = settings.get_boolean(key);
-    if (controls.outline)
-        setComboValue(controls.outline, settings.get_string('dock-outline'));
+    syncAppearancePage(controls, settings);
 
     syncAdvancedPage(controls, recipe);
     state.syncing = false;

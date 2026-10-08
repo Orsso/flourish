@@ -105,6 +105,20 @@ export const AttentionPlay = {
     PEEK: 'peek',
 };
 
+export const OutlineStyle = {
+    NONE: 'none',
+    LIGHT: 'light',
+    DARK: 'dark',
+    AUTO: 'auto',
+    GLASS: 'glass',
+};
+
+export const OutlineLight = {
+    TOP_LEFT: 'top-left',
+    TOP: 'top',
+    TOP_RIGHT: 'top-right',
+};
+
 // The four parts of a recipe; the values index a recipe object.
 export const RecipePart = {
     HOVER: 'hover',
@@ -119,6 +133,8 @@ export const AttentionCycles = {MIN: 1, MAX: 10};
 export const AttentionCyclePause = {MIN: 0, MAX: 1000};
 export const AttentionInterval = {MIN: 2, MAX: 60};
 export const AttentionReminders = {MIN: 1, MAX: 30};
+// THEME leaves the spacing to the theme or the dock.
+export const IconSpacing = {THEME: -1, MIN: 0, MAX: 24, STEP: 2};
 
 export const DEFAULT_PRESET = Preset.SUBTLE;
 

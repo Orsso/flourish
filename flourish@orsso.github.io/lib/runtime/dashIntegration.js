@@ -1,4 +1,6 @@
+import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
+import St from 'gi://St';
 import {Dash} from 'resource:///org/gnome/shell/ui/dash.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
@@ -6,16 +8,21 @@ import {ScreenEdge} from '../motion/catalog.js';
 import {FocusHighlight} from './focusHighlight.js';
 import {dashSpacing, pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
+import {SurfaceOutline} from './surfaceOutline.js';
 
 export class DashIntegration {
     #box = null;
     #highlight = null;
+    #outline;
     #savedClip = false;
     #scheduler;
     #surface = null;
 
     constructor({scheduler}) {
         this.#scheduler = scheduler;
+        this.#outline = new SurfaceOutline({
+            interfaceSettings: new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}),
+        });
     }
 
     enable(recipe) {
@@ -52,9 +59,12 @@ export class DashIntegration {
             getMonitor: () => Main.layoutManager.primaryMonitor,
             labelOffset: '-y-offset',
         });
+        const background = dash._background;
+        this.#outline.track(background, () => background.get_theme_node().get_border_radius(St.Corner.TOPLEFT));
         Main.overview.connectObject('hiding', () => this.#surface.clearPointer(), this);
         Main.layoutManager.connectObject('monitors-changed', () => this.#surface.invalidateGeometry(), this);
         this.#surface.refreshStyles();
+        this.refreshIconSize();
     }
 
     onPointerMotion(x, y) {
@@ -66,6 +76,7 @@ export class DashIntegration {
     }
 
     disable() {
+        this.#outline.destroy();
         if (!this.#surface)
             return;
         Main.layoutManager.disconnectObject(this);
@@ -87,6 +98,16 @@ export class DashIntegration {
 
     refreshStyles() {
         this.#surface?.refreshStyles();
+    }
+
+    // The dash sizes its icons on redisplay only; a spacing change needs a new pass.
+    refreshIconSize() {
+        if (this.#box)
+            Main.overview.dash._adjustIconSize();
+    }
+
+    setOutline(style, intensity, light) {
+        this.#outline.setStyle(style, intensity, light);
     }
 
     getController(appIcon) {

@@ -34,7 +34,7 @@ const BACKGROUND_ROWS = [
         N_('Mark the app that owns the focused window')],
 ];
 
-// The same switches live on both pages; syncControls reads controls.backgroundRows.
+// syncControls reads controls.backgroundRows.
 export function createBackgroundRows(group, settings, controls, state) {
     for (const [key, title, subtitle] of BACKGROUND_ROWS) {
         const row = createSwitchRow(group, _(title), _(subtitle),
