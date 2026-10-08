@@ -273,13 +273,16 @@ export class DockIntegration {
             actor.connectObject('notify::allocation', () => this.#syncBlur(dash),
                 'destroy', () => this.#resetBlur(background, false), this);
         }
-        if (actor.width <= 0 || actor.height <= 0)
+        // Width and height fall back to the preferred size while a relayout is pending.
+        const source = actor.get_allocation_box();
+        const target = background.get_allocation_box();
+        if (source.get_width() <= 0 || source.get_height() <= 0)
             return;
         // Background blur samples transformed screen bounds without a new allocation.
-        group.scale_x = background.width / actor.width;
-        group.scale_y = background.height / actor.height;
-        group.translation_x = background.x - actor.x * group.scale_x;
-        group.translation_y = background.y + dash.y - actor.y * group.scale_y;
+        group.scale_x = target.get_width() / source.get_width();
+        group.scale_y = target.get_height() / source.get_height();
+        group.translation_x = target.x1 - source.x1 * group.scale_x;
+        group.translation_y = target.y1 + dash.get_allocation_box().y1 - source.y1 * group.scale_y;
     }
 
     #resetBlur(background, restore = true) {
