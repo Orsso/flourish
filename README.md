@@ -30,16 +30,17 @@ they stay sharp when magnified. Everything is restored on disable.
 
 It relies on a few private or undocumented members:
 
-- GNOME Shell: the dash's `_box`, `_background` and `_adjustIconSize`, each icon's `_iconBin`
-  and `_createIconTexture`, and the window manager's `_getNthFavoriteApp`.
+- GNOME Shell: the dash's `_box`, `_background`, `_maxWidth` and
+  `_adjustIconSize`, each icon's `_iconBin`, `_createIconTexture` and `_menu`,
+  and the window manager's `_getNthFavoriteApp`.
 - Dash to Dock: `_allDocks`, each dock's `monitorIndex` and `position`, the
   slider's `slide-x`, the manager's settings, the icons' `urgent` and
-  `focused` flags, and `iconAnimator.addAnimation`, overridden to replace
+  `focused` flags and `_menu`, and `iconAnimator.addAnimation`, overridden to replace
   the urgent wiggle.
 - Blur My Shell: `is_static`, and `dash`, `background` and
   `background_group` in `global.blur_my_shell._dash_to_dock_blur.dashes`,
   plus the corner radius of that background's blur effect
-  (`supports_corner_radius`, `unscaled_corner_radius`).
+  (`supports_corner_radius`, `corner_radius`).
 
 On a dock, magnified icons overflow through a wider clip, a paint and pick
 effect on the scroll view, and detached scroll adjustments while the row

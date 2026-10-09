@@ -2,8 +2,6 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {setBooleanCommitted} from '../motion/settings.js';
-
 // xgettext reads N_; the lookup happens where the string is used.
 export const N_ = s => s;
 
@@ -25,22 +23,6 @@ export function createSwitchRow(group, title, subtitle, callback, state, help = 
     });
     group.add(row);
     return row;
-}
-
-const BACKGROUND_ROWS = [
-    ['show-hover-background', N_('Show hover background'),
-        N_('Keep the tile shown under the pointed icon (off hides it)')],
-    ['show-focused-app-background', N_('Show focused app background'),
-        N_('Mark the app that owns the focused window')],
-];
-
-// syncControls reads controls.backgroundRows.
-export function createBackgroundRows(group, settings, controls, state) {
-    for (const [key, title, subtitle] of BACKGROUND_ROWS) {
-        const row = createSwitchRow(group, _(title), _(subtitle),
-            enabled => setBooleanCommitted(settings, key, enabled), state);
-        controls.backgroundRows.push([row, key]);
-    }
 }
 
 function createAdjustment(lower, upper, step) {

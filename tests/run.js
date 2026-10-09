@@ -30,6 +30,8 @@ const modules = [
     './dockVisibility.test.js',
     './surfaceOutline.test.js',
     './iconSpacing.test.js',
+    './iconGroup.test.js',
+    './dockSample.test.js',
     './dockOverflow.test.js',
     './iconMotionController.test.js',
     './iconTexture.test.js',

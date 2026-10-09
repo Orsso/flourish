@@ -1,3 +1,5 @@
+import GLib from 'gi://GLib';
+
 import {DEFAULT_PRESET, Preset, RecipePart, getBuiltInRecipe} from './catalog.js';
 
 const DEFINITIONS = [
@@ -82,6 +84,21 @@ export function setIntCommitted(settings, key, value) {
 
 export function setStringCommitted(settings, key, value) {
     settings.set_string(key, value);
+    settings.apply();
+}
+
+// Gaps stay at their position while apps move; null means no gap.
+export function groupGaps(favoriteIds, stored) {
+    return new Map(favoriteIds.slice(1).map((id, index) => [id, stored[index + 1] ?? null]));
+}
+
+export function setGroupGap(settings, position, gap) {
+    const gaps = settings.get_value('group-gaps').deep_unpack();
+    if (gap)
+        gaps[position] = gap;
+    else
+        delete gaps[position];
+    settings.set_value('group-gaps', new GLib.Variant('a{us}', gaps));
     settings.apply();
 }
 

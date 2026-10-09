@@ -5,6 +5,7 @@ import {
     resetCustom,
     selectPreset,
     setBooleanCommitted,
+    setGroupGap,
     setStringCommitted,
     switchToPresetFromCustom,
     writeCustomRecipe,
@@ -326,4 +327,21 @@ test('every attention key round-trips through custom', () => {
         assertEqual(settings.values[key], value);
         assertEqual(readActiveRecipe(settings).attention[property], value);
     }
+});
+
+test('a group gap is written or removed per position', () => {
+    let stored = {1: 'small'};
+    let applied = 0;
+    const settings = {
+        get_value: () => ({deep_unpack: () => ({...stored})}),
+        set_value: (key, value) => {
+            stored = value.deep_unpack();
+        },
+        apply: () => applied++,
+    };
+    setGroupGap(settings, 3, 'normal');
+    assertDeepEqual(stored, {1: 'small', 3: 'normal'});
+    setGroupGap(settings, 1, null);
+    assertDeepEqual(stored, {3: 'normal'});
+    assertEqual(applied, 2);
 });

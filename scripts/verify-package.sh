@@ -10,11 +10,13 @@ required=(
     extension.js
     lib/motion/catalog.js
     lib/motion/continuum.js
+    lib/motion/outline.js
     lib/motion/settings.js
     lib/motion/transforms.js
     lib/prefs/advancedPage.js
     lib/prefs/appearancePage.js
     lib/prefs/demoSequence.js
+    lib/prefs/dockSample.js
     lib/prefs/motionPreview.js
     lib/prefs/rows.js
     lib/runtime/attentionEngine.js
@@ -31,6 +33,7 @@ required=(
     lib/runtime/iconDim.js
     lib/runtime/iconDecorations.js
     lib/runtime/iconFollower.js
+    lib/runtime/iconGroup.js
     lib/runtime/iconMotionController.js
     lib/runtime/launchEngine.js
     lib/runtime/liveRegistry.js
@@ -43,6 +46,7 @@ required=(
     dash-hover-background-hidden.css
     dash-focused-app-background.css
     icon-spacing.css
+    group-gaps.css
 )
 
 for path in "${required[@]}"; do

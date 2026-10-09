@@ -1,5 +1,5 @@
 import {OutlineLight, OutlineStyle} from '../flourish@orsso.github.io/lib/motion/catalog.js';
-import {outlinePaint} from '../flourish@orsso.github.io/lib/runtime/surfaceOutline.js';
+import {outlinePaint} from '../flourish@orsso.github.io/lib/motion/outline.js';
 
 test('no outline draws nothing, at any intensity', () => {
     assertEqual(outlinePaint(OutlineStyle.NONE, 60, OutlineLight.TOP_LEFT, false), null);

@@ -229,6 +229,12 @@
       <description>Gap between icons in pixels, in steps of 2; -1 leaves it to the theme or the dock.</description>
     </key>
 
+    <key name="group-gaps" type="a{us}">
+      <default>{}</default>
+      <summary>Group gaps</summary>
+      <description>Gaps between favorites, by the position of the favorite after the gap (the first is 0): small or normal.</description>
+    </key>
+
     <key name="dock-outline" enum="org.gnome.shell.extensions.flourish.dock-outline">
       <default>'none'</default>
       <summary>Outline</summary>

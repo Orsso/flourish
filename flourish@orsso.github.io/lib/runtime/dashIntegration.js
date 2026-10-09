@@ -1,18 +1,20 @@
 import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
+import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {Dash} from 'resource:///org/gnome/shell/ui/dash.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {ScreenEdge} from '../motion/catalog.js';
 import {FocusHighlight} from './focusHighlight.js';
-import {dashSpacing, pointerOnSurface} from './geometry.js';
+import {dashSpacing, marginsAlong, pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
 import {SurfaceOutline} from './surfaceOutline.js';
 
 export class DashIntegration {
     #box = null;
     #highlight = null;
+    #injections = null;
     #outline;
     #savedClip = false;
     #scheduler;
@@ -64,6 +66,15 @@ export class DashIntegration {
         Main.overview.connectObject('hiding', () => this.#surface.clearPointer(), this);
         Main.layoutManager.connectObject('monitors-changed', () => this.#surface.invalidateGeometry(), this);
         this.#surface.refreshStyles();
+        // The dash fits its icons without the container margins that group gaps add.
+        this.#injections = new InjectionManager();
+        this.#injections.overrideMethod(dash, '_adjustIconSize', original => function () {
+            const maxWidth = this._maxWidth;
+            if (maxWidth !== -1)
+                this._maxWidth -= marginsAlong(this._box);
+            original.call(this);
+            this._maxWidth = maxWidth;
+        });
         this.refreshIconSize();
     }
 
@@ -83,7 +94,10 @@ export class DashIntegration {
         Main.overview.disconnectObject(this);
         this.#surface.dispose();
         this.#surface = null;
+        this.#injections.clear();
+        this.#injections = null;
         if (this.#box) {
+            Main.overview.dash._adjustIconSize();
             this.#highlight.disable();
             this.#box.disconnectObject(this);
             this.#box.clip_to_allocation = this.#savedClip;
@@ -94,6 +108,11 @@ export class DashIntegration {
 
     setRecipe(recipe) {
         this.#surface?.setRecipe(recipe);
+    }
+
+    setGroups(groups) {
+        this.#surface?.setGroups(groups);
+        this.refreshIconSize();
     }
 
     refreshStyles() {

@@ -26,7 +26,7 @@ pot:
 	xgettext --from-code=UTF-8 --language=JavaScript --keyword=_ --keyword=N_ \
 		--package-name='Flourish' \
 		--output=$(UUID)/po/flourish.pot \
-		$(UUID)/prefs.js $(UUID)/lib/prefs/*.js
+		$(UUID)/extension.js $(UUID)/prefs.js $(UUID)/lib/prefs/*.js
 
 # build needs only gnome-extensions; pack runs the checks first.
 build:
@@ -38,6 +38,7 @@ build:
 		--extra-source=dash-hover-background-hidden.css \
 		--extra-source=dash-focused-app-background.css \
 		--extra-source=icon-spacing.css \
+		--extra-source=group-gaps.css \
 		--extra-source=../README.md \
 		--extra-source=../LICENSE \
 		$(UUID)

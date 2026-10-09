@@ -7,6 +7,7 @@ import {OVERSHOOT_RESERVE, fitHoverLevel, hoverActive, waveFalloff, waveGeometry
 import {getOrientation} from '../motion/transforms.js';
 import {IconMotionController} from './iconMotionController.js';
 import {IconDecorations} from './iconDecorations.js';
+import {IconGroup} from './iconGroup.js';
 import {BackgroundExpansion} from './geometry.js';
 import {LiveRegistry} from './liveRegistry.js';
 
@@ -16,6 +17,8 @@ export class MotionSurface {
     #animationsEnabled;
     #clock;
     #contexts = new Map();
+    #groups = {gaps: new Map()};
+    #iconGroups = new Map();
     #rows = new Set();
     #getPointer;
     #onUrgentChanged;
@@ -67,6 +70,12 @@ export class MotionSurface {
     refreshStyles() {
         for (const controller of this.controllers)
             controller.refreshStyle();
+    }
+
+    setGroups(groups) {
+        this.#groups = groups;
+        for (const group of this.#iconGroups.values())
+            group.setGroups(groups);
     }
 
     invalidateGeometry() {
@@ -123,6 +132,9 @@ export class MotionSurface {
     }
 
     dispose() {
+        for (const group of this.#iconGroups.values())
+            group.dispose();
+        this.#iconGroups.clear();
         this.#registry.disable();
         this.#contexts.clear();
     }
@@ -147,6 +159,7 @@ export class MotionSurface {
             onMenuChanged: (changed, open) => row.holdPointer(changed, open),
             onDestroyed: destroyed => {
                 this.#contexts.delete(destroyed);
+                this.#iconGroups.delete(destroyed);
                 row.remove(destroyed);
             },
             onUrgentChanged: (changed, urgent) => this.#onUrgentChanged(changed, urgent),
@@ -154,6 +167,9 @@ export class MotionSurface {
         row.add(controller, container, boxChildren(container));
         this.#contexts.set(controller, context);
         this.#registry.addController(icon, controller);
+        // Show Apps has no app and never starts a group.
+        if (icon.app)
+            this.#iconGroups.set(controller, new IconGroup({container, icon, groups: this.#groups}));
         // An icon can be urgent before Flourish finds it.
         if (controller.urgent)
             this.#onUrgentChanged(controller, true);

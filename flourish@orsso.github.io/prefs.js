@@ -25,9 +25,11 @@ const PRESET_DETAILS = [
 
 export default class FlourishPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+        // Tall enough for the whole Appearance page; pages keep a 600 px column.
+        window.set_default_size(680, 800);
         const settings = this.getSettings();
         const state = {syncing: false};
-        const controls = {dockPresent: dashToDockEnabled(), backgroundRows: []};
+        const controls = {dockPresent: dashToDockEnabled()};
 
         const essentials = new Adw.PreferencesPage({
             name: 'essentials',
@@ -152,8 +154,6 @@ function syncControls(settings, controls, state) {
     controls.launchEnabled.active = recipe.launch.enabled;
     if (controls.attentionEnabled)
         controls.attentionEnabled.active = recipe.attention.enabled;
-    for (const [row, key] of controls.backgroundRows)
-        row.active = settings.get_boolean(key);
     syncAppearancePage(controls, settings);
 
     syncAdvancedPage(controls, recipe);

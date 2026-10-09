@@ -110,6 +110,13 @@ export function dashSpacing(box, monitor) {
     };
 }
 
+export function marginsAlong(box) {
+    return box.get_children().reduce((sum, child) => {
+        child.ensure_style();
+        return sum + child.margin_left + child.margin_right;
+    }, 0);
+}
+
 export function expandDockClip([x, y, width, height], edge, reserve) {
     switch (edge) {
         case ScreenEdge.TOP:

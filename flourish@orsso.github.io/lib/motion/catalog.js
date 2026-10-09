@@ -136,6 +136,8 @@ export const AttentionReminders = {MIN: 1, MAX: 30};
 // THEME leaves the spacing to the theme or the dock.
 export const IconSpacing = {THEME: -1, MIN: 0, MAX: 24, STEP: 2};
 
+export const GroupGap = {SMALL: 'small', NORMAL: 'normal'};
+
 export const DEFAULT_PRESET = Preset.SUBTLE;
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.

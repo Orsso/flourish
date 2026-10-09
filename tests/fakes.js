@@ -247,10 +247,19 @@ export class FakeContainer extends FakeEmitter {
         super();
         this.child = child;
         this.parent = null;
+        this.classes = new Set();
     }
 
     get_parent() {
         return this.parent;
+    }
+
+    add_style_class_name(name) {
+        this.classes.add(name);
+    }
+
+    remove_style_class_name(name) {
+        this.classes.delete(name);
     }
 }
 
@@ -327,10 +336,19 @@ export class FakeRowContainer extends FakeEmitter {
         this.horizontal = horizontal;
         this.parent = null;
         this.reads = 0;
+        this.classes = new Set();
     }
 
     get_parent() {
         return this.parent;
+    }
+
+    add_style_class_name(name) {
+        this.classes.add(name);
+    }
+
+    remove_style_class_name(name) {
+        this.classes.delete(name);
     }
 
     get_allocation_box() {

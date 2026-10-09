@@ -30,8 +30,10 @@ function makeSurface({
         horizontal, position, makeBin: () => new MeasurableBin(parent),
     });
     if (apps) {
-        for (const icon of box.icons)
-            icon.app = {get_n_windows: () => 1};
+        for (const icon of box.icons) {
+            icon.app = {get_id: () => 'app.desktop', get_n_windows: () => 1};
+            icon._menu = new FakeEmitter();
+        }
     }
     let now = 0;
     const surface = new MotionSurface({

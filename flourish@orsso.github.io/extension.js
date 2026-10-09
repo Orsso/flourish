@@ -2,11 +2,13 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
-import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import {Extension, gettext as _} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {IconSpacing} from './lib/motion/catalog.js';
-import {readActiveRecipe} from './lib/motion/settings.js';
+import {GroupGap, IconSpacing} from './lib/motion/catalog.js';
+import {groupGaps, readActiveRecipe, setGroupGap} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
 import {DockIntegration} from './lib/runtime/dockIntegration.js';
@@ -20,6 +22,7 @@ const STYLESHEETS = [
     'dock-focused-app-background-hidden.css',
     'dash-focused-app-background.css',
     'icon-spacing.css',
+    'group-gaps.css',
 ];
 
 export default class FlourishExtension extends Extension {
@@ -60,6 +63,8 @@ export default class FlourishExtension extends Extension {
         this._dockIntegration.enable(this._recipe);
         this._dashIntegration.enable(this._recipe);
         this._connectPointer();
+        this._syncGroups();
+        AppFavorites.getAppFavorites().connectObject('changed', () => this._syncGroups(), this);
 
         this._launchEngine = new LaunchEngine({
             getController: icon =>
@@ -99,6 +104,7 @@ export default class FlourishExtension extends Extension {
         }
         this._settings.disconnectObject(this);
         St.Settings.get().disconnectObject(this);
+        AppFavorites.getAppFavorites().disconnectObject(this);
 
         this._launchEngine.disable();
         this._launchEngine = null;
@@ -125,8 +131,30 @@ export default class FlourishExtension extends Extension {
         this._recipe = readActiveRecipe(this._settings);
         this._dockIntegration.setRecipe(this._recipe);
         this._dashIntegration.setRecipe(this._recipe);
+        this._syncGroups();
         if (this._syncStyles())
             this._refreshStyles();
+    }
+
+    _syncGroups() {
+        const favorites = AppFavorites.getAppFavorites().getFavorites().map(app => app.get_id());
+        const gaps = groupGaps(favorites, this._settings.get_value('group-gaps').deep_unpack());
+        const groups = {
+            gaps,
+            createMenuItem: id => this._createGroupItem(favorites.indexOf(id), gaps.get(id) !== null),
+        };
+        this._dockIntegration.setGroups(groups);
+        this._dashIntegration.setGroups(groups);
+    }
+
+    _createGroupItem(position, active) {
+        const section = new PopupMenu.PopupMenuSection();
+        section.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        const item = new PopupMenu.PopupSwitchMenuItem(_('Start a group'), active);
+        item.connect('toggled', (_item, state) =>
+            setGroupGap(this._settings, position, state ? GroupGap.NORMAL : null));
+        section.addMenuItem(item);
+        return section;
     }
 
     // The stage covers gaps; native hover signals also refresh the pointer.
@@ -159,7 +187,7 @@ export default class FlourishExtension extends Extension {
         const spacing = this._settings.get_int('icon-spacing');
         const customSpacing = spacing !== IconSpacing.THEME;
         // No short-circuit: every sheet must sync.
-        const changed = [hideHover, hideHover, !showFocused, showFocused, customSpacing]
+        const changed = [hideHover, hideHover, !showFocused, showFocused, customSpacing, true]
             .map((enabled, index) => this._styles[index].setEnabled(enabled))
             .includes(true);
         // After the sheets: the icon size pass needs the spacing rules loaded.

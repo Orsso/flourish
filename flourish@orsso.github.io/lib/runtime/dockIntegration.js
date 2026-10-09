@@ -98,6 +98,10 @@ export class DockIntegration {
         this.#surface.refreshStyles();
     }
 
+    setGroups(groups) {
+        this.#surface.setGroups(groups);
+    }
+
     setOutline(style, intensity, light) {
         this.#outline.setStyle(style, intensity, light);
     }
