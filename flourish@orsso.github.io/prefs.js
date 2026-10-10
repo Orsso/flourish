@@ -5,11 +5,11 @@ import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {ExtensionState} from 'resource:///org/gnome/Shell/Extensions/js/misc/extensionUtils.js';
 
-import {DASH_TO_DOCK_BUILDS, Preset, RecipePart, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {DASH_TO_DOCK_BUILDS, PRESET_APPEARANCE, Preset, RecipePart, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
-    resetCustom,
+    resetAll,
     selectPreset,
     switchToPresetFromCustom,
 } from './lib/motion/settings.js';
@@ -17,6 +17,14 @@ import {buildAnimationPages, syncAnimationPages} from './lib/prefs/animationPage
 import {buildAppearancePage, syncAppearancePage} from './lib/prefs/appearancePage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
 import {N_, createSwitchRow} from './lib/prefs/rows.js';
+
+// Switched off, each part is left to the Shell, the dock or the theme.
+const APPEARANCE_SWITCHES = [
+    ['spacing-enabled', N_('Icon spacing'), N_('Set the gap between icons')],
+    ['groups-enabled', N_('Groups'), N_('Gaps between groups of favorites')],
+    ['outline-enabled', N_('Outline'), N_('An edge around the dock background')],
+    ['backgrounds-enabled', N_('Backgrounds'), N_('Hide or add the hover and focused app tiles')],
+];
 
 const PRESET_DETAILS = [
     [Preset.SUBTLE, N_('Subtle')],
@@ -39,7 +47,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
             window.add(added);
             return added;
         };
-        const essentials = page(_('General'), 'applications-graphics-symbolic');
+        const essentials = page(_('General'), 'go-home-symbolic');
         const animations = {
             [RecipePart.HOVER]: page(_('Hover'), 'input-mouse-symbolic'),
             [RecipePart.PRESS]: page(_('Press'), 'input-touchpad-symbolic'),
@@ -48,6 +56,13 @@ export default class FlourishPreferences extends ExtensionPreferences {
         if (controls.dockPresent)
             animations[RecipePart.ATTENTION] = page(_('Attention'), 'preferences-system-notifications-symbolic');
         const appearance = page(_('Appearance'), 'preferences-desktop-appearance-symbolic');
+
+        const bannerGroup = new Adw.PreferencesGroup();
+        controls.idleBanner = new Adw.Banner({
+            title: _('Flourish changes nothing yet. Pick a preset or turn on a feature below.'),
+        });
+        bannerGroup.add(controls.idleBanner);
+        essentials.add(bannerGroup);
 
         const presetGroup = new Adw.PreferencesGroup({
             title: _('Presets'),
@@ -73,7 +88,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         controls.presets = new Map();
         for (const [preset, title] of PRESET_DETAILS) {
             const recipe = getBuiltInRecipe(preset);
-            const {button, preview} = createPresetCard(_(title), recipe);
+            const {button, preview} = createPresetCard(_(title), recipe, PRESET_APPEARANCE[preset]);
             button.connect('clicked', () => onPresetClicked({
                 window,
                 preset,
@@ -111,14 +126,22 @@ export default class FlourishPreferences extends ExtensionPreferences {
         }
         essentials.add(featureGroup);
 
+        const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
+        // Presets set these switches, so a change leaves the preset.
+        controls.appearanceSwitches = APPEARANCE_SWITCHES.map(([key, title, subtitle]) => [
+            createSwitchRow(appearanceGroup, _(title), _(subtitle), editor(key), state),
+            key,
+        ]);
+        essentials.add(appearanceGroup);
+
         const resetGroup = new Adw.PreferencesGroup();
         const resetRow = new Adw.ActionRow({
-            title: _('Reset Custom'),
-            subtitle: _('Copy the Subtle preset into Custom'),
+            title: _('Reset all settings'),
+            subtitle: _('Flourish goes back to changing nothing'),
         });
         const resetButton = new Gtk.Button({label: _('Reset'), valign: Gtk.Align.CENTER});
         resetButton.add_css_class('destructive-action');
-        resetButton.connect('clicked', () => resetCustom(settings));
+        resetButton.connect('clicked', () => confirmReset(window, settings));
         resetRow.add_suffix(resetButton);
         resetGroup.add(resetRow);
         essentials.add(resetGroup);
@@ -145,20 +168,41 @@ function syncControls(settings, controls, state) {
         card.preview.setSelected(id === preset);
         card.button.active = id === preset;
     }
-    controls.customBadge.visible = preset === Preset.CUSTOM;
-
     controls.hoverEnabled.active = recipe.hover.enabled;
     controls.pressEnabled.active = recipe.press.enabled;
     controls.launchEnabled.active = recipe.launch.enabled;
     if (controls.attentionEnabled)
         controls.attentionEnabled.active = recipe.attention.enabled;
+    for (const [row, key] of controls.appearanceSwitches)
+        row.active = settings.get_boolean(key);
+    const idle = Object.values(RecipePart).every(part => !recipe[part].enabled) &&
+        controls.appearanceSwitches.every(([row]) => !row.active);
+    controls.idleBanner.revealed = idle;
+    controls.customBadge.visible = preset === Preset.CUSTOM && !idle;
     syncAppearancePage(controls, settings);
 
     syncAnimationPages(controls, recipe);
     state.syncing = false;
 }
 
-function createPresetCard(title, recipe) {
+function confirmReset(window, settings) {
+    const dialog = new Adw.AlertDialog({
+        heading: _('Reset all settings?'),
+        body: _('Every Flourish setting goes back to its default. Your group gaps are kept for when you turn Groups back on. Flourish will change nothing until you pick a preset or turn on a feature.'),
+    });
+    dialog.add_response('cancel', _('Cancel'));
+    dialog.add_response('reset', _('Reset'));
+    dialog.set_response_appearance('reset', Adw.ResponseAppearance.DESTRUCTIVE);
+    dialog.set_default_response('cancel');
+    dialog.set_close_response('cancel');
+    dialog.connect('response', (_dialog, response) => {
+        if (response === 'reset')
+            resetAll(settings);
+    });
+    dialog.present(window);
+}
+
+function createPresetCard(title, recipe, appearance) {
     const button = new Gtk.ToggleButton({hexpand: true});
     button.add_css_class('card');
     const content = new Gtk.Box({
@@ -169,7 +213,7 @@ function createPresetCard(title, recipe) {
         margin_start: 6,
         margin_end: 6,
     });
-    const preview = new MotionPreview({recipe});
+    const preview = new MotionPreview({recipe, appearance});
     const titleLabel = new Gtk.Label({label: title});
     titleLabel.add_css_class('caption-heading');
     content.append(preview);

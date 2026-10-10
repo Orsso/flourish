@@ -56,12 +56,12 @@
   <schema id="org.gnome.shell.extensions.flourish"
           path="/org/gnome/shell/extensions/flourish/">
     <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
-      <default>"subtle"</default>
+      <default>"custom"</default>
       <summary>Current preset</summary>
     </key>
 
     <key name="custom-hover-enabled" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Use hover motion in Custom</summary>
     </key>
     <key name="custom-hover-scale" type="d">
@@ -94,7 +94,7 @@
     </key>
 
     <key name="custom-press-enabled" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Use press feedback in Custom</summary>
     </key>
     <key name="custom-press-mode" enum="org.gnome.shell.extensions.flourish.press-mode">
@@ -117,7 +117,7 @@
     </key>
 
     <key name="custom-launch-enabled" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Use launch animation in Custom</summary>
     </key>
     <key name="custom-launch-effect" enum="org.gnome.shell.extensions.flourish.launch-effect">
@@ -168,7 +168,7 @@
       <summary>Stretch effect elasticity</summary>
     </key>
     <key name="custom-attention-enabled" type="b">
-      <default>true</default>
+      <default>false</default>
       <summary>Use the attention animation in Custom</summary>
     </key>
     <key name="custom-attention-effect" enum="org.gnome.shell.extensions.flourish.attention-effect">
@@ -210,23 +210,41 @@
       <summary>Show the attention animation while the dock is hidden</summary>
     </key>
 
-    <key name="show-hover-background" type="b">
+    <key name="backgrounds-enabled" type="b">
       <default>false</default>
+      <summary>Adjust backgrounds</summary>
+      <description>When false, the dash and the dock keep their own hover and focused app backgrounds.</description>
+    </key>
+
+    <key name="show-hover-background" type="b">
+      <default>true</default>
       <summary>Show the hover background</summary>
       <description>When false, hide the hover tile behind the icon.</description>
     </key>
 
     <key name="show-focused-app-background" type="b">
-      <default>false</default>
+      <default>true</default>
       <summary>Show the focused app background</summary>
       <description>Mark the app that owns the focused window in the dash or dock.</description>
     </key>
 
+    <key name="spacing-enabled" type="b">
+      <default>false</default>
+      <summary>Adjust icon spacing</summary>
+      <description>When false, the theme or the dock decides the gap between icons.</description>
+    </key>
+
     <key name="icon-spacing" type="i">
-      <default>-1</default>
-      <range min="-1" max="24"/>
+      <default>16</default>
+      <range min="0" max="24"/>
       <summary>Icon spacing</summary>
-      <description>Gap between icons in pixels, in steps of 2; -1 leaves it to the theme or the dock.</description>
+      <description>Gap between icons in pixels, in steps of 2.</description>
+    </key>
+
+    <key name="groups-enabled" type="b">
+      <default>false</default>
+      <summary>Icon groups</summary>
+      <description>Show the gaps set in group-gaps.</description>
     </key>
 
     <key name="group-gaps" type="a{us}">
@@ -235,8 +253,14 @@
       <description>Gaps between favorites, by the position of the favorite after the gap (the first is 0): small or normal.</description>
     </key>
 
+    <key name="outline-enabled" type="b">
+      <default>false</default>
+      <summary>Outline</summary>
+      <description>Draw the outline set in dock-outline.</description>
+    </key>
+
     <key name="dock-outline" enum="org.gnome.shell.extensions.flourish.dock-outline">
-      <default>'none'</default>
+      <default>'auto'</default>
       <summary>Outline</summary>
       <description>Draw an edge around the dock and dash background. Auto follows the color scheme; glass lights the corners.</description>
     </key>

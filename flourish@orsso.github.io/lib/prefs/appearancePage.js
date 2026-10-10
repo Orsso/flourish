@@ -3,19 +3,18 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {GroupGap, IconSpacing, OutlineLight, OutlineStyle} from '../motion/catalog.js';
-import {setBooleanCommitted, setGroupGap, setIntCommitted, setStringCommitted} from '../motion/settings.js';
+import {GroupGap, OutlineLight, OutlineStyle} from '../motion/catalog.js';
+import {editCustomSetting, setGroupGap} from '../motion/settings.js';
 import {DockSample} from './dockSample.js';
 import {N_, createScaleRow, createSwitchRow} from './rows.js';
 
 const SPACINGS = [
     [N_('Tight'), 4],
     [N_('Compact'), 8],
-    [N_('Theme'), IconSpacing.THEME],
+    [N_('Comfortable'), 16],
     [N_('Airy'), 24],
 ];
 const OUTLINES = [
-    [N_('None'), OutlineStyle.NONE],
     [N_('Theme'), OutlineStyle.AUTO],
     [N_('Light'), OutlineStyle.LIGHT],
     [N_('Dark'), OutlineStyle.DARK],
@@ -28,6 +27,8 @@ const LIGHTS = [
 ];
 // A click on a gap moves to the next step.
 const GAP_CYCLE = [null, GroupGap.SMALL, GroupGap.NORMAL];
+const OFF_HINT = N_('Off in General');
+const BACKGROUNDS_OFF_HINT = N_('Off in General: the dash and the dock keep their own tiles');
 // The page column is about 600 px; the preview shrinks its icons to fit it.
 const PREVIEW_WIDTH = 540;
 const PREVIEW_ICON = 48;
@@ -38,10 +39,8 @@ export function buildAppearancePage(page, controls, settings, state) {
     controls.appearance = appearance;
     const apps = installedFavorites(favorites);
 
-    const dock = new Adw.PreferencesGroup({
-        title: _('Your dock'),
-        description: _('Click between two favorites to add a gap, again to widen it, and once more to remove it. Gaps stay in place when apps move.'),
-    });
+    const dock = new Adw.PreferencesGroup({title: _('Your dock')});
+    appearance.dock = dock;
     appearance.preview = new DockSample({
         apps,
         iconSize: previewIconSize(apps.length),
@@ -60,31 +59,39 @@ export function buildAppearancePage(page, controls, settings, state) {
     dock.add(frame);
     page.add(dock);
 
-    const layout = new Adw.PreferencesGroup({title: _('Layout')});
-    addSegments(appearance, layout, _('Icon spacing'), SPACINGS, 'spacing', state,
-        value => setIntCommitted(settings, 'icon-spacing', value));
-    page.add(layout);
+    // Each section follows its switch in General; off, it stays visible but greyed.
+    appearance.sections = [];
+    const section = (title, key) => {
+        const group = new Adw.PreferencesGroup({title});
+        appearance.sections.push({group, key});
+        page.add(group);
+        return group;
+    };
+    const layout = section(_('Icon spacing'), 'spacingEnabled');
+    addSegments(appearance, layout, _('Gap between icons'), SPACINGS, 'spacing', state,
+        value => editCustomSetting(settings, 'icon-spacing', value));
 
-    const outline = new Adw.PreferencesGroup({title: _('Outline')});
+    const outline = section(_('Outline'), 'outlineEnabled');
     addSegments(appearance, outline, _('Style'), OUTLINES, 'style', state,
-        value => setStringCommitted(settings, 'dock-outline', value));
+        value => editCustomSetting(settings, 'dock-outline', value));
     appearance.light = addSegments(appearance, outline, _('Light from'), LIGHTS, 'light', state,
-        value => setStringCommitted(settings, 'outline-light', value));
+        value => editCustomSetting(settings, 'outline-light', value));
     appearance.intensity = createScaleRow(outline, _('Intensity'), 0, 100, 5,
-        value => setIntCommitted(settings, 'outline-intensity', Math.round(value)), state);
-    page.add(outline);
+        value => editCustomSetting(settings, 'outline-intensity', Math.round(value)), state);
 
-    const backgrounds = new Adw.PreferencesGroup({title: _('Backgrounds')});
+    const backgrounds = section(_('Backgrounds'), 'backgroundsEnabled');
+    // Off, one line replaces the switches so the list is not left empty.
+    appearance.backgroundsOff = new Adw.ActionRow({title: _(BACKGROUNDS_OFF_HINT)});
+    backgrounds.add(appearance.backgroundsOff);
     for (const [key, setting, title, subtitle] of [
         ['hoverTile', 'show-hover-background', _('Hover background'), _('The tile under the pointed icon')],
         ['focusTile', 'show-focused-app-background', _('Focused app background'), _('Marks the app that owns the focused window')],
     ]) {
         const row = createSwitchRow(backgrounds, title, subtitle,
-            enabled => setBooleanCommitted(settings, setting, enabled), state);
+            enabled => editCustomSetting(settings, setting, enabled), state);
         previewOnHover(appearance, row, key, true);
         appearance.switches.push({row, key});
     }
-    page.add(backgrounds);
 
     favorites.connect('changed::favorite-apps', () => {
         const changed = installedFavorites(favorites);
@@ -143,7 +150,18 @@ function previewOnHover(appearance, widget, key, value) {
 function refreshPreview(appearance) {
     if (!appearance.current)
         return;
-    const shown = {...appearance.current, ...appearance.hovered};
+    const {current} = appearance;
+    // The preview shows what the dock shows: a switched off part is native.
+    const shown = {
+        ...current,
+        spacing: current.spacingEnabled ? current.spacing : -1,
+        gaps: current.groupsEnabled ? current.gaps : {},
+        style: current.outlineEnabled ? current.style : OutlineStyle.NONE,
+        // Nothing is hovered at rest; hovering the Hover background row shows the tile.
+        hoverTile: false,
+        focusTile: current.backgroundsEnabled && current.focusTile,
+        ...appearance.hovered,
+    };
     // The light only shows on the glass outline.
     if (appearance.hovered?.light)
         shown.style = OutlineStyle.GLASS;
@@ -153,6 +171,10 @@ function refreshPreview(appearance) {
 export function syncAppearancePage(controls, settings) {
     const {appearance} = controls;
     appearance.current = {
+        spacingEnabled: settings.get_boolean('spacing-enabled'),
+        groupsEnabled: settings.get_boolean('groups-enabled'),
+        outlineEnabled: settings.get_boolean('outline-enabled'),
+        backgroundsEnabled: settings.get_boolean('backgrounds-enabled'),
         spacing: settings.get_int('icon-spacing'),
         gaps: settings.get_value('group-gaps').deep_unpack(),
         style: settings.get_string('dock-outline'),
@@ -166,8 +188,20 @@ export function syncAppearancePage(controls, settings) {
         button.active = current[key] === value;
     for (const {row, key} of appearance.switches)
         row.active = current[key];
+    for (const {group, key} of appearance.sections) {
+        group.sensitive = current[key];
+        // The backgrounds say it in their own row.
+        group.description = current[key] || key === 'backgroundsEnabled' ? null : _(OFF_HINT);
+    }
+    // Greyed switches would read as choices Flourish applies; the docks keep their own tiles.
+    for (const {row} of appearance.switches)
+        row.visible = current.backgroundsEnabled;
+    appearance.backgroundsOff.visible = !current.backgroundsEnabled;
+    appearance.dock.description = current.groupsEnabled
+        ? _('Click between two favorites to add a gap, again to widen it, and once more to remove it. Gaps stay in place when apps move.')
+        : _('Turn on Groups in General to add gaps between favorites.');
+    appearance.preview.can_target = current.groupsEnabled;
     appearance.intensity.adjustment.value = current.intensity;
-    appearance.intensity.row.sensitive = current.style !== OutlineStyle.NONE;
     appearance.light.visible = current.style === OutlineStyle.GLASS;
     refreshPreview(appearance);
 }

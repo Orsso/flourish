@@ -133,15 +133,46 @@ export const AttentionCycles = {MIN: 1, MAX: 10};
 export const AttentionCyclePause = {MIN: 0, MAX: 1000};
 export const AttentionInterval = {MIN: 2, MAX: 60};
 export const AttentionReminders = {MIN: 1, MAX: 30};
-// THEME leaves the spacing to the theme or the dock.
-export const IconSpacing = {THEME: -1, MIN: 0, MAX: 24, STEP: 2};
+export const IconSpacing = {MIN: 0, MAX: 24, STEP: 2};
 
 export const GroupGap = {SMALL: 'small', NORMAL: 'normal'};
 
-export const DEFAULT_PRESET = Preset.SUBTLE;
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.
 export const DASH_TO_DOCK_BUILDS = ['dash-to-dock@micxgx.gmail.com', 'ubuntu-dock@ubuntu.com'];
+
+// A preset turns every feature on and hides the tiles; the gaps stay the user's.
+const PRESET_SWITCHES = {
+    'spacing-enabled': true,
+    'groups-enabled': true,
+    'backgrounds-enabled': true,
+    'show-hover-background': false,
+    'show-focused-app-background': false,
+};
+
+export const PRESET_APPEARANCE = {
+    [Preset.SUBTLE]: {
+        ...PRESET_SWITCHES,
+        'icon-spacing': 16,
+        'outline-enabled': false,
+    },
+    [Preset.BALANCED]: {
+        ...PRESET_SWITCHES,
+        'icon-spacing': 8,
+        'outline-enabled': true,
+        'dock-outline': OutlineStyle.AUTO,
+        'outline-intensity': 50,
+    },
+    [Preset.EXPRESSIVE]: {
+        ...PRESET_SWITCHES,
+        'icon-spacing': 4,
+        'outline-enabled': true,
+        'dock-outline': OutlineStyle.GLASS,
+        'outline-intensity': 30,
+        'outline-light': OutlineLight.TOP_LEFT,
+    },
+    [Preset.CUSTOM]: {},
+};
 
 const COMMON_LAUNCH = {
     enabled: true,

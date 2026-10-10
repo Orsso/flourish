@@ -7,8 +7,8 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {GroupGap, IconSpacing} from './lib/motion/catalog.js';
-import {groupGaps, readActiveRecipe, setGroupGap} from './lib/motion/settings.js';
+import {GroupGap, OutlineStyle} from './lib/motion/catalog.js';
+import {groupGaps, migrateAppearance, readActiveRecipe, setGroupGap} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
 import {DockIntegration} from './lib/runtime/dockIntegration.js';
@@ -28,6 +28,7 @@ const STYLESHEETS = [
 export default class FlourishExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
+        migrateAppearance(this._settings);
         this._recipe = readActiveRecipe(this._settings);
 
         const laters = global.compositor.get_laters();
@@ -138,7 +139,9 @@ export default class FlourishExtension extends Extension {
 
     _syncGroups() {
         const favorites = AppFavorites.getAppFavorites().getFavorites().map(app => app.get_id());
-        const gaps = groupGaps(favorites, this._settings.get_value('group-gaps').deep_unpack());
+        // Groups off: no gap and no menu switch.
+        const gaps = this._settings.get_boolean('groups-enabled')
+            ? groupGaps(favorites, this._settings.get_value('group-gaps').deep_unpack()) : new Map();
         const groups = {
             gaps,
             createMenuItem: id => this._createGroupItem(favorites.indexOf(id), gaps.get(id) !== null),
@@ -175,19 +178,22 @@ export default class FlourishExtension extends Extension {
     }
 
     _syncStyles() {
-        const hideHover = !this._settings.get_boolean('show-hover-background');
-        const showFocused = this._settings.get_boolean('show-focused-app-background');
+        // Each switch off leaves that part to the dash, the dock or the theme.
+        const backgrounds = this._settings.get_boolean('backgrounds-enabled');
+        const hideHover = backgrounds && !this._settings.get_boolean('show-hover-background');
+        const focused = this._settings.get_boolean('show-focused-app-background');
         const outline = [
-            this._settings.get_string('dock-outline'),
+            this._settings.get_boolean('outline-enabled')
+                ? this._settings.get_string('dock-outline') : OutlineStyle.NONE,
             this._settings.get_int('outline-intensity'),
             this._settings.get_string('outline-light'),
         ];
         this._dockIntegration.setOutline(...outline);
         this._dashIntegration.setOutline(...outline);
         const spacing = this._settings.get_int('icon-spacing');
-        const customSpacing = spacing !== IconSpacing.THEME;
+        const customSpacing = this._settings.get_boolean('spacing-enabled');
         // No short-circuit: every sheet must sync.
-        const changed = [hideHover, hideHover, !showFocused, showFocused, customSpacing, true]
+        const changed = [hideHover, hideHover, backgrounds && !focused, backgrounds && focused, customSpacing, true]
             .map((enabled, index) => this._styles[index].setEnabled(enabled))
             .includes(true);
         // After the sheets: the icon size pass needs the spacing rules loaded.

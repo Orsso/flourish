@@ -3,8 +3,9 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 
-import {PressMode, RecipePart, ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
+import {OutlineLight, OutlineStyle, PressMode, RecipePart, ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
 import {hoverActive, waveOffsets, waveFalloff} from '../motion/continuum.js';
+import {REFERENCE_INTENSITY, outlinePaint, paintOutline} from '../motion/outline.js';
 import {
     ATTENTION_SLIDE_DURATION,
     buildAttentionSegments,
@@ -43,17 +44,18 @@ const SWEEP_MS = 1500;
 const SWEEP_SETTLE_MS = 480;
 
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
-    _init({recipe, part = null, ...params}) {
+    _init({recipe, part = null, appearance = {}, ...params}) {
         const inline = Boolean(part);
         const iconCount = part === RecipePart.HOVER ? hoverIconCount(recipe) : 1;
         super._init({
-            height_request: inline ? 72 : 96,
+            height_request: inline ? 72 : 120,
             width_request: inline ? inlineWidth(iconCount) : -1,
             hexpand: !inline,
             valign: inline ? Gtk.Align.CENTER : Gtk.Align.FILL,
             ...params,
         });
         this._selected = false;
+        this._appearance = appearance;
         this._part = part;
         this._iconCount = iconCount;
         this._visibleCount = iconCount;
@@ -456,11 +458,26 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             return;
         }
         const centerX = width / 2;
-        const iconSize = 18;
-        const pad = 12;
-        const dockHeight = 38;
-        const dockWidth = Math.min(width - 14, 210);
-        const dockX = centerX - dockWidth / 2;
+        const iconSize = 22;
+        const pad = 10;
+        const dockHeight = 42;
+        const count = ICON_COLORS.length;
+        // A preset card shows its spacing and outline on a 48 px icon dock, scaled.
+        const appearance = this._appearance;
+        const gap = (appearance['spacing-enabled'] ? appearance['icon-spacing'] : THEME_GAP) * iconSize / 48;
+        const step = iconSize + gap;
+        const middle = (count - 1) / 2;
+        const transforms = Array.from({length: count}, (_, i) => this._iconTransforms(i, middle));
+        const offsets = this._spacing(transforms, iconSize);
+        const centers = transforms.map((_, i) => centerX + (i - middle) * step + offsets[i]);
+        // The background follows the icons as the wave spreads them, like the dock's own.
+        const edges = transforms.map(({motion}, i) => {
+            const half = iconSize * motion.scaleX / 2;
+            const shift = motion.translationX * iconSize / REFERENCE_ICON_SIZE;
+            return [centers[i] + shift - half, centers[i] + shift + half];
+        });
+        const dockX = Math.min(...edges.map(([left]) => left)) - pad;
+        const dockWidth = Math.max(...edges.map(([, right]) => right)) + pad - dockX;
         const dockY = height - dockHeight - 8;
         const iconTop = dockY + (dockHeight - iconSize) / 2;
 
@@ -471,25 +488,30 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         cr.setSourceRGBA(0.22, 0.52, 0.85, this._selected ? 1 : 0.28);
         cr.stroke();
 
+        // A wide wave shrinks the scene around the bottom center instead of leaving the card.
+        const fit = Math.min(1, (width - 8) / dockWidth);
+        cr.save();
+        cr.translate(centerX, dockY + dockHeight);
+        cr.scale(fit, fit);
+        cr.translate(-centerX, -(dockY + dockHeight));
         roundedRectangle(cr, dockX, dockY, dockWidth, dockHeight, 13);
         cr.setSourceRGBA(0.16, 0.17, 0.20, 0.94);
-        cr.fillPreserve();
-        cr.setSourceRGBA(1, 1, 1, 0.12);
-        cr.setLineWidth(1);
-        cr.stroke();
-
-        const count = ICON_COLORS.length;
-        const middle = (count - 1) / 2;
-        const innerLeft = dockX + pad + iconSize / 2;
-        const innerRight = dockX + dockWidth - pad - iconSize / 2;
-        const step = (innerRight - innerLeft) / (count - 1);
-
-        const transforms = Array.from({length: count}, (_, i) => this._iconTransforms(i, middle));
-        const offsets = this._spacing(transforms, iconSize);
-        for (let i = 0; i < count; i++) {
-            drawIcon(cr, innerLeft + i * step + offsets[i], iconTop, iconSize,
-                ICON_COLORS[i], transforms[i]);
+        cr.fill();
+        // The card is dark, so a theme outline draws its light edge.
+        const paint = appearance['outline-enabled'] && outlinePaint(
+            appearance['dock-outline'] ?? OutlineStyle.AUTO,
+            appearance['outline-intensity'] ?? REFERENCE_INTENSITY,
+            appearance['outline-light'] ?? OutlineLight.TOP_LEFT, true);
+        if (paint) {
+            cr.save();
+            cr.translate(dockX, dockY);
+            paintOutline(cr, dockWidth, dockHeight, 13, paint);
+            cr.restore();
         }
+
+        for (let i = 0; i < count; i++)
+            drawIcon(cr, centers[i], iconTop, iconSize, ICON_COLORS[i], transforms[i]);
+        cr.restore();
     }
 
     _drawInline(cr, width, height) {
@@ -558,6 +580,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
 const REFERENCE_ICON_SIZE = 46;
 
+const THEME_GAP = 16;
 const ICON_COLORS = [
     [0.90, 0.42, 0.31],
     [0.95, 0.74, 0.30],

@@ -1,6 +1,6 @@
 import GLib from 'gi://GLib';
 
-import {DEFAULT_PRESET, Preset, RecipePart, getBuiltInRecipe} from './catalog.js';
+import {OutlineStyle, PRESET_APPEARANCE, Preset, RecipePart, getBuiltInRecipe} from './catalog.js';
 
 const DEFINITIONS = [
     ['custom-hover-enabled', 'boolean', RecipePart.HOVER, 'enabled'],
@@ -37,7 +37,22 @@ const DEFINITIONS = [
     ['custom-attention-peek', 'boolean', RecipePart.ATTENTION, 'peekWhenHidden'],
 ].map(([key, type, part, property]) => ({key, type, part, property}));
 
-const DEFINITION_BY_KEY = new Map(DEFINITIONS.map(item => [item.key, item]));
+// Appearance keys a preset sets, so editing one leaves the preset like a motion key.
+const APPEARANCE_DEFINITIONS = [
+    ['spacing-enabled', 'boolean'],
+    ['icon-spacing', 'int'],
+    ['groups-enabled', 'boolean'],
+    ['backgrounds-enabled', 'boolean'],
+    ['show-hover-background', 'boolean'],
+    ['show-focused-app-background', 'boolean'],
+    ['outline-enabled', 'boolean'],
+    ['dock-outline', 'string'],
+    ['outline-intensity', 'int'],
+    ['outline-light', 'string'],
+].map(([key, type]) => ({key, type}));
+
+const DEFINITION_BY_KEY = new Map([...DEFINITIONS, ...APPEARANCE_DEFINITIONS]
+    .map(item => [item.key, item]));
 
 // The stored profile key predates the preset wording.
 export function readActiveRecipe(settings) {
@@ -68,8 +83,14 @@ export function editCustomSetting(settings, key, value) {
 
 export function selectPreset(settings, preset) {
     settings.set_string('motion-profile', preset);
+    writePresetAppearance(settings, preset);
     // delay() sticks for this GSettings object, so presets call apply() too.
     settings.apply();
+}
+
+function writePresetAppearance(settings, preset) {
+    for (const [key, value] of Object.entries(PRESET_APPEARANCE[preset]))
+        write(settings, DEFINITION_BY_KEY.get(key), value);
 }
 
 export function setBooleanCommitted(settings, key, value) {
@@ -106,14 +127,32 @@ export function switchToPresetFromCustom(settings, preset) {
     settings.delay();
     writeCustomRecipe(settings, getBuiltInRecipe(preset));
     settings.set_string('motion-profile', preset);
+    writePresetAppearance(settings, preset);
     settings.apply();
 }
 
-export function resetCustom(settings) {
+// Every key back to its default, so Flourish changes nothing; the gaps wait for Groups.
+export function resetAll(settings) {
     settings.delay();
-    writeCustomRecipe(settings, getBuiltInRecipe(DEFAULT_PRESET));
-    settings.set_string('motion-profile', Preset.CUSTOM);
+    for (const key of settings.settings_schema.list_keys()) {
+        if (key !== 'group-gaps')
+            settings.reset(key);
+    }
     settings.apply();
+}
+
+// 1.2 stored the outline and the backgrounds without a switch; keep what was set.
+export function migrateAppearance(settings) {
+    if (settings.get_user_value('outline-enabled') === null && settings.get_user_value('dock-outline') !== null) {
+        if (settings.get_string('dock-outline') === OutlineStyle.NONE)
+            settings.reset('dock-outline');
+        else
+            settings.set_boolean('outline-enabled', true);
+    }
+    if (settings.get_user_value('backgrounds-enabled') === null &&
+        ['show-hover-background', 'show-focused-app-background']
+            .some(key => settings.get_user_value(key) !== null))
+        settings.set_boolean('backgrounds-enabled', true);
 }
 
 function write(settings, item, value) {

@@ -49,8 +49,8 @@ const BOUNDED_KEYS = [
     ['custom-attention-reminders', AttentionReminders],
 ];
 
-test('icon spacing spans the theme value and the catalog gaps', () => {
-    assertDeepEqual(rangeOf('icon-spacing'), {min: IconSpacing.THEME, max: IconSpacing.MAX});
+test('icon spacing spans the catalog gaps', () => {
+    assertDeepEqual(rangeOf('icon-spacing'), {min: IconSpacing.MIN, max: IconSpacing.MAX});
 });
 
 test('custom magnification spans 100 to 200 percent', () => {

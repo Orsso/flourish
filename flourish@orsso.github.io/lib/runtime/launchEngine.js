@@ -95,7 +95,7 @@ export class LaunchEngine {
         // Super+number with the overview closed: the dash icon is hidden.
         const ghost = !target.mapped;
         const {launch, press} = controller.recipe;
-        if (launch.enabled && launch.effect === LaunchEffect.STOCK &&
+        if (playsStock(launch) &&
             !(press.enabled && press.mode === PressMode.LAUNCHES_ONLY)) {
             if (!ghost)
                 playStock();
@@ -182,7 +182,7 @@ export class LaunchEngine {
         if (session.finished)
             return;
         const {launch} = session.controller.recipe;
-        if (launch.enabled && launch.effect === LaunchEffect.STOCK && session.playStock) {
+        if (playsStock(launch) && session.playStock) {
             this.#finish(session);
             session.playStock();
         } else if (launch.enabled) {
@@ -338,4 +338,9 @@ function placement(visibility, edge, pivot) {
         slidRect: visibility.measure(),
         edge,
     });
+}
+
+// Off means the Shell's own zoom, like the stock effect.
+function playsStock(launch) {
+    return !launch.enabled || launch.effect === LaunchEffect.STOCK;
 }

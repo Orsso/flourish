@@ -1,8 +1,9 @@
 import {Preset, getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
     editCustomSetting,
+    migrateAppearance,
     readActiveRecipe,
-    resetCustom,
+    resetAll,
     selectPreset,
     setBooleanCommitted,
     setGroupGap,
@@ -185,15 +186,77 @@ test('selecting a preset preserves saved custom values', () => {
     assertEqual(settings.values['custom-hover-scale'], 1.27);
 });
 
-test('reset custom copies the default preset values', () => {
-    const settings = new ImmediateSettings(Preset.EXPRESSIVE);
-    settings.values['custom-hover-scale'] = 1.29;
-    resetCustom(settings);
+test('a preset turns the features on, hides the tiles and keeps the gaps', () => {
+    const settings = new ImmediateSettings(Preset.CUSTOM);
+    settings.values['groups-enabled'] = false;
+    settings.values['show-hover-background'] = true;
+    selectPreset(settings, Preset.EXPRESSIVE);
+    assertEqual(settings.values['spacing-enabled'], true);
+    assertEqual(settings.values['icon-spacing'], 4);
+    assertEqual(settings.values['dock-outline'], 'glass');
+    assertEqual(settings.values['groups-enabled'], true);
+    assertEqual(settings.values['backgrounds-enabled'], true);
+    assertEqual(settings.values['show-hover-background'], false);
+    assertEqual(settings.values['group-gaps'], undefined);
+});
+
+test('an appearance edit leaves the preset like a motion edit', () => {
+    const settings = new ImmediateSettings(Preset.BALANCED);
+    editCustomSetting(settings, 'outline-intensity', 80);
     assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
-    assertEqual(settings.values['custom-hover-scale'], 1.04);
-    assertEqual(settings.values['custom-launch-effect'], 'pulse');
-    assertEqual(settings.values['custom-launch-repeat-pause'], 400);
-    assertEqual(settings.applyCount, 1);
+    assertEqual(settings.values['outline-intensity'], 80);
+    assertEqual(readActiveRecipe(settings).hover.scale, getBuiltInRecipe(Preset.BALANCED).hover.scale);
+});
+
+// Defaults and user values, as get_user_value sees them.
+class StoredSettings {
+    constructor(user) {
+        this.user = {...user};
+        this.settings_schema = {list_keys: () => Object.keys(this.user)};
+    }
+
+    delay() {}
+
+    apply() {}
+
+    reset(key) {
+        delete this.user[key];
+    }
+
+    get_user_value(key) {
+        return key in this.user ? this.user[key] : null;
+    }
+
+    get_string(key) {
+        return this.user[key];
+    }
+
+    set_boolean(key, value) {
+        this.user[key] = value;
+    }
+}
+
+test('reset all clears every stored key but the group gaps', () => {
+    const settings = new StoredSettings({
+        'motion-profile': 'expressive',
+        'groups-enabled': true,
+        'group-gaps': {2: 'small'},
+    });
+    resetAll(settings);
+    assertDeepEqual(settings.user, {'group-gaps': {2: 'small'}});
+});
+
+test('1.2 outlines and backgrounds turn their new switch on', () => {
+    const outlined = new StoredSettings({'dock-outline': 'light', 'show-hover-background': true});
+    migrateAppearance(outlined);
+    assertEqual(outlined.user['outline-enabled'], true);
+    assertEqual(outlined.user['backgrounds-enabled'], true);
+    const none = new StoredSettings({'dock-outline': 'none'});
+    migrateAppearance(none);
+    assertDeepEqual(none.user, {});
+    const chosen = new StoredSettings({'dock-outline': 'light', 'outline-enabled': false});
+    migrateAppearance(chosen);
+    assertEqual(chosen.user['outline-enabled'], false);
 });
 
 test('active recipe reads presets without touching custom', () => {
@@ -268,16 +331,6 @@ test('dynamic spacing edits preserve the preset and round-trip through Custom', 
     assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, true);
     selectPreset(settings, Preset.CUSTOM);
     assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
-    resetCustom(settings);
-    assertEqual(readActiveRecipe(settings).hover.dynamicSpacing, false);
-});
-
-test('reset restores the default custom values after an edit', () => {
-    const settings = new ImmediateSettings(Preset.CUSTOM);
-    editCustomSetting(settings, 'custom-hover-scale', 1.29);
-    resetCustom(settings);
-    assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
-    assertEqual(readActiveRecipe(settings).hover.scale, 1.04);
 });
 
 test('attention settings round-trip through custom', () => {

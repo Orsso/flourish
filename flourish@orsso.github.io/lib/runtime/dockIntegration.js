@@ -78,6 +78,7 @@ export class DockIntegration {
         this.#recipe = recipe;
         this.#syncOverflow();
         this.#surface.setRecipe(recipe);
+        this.#syncWiggle();
     }
 
     onPointerMotion(x, y) {
@@ -189,7 +190,8 @@ export class DockIntegration {
     #scanDocks() {
         // Nothing public lists the docks.
         const docks = this.#manager._allDocks;
-        this.#overrideWiggle(docks[0]?.dash.iconAnimator);
+        if (this.#recipe.attention.enabled)
+            this.#overrideWiggle(docks[0]?.dash.iconAnimator);
 
         for (const dock of docks) {
             const box = dock.dash._box;
@@ -320,6 +322,20 @@ export class DockIntegration {
         this.#resetBlur(background);
         background.disconnectObject(this);
         this.#blurBackgrounds.delete(background);
+    }
+
+    // Attention off leaves the urgent wiggle to Dash to Dock.
+    #syncWiggle() {
+        // No dock is a normal setup.
+        if (!this.#manager)
+            return;
+        if (!this.#recipe.attention.enabled) {
+            this.#handBackWiggles();
+            return;
+        }
+        this.#overrideWiggle(this.#manager._allDocks[0]?.dash.iconAnimator);
+        for (const dock of this.#manager._allDocks)
+            this.#stopWiggles(dock);
     }
 
     // The stock wiggle would play on top of the attention motion.

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-09 00:41+0200\n"
+"POT-Creation-Date: 2026-10-09 01:51+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,122 +17,172 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: flourish@orsso.github.io/extension.js:153
+#: flourish@orsso.github.io/extension.js:156
 msgid "Start a group"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:22
-msgid "Subtle"
+#: flourish@orsso.github.io/prefs.js:23
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:70
+msgid "Icon spacing"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:23
-msgid "Lively"
+msgid "Set the gap between icons"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:24
+msgid "Groups"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:24
+msgid "Gaps between groups of favorites"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:25
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:74
+msgid "Outline"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:25
+msgid "An edge around the dock background"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:26
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:82
+msgid "Backgrounds"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:26
+msgid "Hide or add the hover and focused app tiles"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:30
+msgid "Subtle"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:31
+msgid "Lively"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:32
 msgid "Expressive"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:40
+#: flourish@orsso.github.io/prefs.js:50
 msgid "General"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:42
+#: flourish@orsso.github.io/prefs.js:52
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:33
 msgid "Hover"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:43
+#: flourish@orsso.github.io/prefs.js:53
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:68
 msgid "Press"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:44
+#: flourish@orsso.github.io/prefs.js:54
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:91
 msgid "Launch"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:47 flourish@orsso.github.io/prefs.js:106
+#: flourish@orsso.github.io/prefs.js:57 flourish@orsso.github.io/prefs.js:123
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:134
 msgid "Attention"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:48
+#: flourish@orsso.github.io/prefs.js:58 flourish@orsso.github.io/prefs.js:129
 msgid "Appearance"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:51
+#: flourish@orsso.github.io/prefs.js:62
+msgid "Flourish changes nothing yet. Pick a preset or turn on a feature below."
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:68
 msgid "Presets"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:52
+#: flourish@orsso.github.io/prefs.js:69
 msgid "Hover to preview. Click to apply."
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:54
+#: flourish@orsso.github.io/prefs.js:71
 msgid "Custom"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:91
+#: flourish@orsso.github.io/prefs.js:108
 msgid "Motion"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:94
+#: flourish@orsso.github.io/prefs.js:111
 msgid "Hover motion"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:95
+#: flourish@orsso.github.io/prefs.js:112
 msgid "Magnification and elevation around the pointer"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:98
+#: flourish@orsso.github.io/prefs.js:115
 msgid "Press feedback"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:98
+#: flourish@orsso.github.io/prefs.js:115
 msgid "Squash or dim the pressed icon"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:101
+#: flourish@orsso.github.io/prefs.js:118
 msgid "Launch animation"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:102
+#: flourish@orsso.github.io/prefs.js:119
 msgid "Animate cold starts and new windows"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:107
+#: flourish@orsso.github.io/prefs.js:124
 msgid "Animate icons that ask for attention"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:114
-msgid "Reset Custom"
+#: flourish@orsso.github.io/prefs.js:139
+msgid "Reset all settings"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:115
-msgid "Copy the Subtle preset into Custom"
+#: flourish@orsso.github.io/prefs.js:140
+msgid "Flourish goes back to changing nothing"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:117
+#: flourish@orsso.github.io/prefs.js:142 flourish@orsso.github.io/prefs.js:194
 msgid "Reset"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:192
+#: flourish@orsso.github.io/prefs.js:190
+msgid "Reset all settings?"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:191
+msgid ""
+"Every Flourish setting goes back to its default. Your group gaps are kept "
+"for when you turn Groups back on. Flourish will change nothing until you "
+"pick a preset or turn on a feature."
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:193 flourish@orsso.github.io/prefs.js:241
+msgid "Cancel"
+msgstr ""
+
+#: flourish@orsso.github.io/prefs.js:238
 #, javascript-format
 msgid "Switch to %s?"
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:193
+#: flourish@orsso.github.io/prefs.js:239
 #, javascript-format
 msgid ""
 "Your Custom recipe will be abandoned and replaced by the %s preset values."
 msgstr ""
 
-#: flourish@orsso.github.io/prefs.js:195
-msgid "Cancel"
-msgstr ""
-
-#: flourish@orsso.github.io/prefs.js:196
+#: flourish@orsso.github.io/prefs.js:242
 msgid "Switch"
 msgstr ""
 
@@ -239,7 +289,7 @@ msgstr ""
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:83
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:101
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:146
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:73
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:79
 msgid "Intensity"
 msgstr ""
 
@@ -369,8 +419,7 @@ msgid "Compact"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:14
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:19
-msgid "Theme"
+msgid "Comfortable"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:15
@@ -378,81 +427,81 @@ msgid "Airy"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:18
-msgid "None"
+msgid "Theme"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:20
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:19
 msgid "Light"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:21
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:20
 msgid "Dark"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:22
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:21
 msgid "Glass"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:25
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:24
 msgid "Top left"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:26
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:25
 msgid "Top"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:27
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:26
 msgid "Top right"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:30
+msgid "Off in General"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:31
+msgid "Off in General: the dash and the dock keep their own tiles"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:42
 msgid "Your dock"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:43
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:71
+msgid "Gap between icons"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:75
+msgid "Style"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:77
+msgid "Light from"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:87
+msgid "Hover background"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:87
+msgid "The tile under the pointed icon"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:88
+msgid "Focused app background"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:88
+msgid "Marks the app that owns the focused window"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:201
 msgid ""
 "Click between two favorites to add a gap, again to widen it, and once more "
 "to remove it. Gaps stay in place when apps move."
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:63
-msgid "Layout"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:64
-msgid "Icon spacing"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:68
-msgid "Outline"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:69
-msgid "Style"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:71
-msgid "Light from"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:77
-msgid "Backgrounds"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:79
-msgid "Hover background"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:79
-msgid "The tile under the pointed icon"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:80
-msgid "Focused app background"
-msgstr ""
-
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:80
-msgid "Marks the app that owns the focused window"
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:202
+msgid "Turn on Groups in General to add gaps between favorites."
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/rows.js:100
