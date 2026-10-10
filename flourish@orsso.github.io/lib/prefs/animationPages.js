@@ -16,11 +16,7 @@ import {
     PressMode,
     RecipePart,
 } from '../motion/catalog.js';
-import {
-    editCustomSetting,
-    readActiveRecipe,
-    resetCustom,
-} from '../motion/settings.js';
+import {editCustomSetting, readActiveRecipe} from '../motion/settings.js';
 import {MotionPreview} from './motionPreview.js';
 import {
     createComboRow,
@@ -30,10 +26,11 @@ import {
     setComboValue,
 } from './rows.js';
 
-export function buildAdvancedPage(page, controls, settings, state) {
+// One page per recipe part; the Attention page exists only with a dock.
+export function buildAnimationPages(pages, controls, settings, state) {
     controls.partPreviews = {};
 
-    const hover = createPartGroup(page, controls, settings, _('Hover'), RecipePart.HOVER);
+    const hover = createPartGroup(pages, controls, settings, _('Hover'), RecipePart.HOVER);
     hover.group.description = _('Motion adapts to the available space.');
     controls.hoverScale = createScaleRow(
         hover.group, _('Magnification'), 100, 200, 1,
@@ -68,7 +65,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
         _('When off, icons keep their positions and may overlap at high magnification. ' +
         'Motion still adapts to the available space.'));
 
-    const press = createPartGroup(page, controls, settings, _('Press'), RecipePart.PRESS);
+    const press = createPartGroup(pages, controls, settings, _('Press'), RecipePart.PRESS);
     controls.pressMode = createComboRow(
         press.group, _('Trigger'),
         [
@@ -91,7 +88,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
         _('ms'));
     holdWhileSliding(controls.pressIntensity, press);
 
-    const launch = createPartGroup(page, controls, settings, _('Launch'), RecipePart.LAUNCH);
+    const launch = createPartGroup(pages, controls, settings, _('Launch'), RecipePart.LAUNCH);
     controls.launchEffect = createComboRow(
         launch.group, _('Effect'),
         [
@@ -134,7 +131,7 @@ export function buildAdvancedPage(page, controls, settings, state) {
 
     if (controls.dockPresent) {
         const attention = createPartGroup(
-            page, controls, settings, _('Attention'), RecipePart.ATTENTION);
+            pages, controls, settings, _('Attention'), RecipePart.ATTENTION);
         attention.group.description =
             _('Plays when an app asks for attention, with Dash to Dock or Ubuntu Dock.');
         controls.attentionEffect = createComboRow(
@@ -185,21 +182,9 @@ export function buildAdvancedPage(page, controls, settings, state) {
         holdWhileSliding(controls.attentionIntensity, attention);
         holdWhileSliding(controls.attentionSpeed, attention);
     }
-
-    const resetGroup = new Adw.PreferencesGroup();
-    const resetRow = new Adw.ActionRow({
-        title: _('Reset Custom'),
-        subtitle: _('Copy the Subtle preset into Custom'),
-    });
-    const resetButton = new Gtk.Button({label: _('Reset'), valign: Gtk.Align.CENTER});
-    resetButton.add_css_class('destructive-action');
-    resetButton.connect('clicked', () => resetCustom(settings));
-    resetRow.add_suffix(resetButton);
-    resetGroup.add(resetRow);
-    page.add(resetGroup);
 }
 
-export function syncAdvancedPage(controls, recipe) {
+export function syncAnimationPages(controls, recipe) {
     controls.dynamicSpacing.toggle.active = recipe.hover.dynamicSpacing;
     controls.hoverScale.adjustment.value = recipe.hover.scale * 100;
     controls.hoverLift.value = recipe.hover.lift;
@@ -245,7 +230,7 @@ export function syncAdvancedPage(controls, recipe) {
         preview.updateRecipe(recipe);
 }
 
-function createPartGroup(page, controls, settings, title, part) {
+function createPartGroup(pages, controls, settings, title, part) {
     const group = new Adw.PreferencesGroup({title});
     const preview = new MotionPreview({recipe: readActiveRecipe(settings), part});
     const pointer = new Gtk.EventControllerMotion();
@@ -254,7 +239,7 @@ function createPartGroup(page, controls, settings, title, part) {
     group.add_controller(pointer);
     group.set_header_suffix(preview);
     controls.partPreviews[part] = preview;
-    page.add(group);
+    pages[part].add(group);
     return {group, preview, pointer};
 }
 

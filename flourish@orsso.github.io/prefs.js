@@ -5,14 +5,15 @@ import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {ExtensionState} from 'resource:///org/gnome/Shell/Extensions/js/misc/extensionUtils.js';
 
-import {DASH_TO_DOCK_BUILDS, Preset, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {DASH_TO_DOCK_BUILDS, Preset, RecipePart, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
+    resetCustom,
     selectPreset,
     switchToPresetFromCustom,
 } from './lib/motion/settings.js';
-import {buildAdvancedPage, syncAdvancedPage} from './lib/prefs/advancedPage.js';
+import {buildAnimationPages, syncAnimationPages} from './lib/prefs/animationPages.js';
 import {buildAppearancePage, syncAppearancePage} from './lib/prefs/appearancePage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
 import {N_, createSwitchRow} from './lib/prefs/rows.js';
@@ -25,30 +26,28 @@ const PRESET_DETAILS = [
 
 export default class FlourishPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        // Tall enough for the whole Appearance page; pages keep a 600 px column.
-        window.set_default_size(680, 800);
+        // Narrower, libadwaita moves the six tabs to a bottom bar; taller fits Appearance.
+        window.set_default_size(960, 760);
+        // The Extensions app turns search off; rows on every tab are searchable.
+        window.search_enabled = true;
         const settings = this.getSettings();
         const state = {syncing: false};
         const controls = {dockPresent: dashToDockEnabled()};
 
-        const essentials = new Adw.PreferencesPage({
-            name: 'essentials',
-            title: _('General'),
-            icon_name: 'applications-graphics-symbolic',
-        });
-        const advanced = new Adw.PreferencesPage({
-            name: 'advanced',
-            title: _('Animations'),
-            icon_name: 'preferences-system-symbolic',
-        });
-        const appearance = new Adw.PreferencesPage({
-            name: 'appearance',
-            title: _('Appearance'),
-            icon_name: 'preferences-desktop-appearance-symbolic',
-        });
-        window.add(essentials);
-        window.add(advanced);
-        window.add(appearance);
+        const page = (title, icon_name) => {
+            const added = new Adw.PreferencesPage({title, icon_name});
+            window.add(added);
+            return added;
+        };
+        const essentials = page(_('General'), 'applications-graphics-symbolic');
+        const animations = {
+            [RecipePart.HOVER]: page(_('Hover'), 'input-mouse-symbolic'),
+            [RecipePart.PRESS]: page(_('Press'), 'input-touchpad-symbolic'),
+            [RecipePart.LAUNCH]: page(_('Launch'), 'media-playback-start-symbolic'),
+        };
+        if (controls.dockPresent)
+            animations[RecipePart.ATTENTION] = page(_('Attention'), 'preferences-system-notifications-symbolic');
+        const appearance = page(_('Appearance'), 'preferences-desktop-appearance-symbolic');
 
         const presetGroup = new Adw.PreferencesGroup({
             title: _('Presets'),
@@ -112,21 +111,20 @@ export default class FlourishPreferences extends ExtensionPreferences {
         }
         essentials.add(featureGroup);
 
-        const navigationGroup = new Adw.PreferencesGroup();
-        const advancedRow = new Adw.ActionRow({
-            title: _('Animation Settings'),
-            subtitle: _('Timing, effects, and repeats'),
-            activatable: true,
+        const resetGroup = new Adw.PreferencesGroup();
+        const resetRow = new Adw.ActionRow({
+            title: _('Reset Custom'),
+            subtitle: _('Copy the Subtle preset into Custom'),
         });
-        advancedRow.add_suffix(new Gtk.Image({icon_name: 'go-next-symbolic'}));
-        advancedRow.connect('activated', () => {
-            window.visible_page_name = 'advanced';
-        });
-        navigationGroup.add(advancedRow);
-        essentials.add(navigationGroup);
+        const resetButton = new Gtk.Button({label: _('Reset'), valign: Gtk.Align.CENTER});
+        resetButton.add_css_class('destructive-action');
+        resetButton.connect('clicked', () => resetCustom(settings));
+        resetRow.add_suffix(resetButton);
+        resetGroup.add(resetRow);
+        essentials.add(resetGroup);
 
         buildAppearancePage(appearance, controls, settings, state);
-        buildAdvancedPage(advanced, controls, settings, state);
+        buildAnimationPages(animations, controls, settings, state);
 
         const sync = () => syncControls(settings, controls, state);
         const changedId = settings.connect('changed', sync);
@@ -156,7 +154,7 @@ function syncControls(settings, controls, state) {
         controls.attentionEnabled.active = recipe.attention.enabled;
     syncAppearancePage(controls, settings);
 
-    syncAdvancedPage(controls, recipe);
+    syncAnimationPages(controls, recipe);
     state.syncing = false;
 }
 

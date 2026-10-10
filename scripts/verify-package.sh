@@ -13,7 +13,7 @@ required=(
     lib/motion/outline.js
     lib/motion/settings.js
     lib/motion/transforms.js
-    lib/prefs/advancedPage.js
+    lib/prefs/animationPages.js
     lib/prefs/appearancePage.js
     lib/prefs/demoSequence.js
     lib/prefs/dockSample.js
