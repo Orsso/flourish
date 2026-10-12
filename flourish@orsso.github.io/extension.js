@@ -145,6 +145,14 @@ export default class FlourishExtension extends Extension {
         const groups = {
             gaps,
             createMenuItem: id => this._createGroupItem(favorites.indexOf(id), gaps.get(id) !== null),
+            // Above the Quit block, where hands expect Quit to stay last. By actor:
+            // a submenu adds its own child to the box, so menu positions drift.
+            moveAboveQuit: (menu, section) => {
+                const separator = menu.box.get_children()
+                    .findLast(child => child instanceof PopupMenu.PopupSeparatorMenuItem);
+                if (separator)
+                    menu.box.set_child_below_sibling(section.actor, separator);
+            },
         };
         this._dockIntegration.setGroups(groups);
         this._dashIntegration.setGroups(groups);

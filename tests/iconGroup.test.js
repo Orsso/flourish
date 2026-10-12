@@ -28,6 +28,9 @@ function setup(id, stored = {}) {
     const created = [];
     const groups = gaps => ({
         gaps: groupGaps(['first', 'second', 'third'], gaps),
+        moveAboveQuit: (menu, item) => {
+            menu.moved = item;
+        },
         createMenuItem: appId => {
             const item = new FakeEmitter();
             item.appId = appId;
@@ -62,6 +65,7 @@ test('the menu offers the switch to favorites after the first only', () => {
     const second = setup('second');
     second.open();
     assertDeepEqual(second.icon._menu.items.map(item => item.appId), ['second']);
+    assertEqual(second.icon._menu.moved, second.icon._menu.items[0]);
     for (const id of ['first', 'running']) {
         const other = setup(id);
         other.open();

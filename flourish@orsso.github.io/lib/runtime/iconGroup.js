@@ -70,5 +70,6 @@ export class IconGroup {
         }, this);
         this.#item = item;
         this.#menu.addMenuItem(item);
+        this.#groups.moveAboveQuit(this.#menu, item);
     }
 }
