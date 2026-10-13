@@ -1,4 +1,4 @@
-import {groupGaps} from '../flourish@orsso.github.io/lib/motion/settings.js';
+import {followMoves, groupGaps} from '../flourish@orsso.github.io/lib/motion/settings.js';
 import {IconGroup} from '../flourish@orsso.github.io/lib/runtime/iconGroup.js';
 import {FakeContainer, FakeEmitter, FakeIcon} from './fakes.js';
 
@@ -92,4 +92,29 @@ test('dispose clears the class, the switch and the signals', () => {
     assertEqual(icon._menu.items.length, 0);
     assertEqual(icon._menu.handlers.size, 0);
     assertEqual([...icon.handlers.values()].some(handler => handler.owner === group), false);
+});
+
+test('gaps follow one moved, pinned or unpinned app like dock items', () => {
+    const before = ['a', 'b', 'c', 'd', 'e', 'f'];
+    const gaps = {2: 'small', 4: 'normal'};
+    const follow = after => followMoves(before, after, gaps);
+    // Within a group, to its front.
+    assertDeepEqual(follow(['a', 'b', 'd', 'c', 'e', 'f']), {2: 'small', 4: 'normal'});
+    // Across groups: only the moved app changes group.
+    assertDeepEqual(follow(['b', 'c', 'd', 'e', 'a', 'f']), {1: 'small', 3: 'normal'});
+    // The first app of a group leaves: the group keeps its start.
+    assertDeepEqual(follow(['a', 'b', 'd', 'e', 'f', 'c']), {2: 'small', 3: 'normal'});
+    // Dropped at a gap from the left: end of the left group.
+    assertDeepEqual(follow(['b', 'a', 'c', 'd', 'e', 'f']), {2: 'small', 4: 'normal'});
+    // Unpinned and pinned.
+    assertDeepEqual(follow(['a', 'c', 'd', 'e', 'f']), {1: 'small', 3: 'normal'});
+    assertDeepEqual(follow([...before, 'g']), gaps);
+});
+
+test('other favorite changes keep the gap positions', () => {
+    const gaps = {2: 'small'};
+    assertEqual(followMoves(['a', 'b', 'c'], ['a', 'b', 'c'], gaps), gaps);
+    assertEqual(followMoves(['a', 'b', 'c'], ['c', 'b', 'a'], gaps), gaps);
+    assertEqual(followMoves(['a', 'b', 'c'], ['x', 'y'], gaps), gaps);
+    assertDeepEqual(followMoves(['a', 'b', 'c'], ['b', 'a', 'c'], {0: 'small'}), {});
 });

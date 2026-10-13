@@ -8,7 +8,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {GroupGap, OutlineStyle} from './lib/motion/catalog.js';
-import {groupGaps, migrateAppearance, readActiveRecipe, setGroupGap} from './lib/motion/settings.js';
+import {followMoves, groupGaps, migrateAppearance, readActiveRecipe, setGroupGap} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
 import {DockIntegration} from './lib/runtime/dockIntegration.js';
@@ -64,8 +64,9 @@ export default class FlourishExtension extends Extension {
         this._dockIntegration.enable(this._recipe);
         this._dashIntegration.enable(this._recipe);
         this._connectPointer();
+        this._favoriteIds = favoriteIds();
         this._syncGroups();
-        AppFavorites.getAppFavorites().connectObject('changed', () => this._syncGroups(), this);
+        AppFavorites.getAppFavorites().connectObject('changed', () => this._onFavoritesChanged(), this);
 
         this._launchEngine = new LaunchEngine({
             getController: icon =>
@@ -106,6 +107,7 @@ export default class FlourishExtension extends Extension {
         this._settings.disconnectObject(this);
         St.Settings.get().disconnectObject(this);
         AppFavorites.getAppFavorites().disconnectObject(this);
+        this._favoriteIds = null;
 
         this._launchEngine.disable();
         this._launchEngine = null;
@@ -137,8 +139,19 @@ export default class FlourishExtension extends Extension {
             this._refreshStyles();
     }
 
+    // The gaps move with the dock's own reordering, pinning and unpinning.
+    _onFavoritesChanged() {
+        const favorites = favoriteIds();
+        const gaps = this._settings.get_value('group-gaps').deep_unpack();
+        const followed = followMoves(this._favoriteIds, favorites, gaps);
+        this._favoriteIds = favorites;
+        if (followed !== gaps)
+            this._settings.set_value('group-gaps', new GLib.Variant('a{us}', followed));
+        this._syncGroups();
+    }
+
     _syncGroups() {
-        const favorites = AppFavorites.getAppFavorites().getFavorites().map(app => app.get_id());
+        const favorites = favoriteIds();
         // Groups off: no gap and no menu switch.
         const gaps = this._settings.get_boolean('groups-enabled')
             ? groupGaps(favorites, this._settings.get_value('group-gaps').deep_unpack()) : new Map();
@@ -226,4 +239,8 @@ export default class FlourishExtension extends Extension {
         this._dockIntegration.refreshStyles();
         this._dashIntegration.refreshStyles();
     }
+}
+
+function favoriteIds() {
+    return AppFavorites.getAppFavorites().getFavorites().map(app => app.get_id());
 }

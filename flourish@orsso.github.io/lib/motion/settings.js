@@ -113,6 +113,42 @@ export function groupGaps(favoriteIds, stored) {
     return new Map(favoriteIds.slice(1).map((id, index) => [id, stored[index + 1] ?? null]));
 }
 
+// Gaps act like dock items when one app moves, is pinned or unpinned: a gap stays
+// before its right neighbor, or after its left one when that neighbor moved. An app
+// dropped right at a gap stays on the side it came from. Other changes keep positions.
+export function followMoves(before, after, gaps) {
+    const removed = before.filter(id => !after.includes(id));
+    const added = after.filter(id => !before.includes(id));
+    const without = (list, id) => list.filter(other => other !== id);
+    const same = (first, second) => first.length === second.length &&
+        first.every((id, index) => id === second[index]);
+    let moved = null;
+    if (removed.length === 1 && added.length === 0 && same(without(before, removed[0]), after))
+        moved = removed[0];
+    else if (removed.length === 0 && added.length === 1 && same(before, without(after, added[0])))
+        moved = added[0];
+    else if (removed.length === 0 && added.length === 0)
+        moved = before.find(id => same(without(before, id), without(after, id)) && !same(before, after));
+    if (!moved)
+        return gaps;
+    const followed = {};
+    for (const [key, gap] of Object.entries(gaps)) {
+        const position = Number(key);
+        // Position 0 is never shown; moving it would reveal it.
+        if (position < 1)
+            continue;
+        const right = before[position];
+        let anchor = right === moved
+            ? after.indexOf(before[position - 1]) + 1
+            : after.indexOf(right);
+        if (right !== moved && after[anchor - 1] === moved && before.indexOf(moved) > position)
+            anchor--;
+        if (anchor >= 1 && anchor < after.length && !(anchor in followed))
+            followed[anchor] = gap;
+    }
+    return followed;
+}
+
 export function setGroupGap(settings, position, gap) {
     const gaps = settings.get_value('group-gaps').deep_unpack();
     if (gap)
