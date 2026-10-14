@@ -50,7 +50,7 @@ export default class FlourishExtension extends Extension {
             scheduler: this._frameScheduler,
         });
 
-        this._spacingClass = null;
+        this._spacingClasses = [];
         this._styles = STYLESHEETS.map(cssFileName =>
             new BackgroundStyle({extension: this, cssFileName}));
         this._syncStyles();
@@ -115,7 +115,7 @@ export default class FlourishExtension extends Extension {
         Main.overview.disconnectObject(this);
         this._attentionEngine.disable();
         this._attentionEngine = null;
-        this._syncSpacing(null);
+        this._syncSpacing([]);
         for (const style of this._styles)
             style.disable();
         this._styles = null;
@@ -218,20 +218,21 @@ export default class FlourishExtension extends Extension {
             .map((enabled, index) => this._styles[index].setEnabled(enabled))
             .includes(true);
         // After the sheets: the icon size pass needs the spacing rules loaded.
-        this._syncSpacing(customSpacing ? `flourish-spacing-${spacing}` : null);
+        const flush = this._settings.get_boolean('dock-flush') ? ['flourish-flush'] : [];
+        this._syncSpacing(customSpacing ? [`flourish-spacing-${spacing}`, ...flush] : []);
         return changed;
     }
 
-    // One class on uiGroup selects the spacing rules of the dash and every dock.
-    _syncSpacing(name) {
-        if (this._spacingClass === name)
+    // Classes on uiGroup select the spacing rules of the dash and every dock.
+    _syncSpacing(names) {
+        if (names.join() === this._spacingClasses.join())
             return;
         const group = Main.layoutManager.uiGroup;
-        if (this._spacingClass)
-            group.remove_style_class_name(this._spacingClass);
-        if (name)
+        for (const name of this._spacingClasses)
+            group.remove_style_class_name(name);
+        for (const name of names)
             group.add_style_class_name(name);
-        this._spacingClass = name;
+        this._spacingClasses = names;
         this._dashIntegration.refreshIconSize();
     }
 

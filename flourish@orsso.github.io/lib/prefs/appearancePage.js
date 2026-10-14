@@ -14,6 +14,10 @@ const SPACINGS = [
     [N_('Comfortable'), 16],
     [N_('Airy'), 24],
 ];
+const POSITIONS = [
+    [N_('Floating'), false],
+    [N_('Flush'), true],
+];
 const OUTLINES = [
     [N_('Theme'), OutlineStyle.AUTO],
     [N_('Light'), OutlineStyle.LIGHT],
@@ -70,6 +74,10 @@ export function buildAppearancePage(page, controls, settings, state) {
     const layout = section(_('Icon spacing'), 'spacingEnabled');
     addSegments(appearance, layout, _('Gap between icons'), SPACINGS, 'spacing', state,
         value => editCustomSetting(settings, 'icon-spacing', value));
+    // Presets leave the dock where it is.
+    const position = addSegments(appearance, layout, _('Dock position'), POSITIONS, 'flush', state,
+        value => settings.set_boolean('dock-flush', value));
+    position.subtitle = _('Dash to Dock and Ubuntu Dock');
 
     const outline = section(_('Outline'), 'outlineEnabled');
     addSegments(appearance, outline, _('Style'), OUTLINES, 'style', state,
@@ -176,6 +184,7 @@ export function syncAppearancePage(controls, settings) {
         outlineEnabled: settings.get_boolean('outline-enabled'),
         backgroundsEnabled: settings.get_boolean('backgrounds-enabled'),
         spacing: settings.get_int('icon-spacing'),
+        flush: settings.get_boolean('dock-flush'),
         gaps: settings.get_value('group-gaps').deep_unpack(),
         style: settings.get_string('dock-outline'),
         intensity: settings.get_int('outline-intensity'),

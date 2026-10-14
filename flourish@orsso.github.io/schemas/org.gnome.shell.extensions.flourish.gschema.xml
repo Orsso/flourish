@@ -241,6 +241,12 @@
       <description>Gap between icons in pixels, in steps of 2.</description>
     </key>
 
+    <key name="dock-flush" type="b">
+      <default>false</default>
+      <summary>Flush dock</summary>
+      <description>With icon spacing on, the dock background meets the screen edge and maximized windows instead of floating.</description>
+    </key>
+
     <key name="groups-enabled" type="b">
       <default>false</default>
       <summary>Icon groups</summary>
