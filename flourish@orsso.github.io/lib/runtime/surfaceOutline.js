@@ -11,7 +11,7 @@ export class SurfaceOutline {
     #paint = null;
     #style = OutlineStyle.NONE;
     #intensity = REFERENCE_INTENSITY;
-    #light = OutlineLight.TOP_LEFT;
+    #light = OutlineLight.MIN;
 
     constructor({interfaceSettings}) {
         this.#interfaceSettings = interfaceSettings;

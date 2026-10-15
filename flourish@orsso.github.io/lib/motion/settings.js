@@ -48,7 +48,7 @@ const APPEARANCE_DEFINITIONS = [
     ['outline-enabled', 'boolean'],
     ['dock-outline', 'string'],
     ['outline-intensity', 'int'],
-    ['outline-light', 'string'],
+    ['outline-light', 'int'],
 ].map(([key, type]) => ({key, type}));
 
 const DEFINITION_BY_KEY = new Map([...DEFINITIONS, ...APPEARANCE_DEFINITIONS]

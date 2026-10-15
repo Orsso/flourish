@@ -24,11 +24,6 @@ const OUTLINES = [
     [N_('Dark'), OutlineStyle.DARK],
     [N_('Glass'), OutlineStyle.GLASS],
 ];
-const LIGHTS = [
-    [N_('Top left'), OutlineLight.TOP_LEFT],
-    [N_('Top'), OutlineLight.TOP],
-    [N_('Top right'), OutlineLight.TOP_RIGHT],
-];
 // A click on a gap moves to the next step.
 const GAP_CYCLE = [null, GroupGap.SMALL, GroupGap.NORMAL];
 const OFF_HINT = N_('Off in General');
@@ -82,8 +77,9 @@ export function buildAppearancePage(page, controls, settings, state) {
     const outline = section(_('Outline'), 'outlineEnabled');
     addSegments(appearance, outline, _('Style'), OUTLINES, 'style', state,
         value => editCustomSetting(settings, 'dock-outline', value));
-    appearance.light = addSegments(appearance, outline, _('Light from'), LIGHTS, 'light', state,
-        value => editCustomSetting(settings, 'outline-light', value));
+    appearance.light = createScaleRow(outline, _('Light position'), OutlineLight.MIN, OutlineLight.MAX, OutlineLight.STEP,
+        value => editCustomSetting(settings, 'outline-light', Math.round(value)), state);
+    appearance.light.scale.add_mark(0, Gtk.PositionType.BOTTOM, null);
     appearance.intensity = createScaleRow(outline, _('Intensity'), 0, 100, 5,
         value => editCustomSetting(settings, 'outline-intensity', Math.round(value)), state);
 
@@ -170,9 +166,6 @@ function refreshPreview(appearance) {
         focusTile: current.backgroundsEnabled && current.focusTile,
         ...appearance.hovered,
     };
-    // The light only shows on the glass outline.
-    if (appearance.hovered?.light)
-        shown.style = OutlineStyle.GLASS;
     appearance.preview.update(shown);
 }
 
@@ -188,7 +181,7 @@ export function syncAppearancePage(controls, settings) {
         gaps: settings.get_value('group-gaps').deep_unpack(),
         style: settings.get_string('dock-outline'),
         intensity: settings.get_int('outline-intensity'),
-        light: settings.get_string('outline-light'),
+        light: settings.get_int('outline-light'),
         hoverTile: settings.get_boolean('show-hover-background'),
         focusTile: settings.get_boolean('show-focused-app-background'),
     };
@@ -211,6 +204,7 @@ export function syncAppearancePage(controls, settings) {
         : _('Turn on Groups in General to add gaps between favorites.');
     appearance.preview.can_target = current.groupsEnabled;
     appearance.intensity.adjustment.value = current.intensity;
-    appearance.light.visible = current.style === OutlineStyle.GLASS;
+    appearance.light.adjustment.value = current.light;
+    appearance.light.row.visible = current.style === OutlineStyle.GLASS;
     refreshPreview(appearance);
 }

@@ -8,12 +8,8 @@ const EDGES = {
     [OutlineStyle.LIGHT]: {shade: 1, alpha: 0.18},
     [OutlineStyle.DARK]: {shade: 0, alpha: 0.35},
 };
-const GLASS = {top: 0.11, bottom: 0.05, glint: 0.6};
-const GLINTS = {
-    [OutlineLight.TOP_LEFT]: [['top-left', 1], ['bottom-right', 0.7]],
-    [OutlineLight.TOP]: [['top-left', 0.8], ['top-right', 0.8], ['bottom-left', 0.4], ['bottom-right', 0.4]],
-    [OutlineLight.TOP_RIGHT]: [['top-right', 1], ['bottom-left', 0.7]],
-};
+// Along the light: the near rim, the middle and the far rim, then the two glints.
+const GLASS = {near: 0.14, middle: 0.05, far: 0.08, glint: 0.6, counter: 0.35};
 
 export function outlinePaint(style, intensity, light, darkScheme) {
     const scale = intensity / REFERENCE_INTENSITY;
@@ -23,15 +19,18 @@ export function outlinePaint(style, intensity, light, darkScheme) {
     if (style === OutlineStyle.GLASS) {
         return {
             shade: 1,
-            top: alpha(GLASS.top),
-            bottom: alpha(GLASS.bottom),
-            glints: GLINTS[light].map(([corner, weight]) => [corner, alpha(GLASS.glint * weight)]),
+            light: light / OutlineLight.MAX,
+            near: alpha(GLASS.near),
+            middle: alpha(GLASS.middle),
+            far: alpha(GLASS.far),
+            glint: alpha(GLASS.glint),
+            counter: alpha(GLASS.counter),
         };
     }
     const edge = style === OutlineStyle.AUTO
         ? EDGES[darkScheme ? OutlineStyle.LIGHT : OutlineStyle.DARK]
         : EDGES[style];
-    return {shade: edge.shade, top: alpha(edge.alpha), bottom: alpha(edge.alpha), glints: []};
+    return {shade: edge.shade, light: null, top: alpha(edge.alpha), bottom: alpha(edge.alpha)};
 }
 
 export function roundedRect(cr, inset, width, height, radius) {
@@ -53,27 +52,28 @@ export function paintOutline(cr, width, height, radius, paint) {
         cr.setLineWidth(lineWidth);
         cr.stroke();
     };
-    const edge = new Cairo.LinearGradient(0, 0, 0, height);
-    edge.addColorStopRGBA(0, shade, shade, shade, paint.top);
-    if (paint.glints.length > 0)
-        edge.addColorStopRGBA(0.5, shade, shade, shade, Math.min(paint.top, paint.bottom) * 0.4);
-    edge.addColorStopRGBA(1, shade, shade, shade, paint.bottom);
-    stroke(edge, 1);
+    if (paint.light === null) {
+        const edge = new Cairo.LinearGradient(0, 0, 0, height);
+        edge.addColorStopRGBA(0, shade, shade, shade, paint.top);
+        edge.addColorStopRGBA(1, shade, shade, shade, paint.bottom);
+        stroke(edge, 1);
+        return;
+    }
+    // The light runs along the top edge and turns into the corner at either end.
     const inset = radius * 0.6;
-    const centers = {
-        'top-left': [inset, inset],
-        'top-right': [width - inset, inset],
-        'bottom-left': [inset, height - inset],
-        'bottom-right': [width - inset, height - inset],
-    };
-    // A wide faint stroke under each glint reads as light caught by the edge.
-    for (const [corner, alpha] of paint.glints) {
-        const [x, y] = centers[corner];
-        for (const [lineWidth, weight] of [[1, 1], [3, 0.3]]) {
-            const glint = new Cairo.RadialGradient(x, y, 0, x, y, radius * 3);
-            glint.addColorStopRGBA(0, shade, shade, shade, alpha * weight);
-            glint.addColorStopRGBA(1, shade, shade, shade, 0);
-            stroke(glint, lineWidth);
-        }
+    const x = width / 2 + paint.light * (width / 2 - inset);
+    const y = inset * Math.max(0, Math.abs(paint.light) * 5 - 4);
+    const [farX, farY] = [width - x, height - y];
+    const rim = new Cairo.LinearGradient(x, y, farX, farY);
+    rim.addColorStopRGBA(0, shade, shade, shade, paint.near);
+    rim.addColorStopRGBA(0.5, shade, shade, shade, paint.middle);
+    rim.addColorStopRGBA(1, shade, shade, shade, paint.far);
+    stroke(rim, 1);
+    const reach = Math.max(width, height);
+    for (const [gx, gy, alpha, extent] of [[x, y, paint.glint, 0.18], [farX, farY, paint.counter, 0.12]]) {
+        const glint = new Cairo.RadialGradient(gx, gy, 0, gx, gy, reach * extent);
+        glint.addColorStopRGBA(0, shade, shade, shade, alpha);
+        glint.addColorStopRGBA(1, shade, shade, shade, 0);
+        stroke(glint, 1);
     }
 }

@@ -501,7 +501,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const paint = appearance['outline-enabled'] && outlinePaint(
             appearance['dock-outline'] ?? OutlineStyle.AUTO,
             appearance['outline-intensity'] ?? REFERENCE_INTENSITY,
-            appearance['outline-light'] ?? OutlineLight.TOP_LEFT, true);
+            appearance['outline-light'] ?? OutlineLight.MIN, true);
         if (paint) {
             cr.save();
             cr.translate(dockX, dockY);

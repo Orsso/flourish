@@ -6,6 +6,7 @@ import {
     AttentionInterval,
     AttentionReminders,
     IconSpacing,
+    OutlineLight,
     Reach,
     Preset,
     getBuiltInRecipe,
@@ -51,6 +52,10 @@ const BOUNDED_KEYS = [
 
 test('icon spacing spans the catalog gaps', () => {
     assertDeepEqual(rangeOf('icon-spacing'), {min: IconSpacing.MIN, max: IconSpacing.MAX});
+});
+
+test('the outline light spans the catalog positions', () => {
+    assertDeepEqual(rangeOf('outline-light'), {min: OutlineLight.MIN, max: OutlineLight.MAX});
 });
 
 test('custom magnification spans 100 to 200 percent', () => {

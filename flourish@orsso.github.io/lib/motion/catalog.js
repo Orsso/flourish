@@ -113,11 +113,8 @@ export const OutlineStyle = {
     GLASS: 'glass',
 };
 
-export const OutlineLight = {
-    TOP_LEFT: 'top-left',
-    TOP: 'top',
-    TOP_RIGHT: 'top-right',
-};
+// Where the glass light sits along the top edge, from the left end to the right end.
+export const OutlineLight = {MIN: -100, MAX: 100, STEP: 10};
 
 // The four parts of a recipe; the values index a recipe object.
 export const RecipePart = {
@@ -169,7 +166,7 @@ export const PRESET_APPEARANCE = {
         'outline-enabled': true,
         'dock-outline': OutlineStyle.GLASS,
         'outline-intensity': 30,
-        'outline-light': OutlineLight.TOP_LEFT,
+        'outline-light': OutlineLight.MIN,
     },
     [Preset.CUSTOM]: {},
 };

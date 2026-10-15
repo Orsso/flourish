@@ -207,7 +207,7 @@ export default class FlourishExtension extends Extension {
             this._settings.get_boolean('outline-enabled')
                 ? this._settings.get_string('dock-outline') : OutlineStyle.NONE,
             this._settings.get_int('outline-intensity'),
-            this._settings.get_string('outline-light'),
+            this._settings.get_int('outline-light'),
         ];
         this._dockIntegration.setOutline(...outline);
         this._dashIntegration.setOutline(...outline);

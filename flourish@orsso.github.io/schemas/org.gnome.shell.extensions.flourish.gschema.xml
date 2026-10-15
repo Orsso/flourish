@@ -47,12 +47,6 @@
     <value nick="glass" value="4"/>
   </enum>
 
-  <enum id="org.gnome.shell.extensions.flourish.outline-light">
-    <value nick="top-left" value="0"/>
-    <value nick="top" value="1"/>
-    <value nick="top-right" value="2"/>
-  </enum>
-
   <schema id="org.gnome.shell.extensions.flourish"
           path="/org/gnome/shell/extensions/flourish/">
     <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
@@ -268,7 +262,7 @@
     <key name="dock-outline" enum="org.gnome.shell.extensions.flourish.dock-outline">
       <default>'auto'</default>
       <summary>Outline</summary>
-      <description>Draw an edge around the dock and dash background. Auto follows the color scheme; glass lights the corners.</description>
+      <description>Draw an edge around the dock and dash background. Auto follows the color scheme; glass catches a light along the edge.</description>
     </key>
 
     <key name="outline-intensity" type="i">
@@ -278,10 +272,11 @@
       <description>Strength of the outline in percent.</description>
     </key>
 
-    <key name="outline-light" enum="org.gnome.shell.extensions.flourish.outline-light">
-      <default>'top-left'</default>
+    <key name="outline-light" type="i">
+      <default>-100</default>
+      <range min="-100" max="100"/>
       <summary>Outline light</summary>
-      <description>Where the light of the glass outline comes from.</description>
+      <description>Where the light of the glass outline sits along the top edge, from -100 at the left end to 100 at the right end.</description>
     </key>
 
   </schema>
