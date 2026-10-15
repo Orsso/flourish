@@ -127,12 +127,20 @@ export default class FlourishExtension extends Extension {
 
     // The stage covers gaps; native hover signals also refresh the pointer.
     _connectPointer() {
-        global.stage.connectObject('motion-event', (_stage, event) => {
-            const [x, y] = event.get_coords();
-            this._dockIntegration.onPointerMotion(x, y);
-            this._dashIntegration.onPointerMotion(x, y);
-            return Clutter.EVENT_PROPAGATE;
-        }, this);
+        const onMotion = (x, y, pen) => {
+            this._dockIntegration.onPointerMotion(x, y, pen);
+            this._dashIntegration.onPointerMotion(x, y, pen);
+        };
+        global.stage.connectObject(
+            'motion-event', (_stage, event) => {
+                onMotion(...event.get_coords(), event.get_device_tool() !== null);
+                return Clutter.EVENT_PROPAGATE;
+            },
+            'event', (_stage, event) => {
+                if (event.type() === Clutter.EventType.PROXIMITY_OUT)
+                    onMotion(...global.get_pointer().slice(0, 2), false);
+                return Clutter.EVENT_PROPAGATE;
+            }, this);
         const holdDrag = held => {
             this._dockIntegration.holdPointer(Main.overview, held);
             this._dashIntegration.holdPointer(Main.overview, held);

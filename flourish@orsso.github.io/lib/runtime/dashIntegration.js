@@ -57,8 +57,8 @@ export class DashIntegration {
         this.#surface.refreshStyles();
     }
 
-    onPointerMotion(x, y) {
-        this.#surface?.onPointerMotion(x, y);
+    onPointerMotion(x, y, pen) {
+        this.#surface?.onPointerMotion(x, y, pen);
     }
 
     holdPointer(owner, held) {

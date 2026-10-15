@@ -19,6 +19,7 @@ export class MotionSurface {
     #rows = new Set();
     #getPointer;
     #onUrgentChanged;
+    #penPointer = null;
     #recipe;
     #registry = new LiveRegistry();
     #scheduler;
@@ -33,7 +34,8 @@ export class MotionSurface {
     }) {
         this.#recipe = recipe;
         this.#clock = clock;
-        this.#getPointer = getPointer;
+        // A pen has its own cursor; the seat pointer is the mouse.
+        this.#getPointer = () => this.#penPointer ?? getPointer();
         this.#animationsEnabled = animationsEnabled;
         this.#onUrgentChanged = onUrgentChanged;
         this.#scheduler = scheduler;
@@ -74,7 +76,8 @@ export class MotionSurface {
             row.invalidateGeometry();
     }
 
-    onPointerMotion(x, y) {
+    onPointerMotion(x, y, pen = false) {
+        this.#penPointer = pen ? [x, y] : null;
         for (const row of this.#rows)
             row.onPointerMotion(x, y);
     }
