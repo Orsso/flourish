@@ -1,6 +1,7 @@
 import {getBuiltInRecipe, Preset} from '../flourish@orsso.github.io/lib/motion/catalog.js';
 import {
     hoverActive,
+    rowPosition,
     waveFalloff,
     fitHoverLevel,
     waveGeometry,
@@ -108,4 +109,25 @@ test('hover activity requires the toggle and a visible transform', () => {
     assertEqual(hoverActive(recipe.hover), true);
     recipe.hover.enabled = false;
     assertEqual(hoverActive(recipe.hover), false);
+});
+
+test('rowPosition counts icons, not pixels, so a group gap adds no distance', () => {
+    const even = [0, 50, 100, 150];
+    assertClose(rowPosition(even, 75, 50), 1.5);
+    assertClose(rowPosition(even, -25, 50), -0.5);
+    assertClose(rowPosition(even, 200, 50), 4);
+    const gapped = [0, 50, 136, 186];
+    assertClose(rowPosition(gapped, 93, 62), 1.5);
+    assertClose(rowPosition(gapped, 136, 62), 2);
+    assertClose(rowPosition(gapped, 161, 62), 2.5);
+});
+
+test('the wave keeps its total growth while the pointer crosses a gap', () => {
+    const gapped = [0, 50, 136, 186, 236, 322, 372];
+    const total = pointer => {
+        const position = rowPosition(gapped, pointer, 62);
+        return gapped.reduce((sum, _center, index) => sum + waveFalloff(Math.abs(index - position), 2), 0);
+    };
+    assertClose(total(93), total(211));
+    assertClose(total(136), total(186));
 });

@@ -13,6 +13,19 @@ export function waveFalloff(distance, radius) {
     return 0.5 * (1 + Math.cos((Math.PI * distance) / radius));
 }
 
+// Pointer as a fractional icon index: a group gap counts as no distance, so the wave keeps its size across it.
+export function rowPosition(centers, pointer, pitch) {
+    const last = centers.length - 1;
+    if (pointer <= centers[0])
+        return (pointer - centers[0]) / pitch;
+    if (pointer >= centers[last])
+        return last + (pointer - centers[last]) / pitch;
+    let index = 0;
+    while (centers[index + 1] <= pointer)
+        index++;
+    return index + (pointer - centers[index]) / (centers[index + 1] - centers[index]);
+}
+
 export function waveOffsets(sizes, scales) {
     const offsets = [];
     let extra = 0;

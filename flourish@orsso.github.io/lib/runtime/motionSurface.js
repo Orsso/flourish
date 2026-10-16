@@ -3,7 +3,7 @@ import GLib from 'gi://GLib';
 import St from 'gi://St';
 
 import {Easing, sampleRamp} from '../motion/catalog.js';
-import {OVERSHOOT_RESERVE, fitHoverLevel, hoverActive, waveFalloff, waveGeometry} from '../motion/continuum.js';
+import {OVERSHOOT_RESERVE, fitHoverLevel, hoverActive, rowPosition, waveFalloff, waveGeometry} from '../motion/continuum.js';
 import {getOrientation} from '../motion/transforms.js';
 import {IconMotionController} from './iconMotionController.js';
 import {IconDecorations} from './iconDecorations.js';
@@ -381,7 +381,7 @@ class WaveRow {
         return sampleRamp(this.#envRamp, this.#clock());
     }
 
-    // Row geometry under the pointer, or null.
+    // Pointer position along the row in icons, or null.
     #waveShape() {
         // The overview dash keeps its allocation while hidden.
         if (this.#pointer === null || this.#holds.size > 0 || !this.#box.mapped ||
@@ -422,7 +422,7 @@ class WaveRow {
             return null;
         if (!this.#context.containsPointer(...this.#pointer))
             return null;
-        return {pointer, centers: this.#entries.map(entry => this.#center(entry)), pitch};
+        return rowPosition(this.#entries.map(entry => this.#center(entry)), pointer, pitch);
     }
 
     // Allocation boxes are parent-relative, like the pointer.
@@ -432,13 +432,13 @@ class WaveRow {
     }
 
     #syncWave() {
-        const shape = this.#waveShape();
+        const position = this.#waveShape();
         let env;
-        if (shape) {
+        if (position !== null) {
             const {hover} = this.#recipe;
             const limit = this.#wavePeak();
-            const levels = shape.centers.map(center => waveFalloff(
-                Math.abs(center - shape.pointer) / shape.pitch, hover.reach) * limit);
+            const levels = this.#entries.map((_entry, index) =>
+                waveFalloff(Math.abs(index - position), hover.reach) * limit);
             if (this.#envRamp.to !== 1)
                 this.#startEnv(this.#sampleEnv(), 1);
             env = this.#sampleEnv();
