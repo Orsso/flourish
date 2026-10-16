@@ -594,16 +594,20 @@ test('native hover exit samples the pointer after the notification', () => {
 });
 
 test('a pen drives the wave from its own cursor until it leaves proximity', () => {
-    const mouse = [600, 500];
+    const mouse = [25, 25];
     const {surface, bins, frame, settle} = makeSurface({getPointer: () => mouse});
     surface.onPointerMotion(125, 25, true);
     frame(0);
     settle();
     assertClose(bins[2].scale_x, 1.22);
-    surface.onPointerMotion(...mouse);
+    assertEqual(bins[0].scale_x, 1);
+    surface.penLeft();
     settle();
     for (const bin of bins)
         assertClose(bin.scale_x, 1);
+    surface.onPointerMotion(...mouse);
+    settle();
+    assertClose(bins[0].scale_x, 1.22);
     surface.dispose();
 });
 

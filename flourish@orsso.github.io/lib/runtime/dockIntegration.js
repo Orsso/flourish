@@ -85,6 +85,10 @@ export class DockIntegration {
         this.#surface.onPointerMotion(x, y, pen);
     }
 
+    penLeft() {
+        this.#surface.penLeft();
+    }
+
     holdPointer(owner, held) {
         this.#surface.holdPointer(owner, held);
     }

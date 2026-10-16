@@ -137,8 +137,10 @@ export default class FlourishExtension extends Extension {
                 return Clutter.EVENT_PROPAGATE;
             },
             'event', (_stage, event) => {
-                if (event.type() === Clutter.EventType.PROXIMITY_OUT)
-                    onMotion(...global.get_pointer().slice(0, 2), false);
+                if (event.type() === Clutter.EventType.PROXIMITY_OUT) {
+                    this._dockIntegration.penLeft();
+                    this._dashIntegration.penLeft();
+                }
                 return Clutter.EVENT_PROPAGATE;
             }, this);
         const holdDrag = held => {

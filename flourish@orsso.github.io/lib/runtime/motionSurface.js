@@ -19,6 +19,7 @@ export class MotionSurface {
     #rows = new Set();
     #getPointer;
     #onUrgentChanged;
+    #penLeft = false;
     #penPointer = null;
     #recipe;
     #registry = new LiveRegistry();
@@ -77,9 +78,20 @@ export class MotionSurface {
     }
 
     onPointerMotion(x, y, pen = false) {
+        if (this.#penLeft) {
+            this.#penLeft = false;
+            this.holdPointer(this, false);
+        }
         this.#penPointer = pen ? [x, y] : null;
         for (const row of this.#rows)
             row.onPointerMotion(x, y);
+    }
+
+    // The resting mouse cursor takes over only once it moves.
+    penLeft() {
+        this.#penPointer = null;
+        this.#penLeft = true;
+        this.holdPointer(this, true);
     }
 
     holdPointer(owner, held) {
