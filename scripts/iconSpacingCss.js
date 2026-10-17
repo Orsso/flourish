@@ -62,13 +62,19 @@ export function iconSpacingCss() {
         const flush = `${scope}.flourish-flush`;
         blocks.push(rule(['bottom', 'top', 'left', 'right'].map(edge => `${flush} #dashtodockContainer.${edge} #dash .dash-background`),
             'margin: 0 !important;'));
+        // The tiles take the container margins below twice the halo, so the screen edge stays on an icon.
+        const small = gap < 2 * HALO;
+        if (small)
+            blocks.push(rule(['bottom', 'top', 'left', 'right'].map(edge => `${flush} #dashtodockContainer.${edge} #dash .dash-item-container`),
+                'margin: 0 !important;'));
         for (const [mode, padding] of Object.entries(FLUSH_TILE_PADDING)) {
             const dockTiles = edges => edges.flatMap(edge =>
                 DOCK_TILES.map(tile => `${flush} #dashtodockContainer.${edge}${mode} #dash .dash-item-container ${tile}`));
+            const [before, after, side] = small ? [HALO - top, HALO - bottom, HALO - gap / 2] : [0, 0, 0];
             blocks.push(rule(dockTiles(['bottom', 'top']),
-                `padding-top: ${px(padding)} !important;\n    padding-bottom: ${px(padding)} !important;`));
+                `padding-top: ${px(padding + before)} !important;\n    padding-bottom: ${px(padding + after)} !important;`));
             blocks.push(rule(dockTiles(['left', 'right']),
-                `padding-left: ${px(padding)} !important;\n    padding-right: ${px(padding)} !important;`));
+                `padding-left: ${px(padding + side)} !important;\n    padding-right: ${px(padding + side)} !important;`));
         }
         dockEnds(flush, FLUSH_INSETS);
         if (gap >= 2 * HALO) {

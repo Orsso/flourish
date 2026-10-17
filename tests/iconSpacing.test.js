@@ -39,9 +39,21 @@ test('a flush dock fills its background and pads its tiles evenly', () => {
     const css = iconSpacingCss();
     assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-background {
     margin: 0 !important;`), true);
-    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
+    assertEqual(css.includes(`.flourish-spacing-12.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
     padding-top: 3px !important;
     padding-bottom: 3px !important;`), true);
     assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash #dashtodockDashContainer {
     padding-left: 7px !important;`), true);
+});
+
+test('a flush dock keeps the screen edge on its tiles below twice the halo', () => {
+    const css = iconSpacingCss();
+    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;`), true);
+    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
+    padding-top: 9px !important;
+    padding-bottom: 5px !important;`), true);
+    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
+    padding-left: 14px !important;
+    padding-right: 14px !important;`), true);
 });

@@ -59,14 +59,21 @@
     margin: 0 !important;
 }
 
+.flourish-spacing-0.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-0.flourish-flush #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-0.flourish-flush #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-0.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
 .flourish-spacing-0.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.top #dash .dash-item-container .app-well-app,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.top #dash .dash-item-container .show-apps,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.top #dash .dash-item-container .overview-tile {
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
 }
 
 .flourish-spacing-0.flourish-flush #dashtodockContainer.left #dash .dash-item-container .app-well-app,
@@ -75,8 +82,8 @@
 .flourish-spacing-0.flourish-flush #dashtodockContainer.right #dash .dash-item-container .app-well-app,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.right #dash .dash-item-container .show-apps,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
 }
 
 .flourish-spacing-0.flourish-flush #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app,
@@ -85,8 +92,8 @@
 .flourish-spacing-0.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
-    padding-top: 3px !important;
-    padding-bottom: 3px !important;
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
 }
 
 .flourish-spacing-0.flourish-flush #dashtodockContainer.left.shrink #dash .dash-item-container .app-well-app,
@@ -95,8 +102,8 @@
 .flourish-spacing-0.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-0.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile {
-    padding-left: 3px !important;
-    padding-right: 3px !important;
+    padding-left: 9px !important;
+    padding-right: 9px !important;
 }
 
 .flourish-spacing-0.flourish-flush #dashtodockContainer.bottom #dash #dashtodockDashContainer,
@@ -199,14 +206,21 @@
     margin: 0 !important;
 }
 
+.flourish-spacing-2.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-2.flourish-flush #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-2.flourish-flush #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-2.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
 .flourish-spacing-2.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.top #dash .dash-item-container .app-well-app,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.top #dash .dash-item-container .show-apps,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.top #dash .dash-item-container .overview-tile {
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
+    padding-top: 16px !important;
+    padding-bottom: 14px !important;
 }
 
 .flourish-spacing-2.flourish-flush #dashtodockContainer.left #dash .dash-item-container .app-well-app,
@@ -215,8 +229,8 @@
 .flourish-spacing-2.flourish-flush #dashtodockContainer.right #dash .dash-item-container .app-well-app,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.right #dash .dash-item-container .show-apps,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 15px !important;
+    padding-right: 15px !important;
 }
 
 .flourish-spacing-2.flourish-flush #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app,
@@ -225,8 +239,8 @@
 .flourish-spacing-2.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
-    padding-top: 3px !important;
-    padding-bottom: 3px !important;
+    padding-top: 9px !important;
+    padding-bottom: 7px !important;
 }
 
 .flourish-spacing-2.flourish-flush #dashtodockContainer.left.shrink #dash .dash-item-container .app-well-app,
@@ -235,8 +249,8 @@
 .flourish-spacing-2.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-2.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile {
-    padding-left: 3px !important;
-    padding-right: 3px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
 }
 
 .flourish-spacing-2.flourish-flush #dashtodockContainer.bottom #dash #dashtodockDashContainer,
@@ -339,14 +353,21 @@
     margin: 0 !important;
 }
 
+.flourish-spacing-4.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-4.flourish-flush #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-4.flourish-flush #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
 .flourish-spacing-4.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.top #dash .dash-item-container .app-well-app,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.top #dash .dash-item-container .show-apps,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.top #dash .dash-item-container .overview-tile {
-    padding-top: 10px !important;
-    padding-bottom: 10px !important;
+    padding-top: 16px !important;
+    padding-bottom: 12px !important;
 }
 
 .flourish-spacing-4.flourish-flush #dashtodockContainer.left #dash .dash-item-container .app-well-app,
@@ -355,8 +376,8 @@
 .flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container .app-well-app,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container .show-apps,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 14px !important;
+    padding-right: 14px !important;
 }
 
 .flourish-spacing-4.flourish-flush #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app,
@@ -365,8 +386,8 @@
 .flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
-    padding-top: 3px !important;
-    padding-bottom: 3px !important;
+    padding-top: 9px !important;
+    padding-bottom: 5px !important;
 }
 
 .flourish-spacing-4.flourish-flush #dashtodockContainer.left.shrink #dash .dash-item-container .app-well-app,
@@ -375,8 +396,8 @@
 .flourish-spacing-4.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-4.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile {
-    padding-left: 3px !important;
-    padding-right: 3px !important;
+    padding-left: 7px !important;
+    padding-right: 7px !important;
 }
 
 .flourish-spacing-4.flourish-flush #dashtodockContainer.bottom #dash #dashtodockDashContainer,
@@ -479,13 +500,20 @@
     margin: 0 !important;
 }
 
+.flourish-spacing-6.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-6.flourish-flush #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-6.flourish-flush #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-6.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
 .flourish-spacing-6.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.top #dash .dash-item-container .app-well-app,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.top #dash .dash-item-container .show-apps,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.top #dash .dash-item-container .overview-tile {
-    padding-top: 10px !important;
+    padding-top: 16px !important;
     padding-bottom: 10px !important;
 }
 
@@ -495,8 +523,8 @@
 .flourish-spacing-6.flourish-flush #dashtodockContainer.right #dash .dash-item-container .app-well-app,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.right #dash .dash-item-container .show-apps,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 13px !important;
+    padding-right: 13px !important;
 }
 
 .flourish-spacing-6.flourish-flush #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app,
@@ -505,7 +533,7 @@
 .flourish-spacing-6.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
-    padding-top: 3px !important;
+    padding-top: 9px !important;
     padding-bottom: 3px !important;
 }
 
@@ -515,8 +543,8 @@
 .flourish-spacing-6.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-6.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile {
-    padding-left: 3px !important;
-    padding-right: 3px !important;
+    padding-left: 6px !important;
+    padding-right: 6px !important;
 }
 
 .flourish-spacing-6.flourish-flush #dashtodockContainer.bottom #dash #dashtodockDashContainer,
@@ -619,13 +647,20 @@
     margin: 0 !important;
 }
 
+.flourish-spacing-8.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-8.flourish-flush #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-8.flourish-flush #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-8.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
 .flourish-spacing-8.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.top #dash .dash-item-container .app-well-app,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.top #dash .dash-item-container .show-apps,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.top #dash .dash-item-container .overview-tile {
-    padding-top: 10px !important;
+    padding-top: 14px !important;
     padding-bottom: 10px !important;
 }
 
@@ -635,8 +670,8 @@
 .flourish-spacing-8.flourish-flush #dashtodockContainer.right #dash .dash-item-container .app-well-app,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.right #dash .dash-item-container .show-apps,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
 }
 
 .flourish-spacing-8.flourish-flush #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app,
@@ -645,7 +680,7 @@
 .flourish-spacing-8.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
-    padding-top: 3px !important;
+    padding-top: 7px !important;
     padding-bottom: 3px !important;
 }
 
@@ -655,8 +690,8 @@
 .flourish-spacing-8.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-8.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile {
-    padding-left: 3px !important;
-    padding-right: 3px !important;
+    padding-left: 5px !important;
+    padding-right: 5px !important;
 }
 
 .flourish-spacing-8.flourish-flush #dashtodockContainer.bottom #dash #dashtodockDashContainer,
@@ -759,13 +794,20 @@
     margin: 0 !important;
 }
 
+.flourish-spacing-10.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container,
+.flourish-spacing-10.flourish-flush #dashtodockContainer.top #dash .dash-item-container,
+.flourish-spacing-10.flourish-flush #dashtodockContainer.left #dash .dash-item-container,
+.flourish-spacing-10.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    margin: 0 !important;
+}
+
 .flourish-spacing-10.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .app-well-app,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .show-apps,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.bottom #dash .dash-item-container .overview-tile,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.top #dash .dash-item-container .app-well-app,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.top #dash .dash-item-container .show-apps,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.top #dash .dash-item-container .overview-tile {
-    padding-top: 10px !important;
+    padding-top: 12px !important;
     padding-bottom: 10px !important;
 }
 
@@ -775,8 +817,8 @@
 .flourish-spacing-10.flourish-flush #dashtodockContainer.right #dash .dash-item-container .app-well-app,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.right #dash .dash-item-container .show-apps,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
-    padding-left: 10px !important;
-    padding-right: 10px !important;
+    padding-left: 11px !important;
+    padding-right: 11px !important;
 }
 
 .flourish-spacing-10.flourish-flush #dashtodockContainer.bottom.shrink #dash .dash-item-container .app-well-app,
@@ -785,7 +827,7 @@
 .flourish-spacing-10.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
-    padding-top: 3px !important;
+    padding-top: 5px !important;
     padding-bottom: 3px !important;
 }
 
@@ -795,8 +837,8 @@
 .flourish-spacing-10.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .app-well-app,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .show-apps,
 .flourish-spacing-10.flourish-flush #dashtodockContainer.right.shrink #dash .dash-item-container .overview-tile {
-    padding-left: 3px !important;
-    padding-right: 3px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
 }
 
 .flourish-spacing-10.flourish-flush #dashtodockContainer.bottom #dash #dashtodockDashContainer,
