@@ -21,7 +21,9 @@ export class MotionSurface {
     #iconGroups = new Map();
     #rows = new Set();
     #getPointer;
+    #awaitingMouse = false;
     #onUrgentChanged;
+    #penPointer = null;
     #recipe;
     #registry = new LiveRegistry();
     #scheduler;
@@ -36,7 +38,8 @@ export class MotionSurface {
     }) {
         this.#recipe = recipe;
         this.#clock = clock;
-        this.#getPointer = getPointer;
+        // A pen has its own cursor; the seat pointer is the mouse.
+        this.#getPointer = () => this.#penPointer ?? getPointer();
         this.#animationsEnabled = animationsEnabled;
         this.#onUrgentChanged = onUrgentChanged;
         this.#scheduler = scheduler;
@@ -83,9 +86,21 @@ export class MotionSurface {
             row.invalidateGeometry();
     }
 
-    onPointerMotion(x, y) {
+    onPointerMotion(x, y, pen = false) {
+        if (this.#awaitingMouse) {
+            this.#awaitingMouse = false;
+            this.holdPointer(this, false);
+        }
+        this.#penPointer = pen ? [x, y] : null;
         for (const row of this.#rows)
             row.onPointerMotion(x, y);
+    }
+
+    // The resting mouse cursor takes over only once it moves.
+    penLeft() {
+        this.#penPointer = null;
+        this.#awaitingMouse = true;
+        this.holdPointer(this, true);
     }
 
     holdPointer(owner, held) {
@@ -107,6 +122,11 @@ export class MotionSurface {
             recipe: this.#recipe,
             clock: this.#clock,
             getPointer: this.#getPointer,
+            onLeave: (x, y) => {
+                // A pen over a client window sends no stage motion.
+                if (this.#penPointer)
+                    this.#penPointer = [x, y];
+            },
             animationsEnabled: this.#animationsEnabled,
             context,
         });
@@ -199,7 +219,7 @@ class WaveRow {
     #scheduler;
     #translations = new Map();
 
-    constructor({scheduler, box, edge, recipe, clock, getPointer, animationsEnabled, context}) {
+    constructor({scheduler, box, edge, recipe, clock, getPointer, onLeave, animationsEnabled, context}) {
         const {pointerActor, background} = context;
         this.#scheduler = scheduler;
         this.#box = box;
@@ -219,6 +239,7 @@ class WaveRow {
         }, this);
         // Client entry can leave the surface without changing any icon's hover.
         pointerActor.connectObject('leave-event', (_actor, event) => {
+            onLeave(...event.get_coords());
             this.onPointerMotion(...event.get_coords());
             return Clutter.EVENT_PROPAGATE;
         }, this);

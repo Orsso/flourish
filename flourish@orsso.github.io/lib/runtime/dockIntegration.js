@@ -81,8 +81,12 @@ export class DockIntegration {
         this.#syncWiggle();
     }
 
-    onPointerMotion(x, y) {
-        this.#surface.onPointerMotion(x, y);
+    onPointerMotion(x, y, pen) {
+        this.#surface.onPointerMotion(x, y, pen);
+    }
+
+    penLeft() {
+        this.#surface.penLeft();
     }
 
     holdPointer(owner, held) {
