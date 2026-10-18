@@ -611,6 +611,20 @@ test('a pen drives the wave from its own cursor until it leaves proximity', () =
     surface.dispose();
 });
 
+test('a pen leaving the row onto a client window retreats the wave', () => {
+    const pointerActor = new FakeEmitter();
+    const {surface, bins, frame, settle} = makeSurface({pointerActor, getPointer: () => [25, 25]});
+    surface.onPointerMotion(125, 25, true);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+    pointerActor.emit('leave-event', {get_coords: () => [125, 1000]});
+    settle();
+    for (const bin of bins)
+        assertClose(bin.scale_x, 1);
+    surface.dispose();
+});
+
 test('surface picking is coalesced, bounded to the row and idle after settling', () => {
     let picks = 0;
     const {surface, frame, settle, scheduler} = makeSurface({

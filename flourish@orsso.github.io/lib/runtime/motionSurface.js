@@ -18,8 +18,8 @@ export class MotionSurface {
     #contexts = new Map();
     #rows = new Set();
     #getPointer;
+    #awaitingMouse = false;
     #onUrgentChanged;
-    #penLeft = false;
     #penPointer = null;
     #recipe;
     #registry = new LiveRegistry();
@@ -78,8 +78,8 @@ export class MotionSurface {
     }
 
     onPointerMotion(x, y, pen = false) {
-        if (this.#penLeft) {
-            this.#penLeft = false;
+        if (this.#awaitingMouse) {
+            this.#awaitingMouse = false;
             this.holdPointer(this, false);
         }
         this.#penPointer = pen ? [x, y] : null;
@@ -90,7 +90,7 @@ export class MotionSurface {
     // The resting mouse cursor takes over only once it moves.
     penLeft() {
         this.#penPointer = null;
-        this.#penLeft = true;
+        this.#awaitingMouse = true;
         this.holdPointer(this, true);
     }
 
@@ -113,6 +113,11 @@ export class MotionSurface {
             recipe: this.#recipe,
             clock: this.#clock,
             getPointer: this.#getPointer,
+            onLeave: (x, y) => {
+                // A pen over a client window sends no stage motion.
+                if (this.#penPointer)
+                    this.#penPointer = [x, y];
+            },
             animationsEnabled: this.#animationsEnabled,
             context,
         });
@@ -198,7 +203,7 @@ class WaveRow {
     #scheduler;
     #translations = new Map();
 
-    constructor({scheduler, box, edge, recipe, clock, getPointer, animationsEnabled, context}) {
+    constructor({scheduler, box, edge, recipe, clock, getPointer, onLeave, animationsEnabled, context}) {
         const {pointerActor, background} = context;
         this.#scheduler = scheduler;
         this.#box = box;
@@ -218,6 +223,7 @@ class WaveRow {
         }, this);
         // Client entry can leave the surface without changing any icon's hover.
         pointerActor.connectObject('leave-event', (_actor, event) => {
+            onLeave(...event.get_coords());
             this.onPointerMotion(...event.get_coords());
             return Clutter.EVENT_PROPAGATE;
         }, this);
