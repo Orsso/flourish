@@ -62,14 +62,19 @@ export function fitBackgroundGrowth(growth, start, end, origin, scale, monitorSt
     return Math.min(growth, 2 * Math.max(0, Math.min(leading, trailing)));
 }
 
-export function pointerOnSurface(actor, x, y, gapRoot = null) {
-    return ownsPick(actor, global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y), gapRoot);
+export function pointerOnSurface(actor, row, x, y, gapRoot = null) {
+    return ownsPick(actor, row, global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y), gapRoot);
 }
 
 // A gap between icons picks a reactive ancestor: overviewGroup, or ControlsManager since Shell 51.
-export function ownsPick(actor, picked, gapRoot) {
+export function ownsPick(actor, row, picked, gapRoot) {
     if (picked === null)
         return false;
+    // Another extension's widget in the row, such as Dynamic Music Pill, is outside the wave.
+    for (let child = picked; child !== null; child = child.get_parent()) {
+        if (child.get_parent() === row)
+            return Boolean((child.child ?? child).icon?._iconBin);
+    }
     return actor.contains(picked) ||
         (gapRoot !== null && gapRoot.contains(picked) && picked.contains(actor));
 }

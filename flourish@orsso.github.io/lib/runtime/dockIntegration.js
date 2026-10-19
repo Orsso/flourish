@@ -216,7 +216,7 @@ export class DockIntegration {
                 visibility,
                 pointerActor: slid,
                 isAvailable: () => visibility.state === DockState.SHOWN,
-                containsPointer: (x, y) => pointerOnSurface(slid, x, y),
+                containsPointer: (x, y) => pointerOnSurface(slid, box, x, y),
                 getMonitor,
                 dockSettings: this.#manager.settings,
                 labelOffset: '-x-offset',

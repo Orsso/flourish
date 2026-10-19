@@ -79,6 +79,9 @@ test('a clipped native row has no spacing room despite free monitor margins', ()
 test('a gap pick counts when it is an ancestor of the surface inside the gap root', () => {
     const node = (name, parent = null) => ({
         name, parent,
+        get_parent() {
+            return this.parent;
+        },
         contains(other) {
             for (let n = other; n; n = n.parent) {
                 if (n === this)
@@ -91,13 +94,21 @@ test('a gap pick counts when it is an ancestor of the surface inside the gap roo
     const overviewGroup = node('overviewGroup', stage);
     const controls = node('controls', overviewGroup); // reactive since Shell 51
     const dash = node('dash', controls);
-    const icon = node('icon', dash);
+    const box = node('box', dash);
+    const container = node('container', box);
+    container.child = {icon: {_iconBin: {}}};
+    const icon = node('icon', container);
+    const pill = node('pill', box);
+    const pillLabel = node('pillLabel', pill);
     const grid = node('grid', controls);
-    assertEqual(ownsPick(dash, icon, overviewGroup), true);
-    assertEqual(ownsPick(dash, overviewGroup, overviewGroup), true);
-    assertEqual(ownsPick(dash, controls, overviewGroup), true);
-    assertEqual(ownsPick(dash, grid, overviewGroup), false);
-    assertEqual(ownsPick(dash, stage, overviewGroup), false);
-    assertEqual(ownsPick(dash, controls, null), false);
-    assertEqual(ownsPick(dash, null, overviewGroup), false);
+    assertEqual(ownsPick(dash, box, icon, overviewGroup), true);
+    assertEqual(ownsPick(dash, box, overviewGroup, overviewGroup), true);
+    assertEqual(ownsPick(dash, box, controls, overviewGroup), true);
+    assertEqual(ownsPick(dash, box, grid, overviewGroup), false);
+    assertEqual(ownsPick(dash, box, stage, overviewGroup), false);
+    assertEqual(ownsPick(dash, box, controls, null), false);
+    assertEqual(ownsPick(dash, box, null, overviewGroup), false);
+    assertEqual(ownsPick(dash, box, box, overviewGroup), true);
+    assertEqual(ownsPick(dash, box, pillLabel, overviewGroup), false);
+    assertEqual(ownsPick(dash, box, pill, null), false);
 });
