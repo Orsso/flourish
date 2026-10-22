@@ -6,6 +6,7 @@ import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {DASH_TO_DOCK_BUILDS, DockState, ScreenEdge} from '../motion/catalog.js';
+import {shouldReattachDock} from '../motion/transforms.js';
 import {DockVisibility} from './dockVisibility.js';
 import {DockOutline} from './dockOutline.js';
 import {DockOverflow} from './dockOverflow.js';
@@ -20,6 +21,7 @@ export class DockIntegration {
     #injections = null;
     #manager = null;
     #managerSignals = [];
+    #managerUuid = null;
     #onUrgentChanged;
     #outline;
     #overflows = new Set();
@@ -51,10 +53,11 @@ export class DockIntegration {
         Main.layoutManager.connectObject('monitors-changed', () => this.#surface.invalidateGeometry(), this);
         Main.extensionManager.connectObject('extension-state-changed',
             (_manager, extension) => {
-                if (!DASH_TO_DOCK_BUILDS.includes(extension.uuid))
-                    return;
-                // An update notice keeps the docks; a reload destroys the manager.
-                if (this.#manager && extension.state === ExtensionState.ACTIVE)
+                if (!shouldReattachDock({
+                    uuid: extension.uuid,
+                    active: extension.state === ExtensionState.ACTIVE,
+                    attachedUuid: this.#managerUuid,
+                }))
                     return;
                 this.#detachManager();
                 this.#scheduleAttach();
@@ -156,6 +159,7 @@ export class DockIntegration {
             return;
 
         this.#manager = module.dockManager;
+        this.#managerUuid = extension.uuid;
         // DockManager uses Signals.addSignalMethods: no connectObject there.
         this.#managerSignals = [
             this.#manager.connect('docks-ready', () => this.#scanDocks()),
@@ -174,6 +178,7 @@ export class DockIntegration {
             this.#manager.disconnect(id);
         this.#managerSignals = [];
         this.#manager = null;
+        this.#managerUuid = null;
     }
 
     #disposeDocks() {
