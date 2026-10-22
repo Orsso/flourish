@@ -32,6 +32,7 @@ import {
     sampleLaunchSegments,
     shouldPlayAttention,
     shouldRepeatLaunch,
+    shouldReattachDock,
     shouldRetreatOnHandoff,
     wiggleSegments,
 } from '../flourish@orsso.github.io/lib/motion/transforms.js';
@@ -396,6 +397,25 @@ test('handoff settles into the dash of a steady overview', () => {
         overviewVisibleTarget: true,
         dashContainsTarget: true,
     }), false);
+});
+
+test('a disabled Ubuntu Dock loading leaves Dash to Dock attached', () => {
+    assertEqual(shouldReattachDock({
+        uuid: 'ubuntu-dock@ubuntu.com',
+        active: false,
+        attachedUuid: 'dash-to-dock@micxgx.gmail.com',
+    }), false);
+});
+
+test('the attached dock reattaches when it goes away, not on an update notice', () => {
+    const attachedUuid = 'dash-to-dock@micxgx.gmail.com';
+    assertEqual(shouldReattachDock({uuid: attachedUuid, active: false, attachedUuid}), true);
+    assertEqual(shouldReattachDock({uuid: attachedUuid, active: true, attachedUuid}), false);
+});
+
+test('any dock build attaches while none is attached', () => {
+    assertEqual(shouldReattachDock({uuid: 'ubuntu-dock@ubuntu.com', active: true, attachedUuid: null}), true);
+    assertEqual(shouldReattachDock({uuid: 'other@example.com', active: true, attachedUuid: null}), false);
 });
 
 test('launch segment sampling uses the shared timeline', () => {

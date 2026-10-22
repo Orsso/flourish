@@ -1,6 +1,7 @@
 import {
     AttentionEffect,
     AttentionPlay,
+    DASH_TO_DOCK_BUILDS,
     DockState,
     Easing,
     LaunchEffect,
@@ -312,6 +313,17 @@ export function shouldRetreatOnHandoff({
     if (!targetMapped || !dockShown)
         return true;
     return overviewVisible && !overviewVisibleTarget && dashContainsTarget;
+}
+
+// Only the build the docks come from can take them away: Ubuntu Dock loading
+// disabled next to Dash to Dock leaves Dash to Dock's docks alone.
+export function shouldReattachDock({uuid, active, attachedUuid}) {
+    if (!DASH_TO_DOCK_BUILDS.includes(uuid))
+        return false;
+    if (!attachedUuid)
+        return true;
+    // An update notice keeps the docks; a reload destroys the manager.
+    return uuid === attachedUuid && !active;
 }
 
 // Half a pixel absorbs the rounding of transformed positions.
