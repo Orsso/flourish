@@ -4,7 +4,7 @@ import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {GroupGap, OutlineLight, OutlineStyle} from '../motion/catalog.js';
-import {editCustomSetting, setGroupGap} from '../motion/settings.js';
+import {editCustomSetting, setBooleanCommitted, setGroupGap} from '../motion/settings.js';
 import {DockSample} from './dockSample.js';
 import {N_, createScaleRow, createSwitchRow} from './rows.js';
 
@@ -71,7 +71,7 @@ export function buildAppearancePage(page, controls, settings, state) {
         value => editCustomSetting(settings, 'icon-spacing', value));
     // Presets leave the dock where it is.
     const position = addSegments(appearance, layout, _('Dock position'), POSITIONS, 'flush', state,
-        value => settings.set_boolean('dock-flush', value));
+        value => setBooleanCommitted(settings, 'dock-flush', value));
     position.subtitle = _('Dash to Dock and Ubuntu Dock');
 
     const outline = section(_('Outline'), 'outlineEnabled');
