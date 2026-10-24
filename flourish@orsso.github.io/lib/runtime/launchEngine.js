@@ -158,8 +158,8 @@ export class LaunchEngine {
             }),
             visibility,
             wasLaunching: app.state !== Shell.AppState.RUNNING,
-            // Window-backed apps have no desktop entry.
-            startupNotify: app.get_app_info()?.get_string('StartupNotify'),
+            // Window-backed apps have no desktop entry; on Shell 46, Dash to Dock's Trash and volumes lack get_string (#12).
+            startupNotify: app.get_app_info()?.get_string?.('StartupNotify'),
         };
         target.connectObject('destroy',
             () => this.#finish(session, {targetDestroyed: true}), session);
