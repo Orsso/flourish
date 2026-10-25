@@ -23,6 +23,7 @@ import {
     DemoPhase,
     PHASE_WAIT_MS,
 } from './demoSequence.js';
+import {accentColor} from './dockSample.js';
 
 const IDENTITY = {
     scaleX: 1,
@@ -481,7 +482,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         cr.setSourceRGBA(0.08, 0.09, 0.11, 1);
         cr.fillPreserve();
         cr.setLineWidth(this._selected ? 2 : 1);
-        cr.setSourceRGBA(0.22, 0.52, 0.85, this._selected ? 1 : 0.28);
+        const {red, green, blue} = accentColor();
+        cr.setSourceRGBA(red, green, blue, this._selected ? 1 : 0.28);
         cr.stroke();
 
         // A wide wave shrinks the scene around the bottom center instead of leaving the card.
