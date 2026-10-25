@@ -2,7 +2,7 @@ import {GroupGap} from '../motion/catalog.js';
 
 const GAP_CLASSES = Object.values(GroupGap).map(gap => `flourish-gap-${gap}`);
 
-// A favorite's gap and its group switch in the icon menu.
+// A favorite's gap and its group item in the icon menu.
 export class IconGroup {
     #container;
     #groups;

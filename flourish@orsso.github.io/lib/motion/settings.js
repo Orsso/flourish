@@ -108,54 +108,45 @@ export function setStringCommitted(settings, key, value) {
     settings.apply();
 }
 
-// Gaps stay at their position while apps move; null means no gap.
+// The gap before each favorite after the first, keyed by app id; null means no gap.
 export function groupGaps(favoriteIds, stored) {
-    return new Map(favoriteIds.slice(1).map((id, index) => [id, stored[index + 1] ?? null]));
+    return new Map(favoriteIds.slice(1).map(id => [id, stored[id] ?? null]));
 }
 
-// Gaps act like dock items when one app moves, is pinned or unpinned: a gap stays
-// before its right neighbor, or after its left one when that neighbor moved. An app
-// dropped right at a gap stays on the side it came from. Other changes keep positions.
-export function followMoves(before, after, gaps) {
-    const removed = before.filter(id => !after.includes(id));
-    const added = after.filter(id => !before.includes(id));
-    const without = (list, id) => list.filter(other => other !== id);
-    const same = (first, second) => first.length === second.length &&
-        first.every((id, index) => id === second[index]);
-    let moved = null;
-    if (removed.length === 1 && added.length === 0 && same(without(before, removed[0]), after))
-        moved = removed[0];
-    else if (removed.length === 0 && added.length === 1 && same(before, without(after, added[0])))
-        moved = added[0];
-    else if (removed.length === 0 && added.length === 0)
-        moved = before.find(id => same(without(before, id), without(after, id)) && !same(before, after));
-    if (!moved)
-        return gaps;
-    const followed = {};
-    for (const [key, gap] of Object.entries(gaps)) {
-        const position = Number(key);
-        // Position 0 is never shown; moving it would reveal it.
-        if (position < 1)
+// A group keeps its edge when its first app leaves: the next app that stays starts it.
+// Dash to Dock moves an app as a removal then an insertion, so only removals count.
+export function passGaps(before, after, stored) {
+    const passed = {...stored};
+    let changed = false;
+    for (const [index, id] of before.entries()) {
+        if (!stored[id] || after.includes(id))
             continue;
-        const right = before[position];
-        let anchor = right === moved
-            ? after.indexOf(before[position - 1]) + 1
-            : after.indexOf(right);
-        if (right !== moved && after[anchor - 1] === moved && before.indexOf(moved) > position)
-            anchor--;
-        if (anchor >= 1 && anchor < after.length && !(anchor in followed))
-            followed[anchor] = gap;
+        delete passed[id];
+        changed = true;
+        const next = before.slice(index + 1).find(other => after.includes(other));
+        // The first favorite never shows a gap.
+        if (next && after.indexOf(next) > 0 && !passed[next])
+            passed[next] = stored[id];
     }
-    return followed;
+    return changed ? passed : stored;
 }
 
-export function setGroupGap(settings, position, gap) {
-    const gaps = settings.get_value('group-gaps').deep_unpack();
+export function setGroupGap(settings, id, gap) {
+    const gaps = settings.get_value('group-starts').deep_unpack();
     if (gap)
-        gaps[position] = gap;
+        gaps[id] = gap;
     else
-        delete gaps[position];
-    settings.set_value('group-gaps', new GLib.Variant('a{us}', gaps));
+        delete gaps[id];
+    settings.set_value('group-starts', new GLib.Variant('a{ss}', gaps));
+    settings.apply();
+}
+
+// One write, so a dragged gap never shows twice.
+export function moveGroupGap(settings, from, to) {
+    const gaps = settings.get_value('group-starts').deep_unpack();
+    gaps[to] = gaps[from];
+    delete gaps[from];
+    settings.set_value('group-starts', new GLib.Variant('a{ss}', gaps));
     settings.apply();
 }
 
@@ -171,7 +162,7 @@ export function switchToPresetFromCustom(settings, preset) {
 export function resetAll(settings) {
     settings.delay();
     for (const key of settings.settings_schema.list_keys()) {
-        if (key !== 'group-gaps')
+        if (key !== 'group-starts')
             settings.reset(key);
     }
     settings.apply();

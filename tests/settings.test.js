@@ -2,6 +2,7 @@ import {Preset, getBuiltInRecipe} from '../flourish@orsso.github.io/lib/motion/c
 import {
     editCustomSetting,
     migrateAppearance,
+    moveGroupGap,
     readActiveRecipe,
     resetAll,
     selectPreset,
@@ -240,10 +241,10 @@ test('reset all clears every stored key but the group gaps', () => {
     const settings = new StoredSettings({
         'motion-profile': 'expressive',
         'groups-enabled': true,
-        'group-gaps': {2: 'small'},
+        'group-starts': {firefox: 'small'},
     });
     resetAll(settings);
-    assertDeepEqual(settings.user, {'group-gaps': {2: 'small'}});
+    assertDeepEqual(settings.user, {'group-starts': {firefox: 'small'}});
 });
 
 test('1.2 outlines and backgrounds turn their new switch on', () => {
@@ -382,8 +383,8 @@ test('every attention key round-trips through custom', () => {
     }
 });
 
-test('a group gap is written or removed per position', () => {
-    let stored = {1: 'small'};
+test('a group gap is written, removed or moved per app in one write', () => {
+    let stored = {b: 'small'};
     let applied = 0;
     const settings = {
         get_value: () => ({deep_unpack: () => ({...stored})}),
@@ -392,9 +393,11 @@ test('a group gap is written or removed per position', () => {
         },
         apply: () => applied++,
     };
-    setGroupGap(settings, 3, 'normal');
-    assertDeepEqual(stored, {1: 'small', 3: 'normal'});
-    setGroupGap(settings, 1, null);
-    assertDeepEqual(stored, {3: 'normal'});
-    assertEqual(applied, 2);
+    setGroupGap(settings, 'd', 'normal');
+    assertDeepEqual(stored, {b: 'small', d: 'normal'});
+    setGroupGap(settings, 'b', null);
+    assertDeepEqual(stored, {d: 'normal'});
+    moveGroupGap(settings, 'd', 'e');
+    assertDeepEqual(stored, {e: 'normal'});
+    assertEqual(applied, 3);
 });

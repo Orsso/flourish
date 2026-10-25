@@ -4,7 +4,7 @@ import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {GroupGap, OutlineLight, OutlineStyle} from '../motion/catalog.js';
-import {editCustomSetting, setBooleanCommitted, setGroupGap} from '../motion/settings.js';
+import {editCustomSetting, moveGroupGap, setBooleanCommitted, setGroupGap} from '../motion/settings.js';
 import {DockSample} from './dockSample.js';
 import {N_, createScaleRow, createSwitchRow} from './rows.js';
 
@@ -37,6 +37,7 @@ export function buildAppearancePage(page, controls, settings, state) {
     const appearance = {segments: [], switches: [], hovered: null};
     controls.appearance = appearance;
     const apps = installedFavorites(favorites);
+    appearance.apps = apps;
 
     const dock = new Adw.PreferencesGroup({title: _('Your dock')});
     appearance.dock = dock;
@@ -49,9 +50,12 @@ export function buildAppearancePage(page, controls, settings, state) {
         margin_start: 12,
         margin_end: 12,
         onSlotClicked: position => {
-            const gap = appearance.current.gaps[position] ?? null;
-            setGroupGap(settings, position, GAP_CYCLE[(GAP_CYCLE.indexOf(gap) + 1) % GAP_CYCLE.length]);
+            const id = appearance.apps[position].get_id();
+            const gap = appearance.current.gaps[id] ?? null;
+            setGroupGap(settings, id, GAP_CYCLE[(GAP_CYCLE.indexOf(gap) + 1) % GAP_CYCLE.length]);
         },
+        onGapDragged: (from, to) =>
+            moveGroupGap(settings, appearance.apps[from].get_id(), appearance.apps[to].get_id()),
     });
     const frame = new Gtk.Frame({child: appearance.preview});
     frame.add_css_class('view');
@@ -99,6 +103,7 @@ export function buildAppearancePage(page, controls, settings, state) {
 
     favorites.connect('changed::favorite-apps', () => {
         const changed = installedFavorites(favorites);
+        appearance.apps = changed;
         appearance.preview.setApps(changed, previewIconSize(changed.length));
         syncAppearancePage(controls, settings);
     });
@@ -109,6 +114,12 @@ export function buildAppearancePage(page, controls, settings, state) {
 function installedFavorites(favorites) {
     const installed = new Map(Gio.AppInfo.get_all().map(info => [info.get_id(), info]));
     return favorites.get_strv('favorite-apps').map(id => installed.get(id)).filter(info => info);
+}
+
+// The sample places gaps by position, before the favorite at that position.
+function gapPositions(apps, gaps) {
+    return Object.fromEntries(apps.map((app, position) => [position, gaps[app.get_id()]])
+        .filter(([position, gap]) => position > 0 && gap));
 }
 
 // One icon plus one theme gap is a third more than the icon.
@@ -159,7 +170,7 @@ function refreshPreview(appearance) {
     const shown = {
         ...current,
         spacing: current.spacingEnabled ? current.spacing : -1,
-        gaps: current.groupsEnabled ? current.gaps : {},
+        gaps: current.groupsEnabled ? gapPositions(appearance.apps, current.gaps) : {},
         style: current.outlineEnabled ? current.style : OutlineStyle.NONE,
         // Nothing is hovered at rest; hovering the Hover background row shows the tile.
         hoverTile: false,
@@ -178,7 +189,7 @@ export function syncAppearancePage(controls, settings) {
         backgroundsEnabled: settings.get_boolean('backgrounds-enabled'),
         spacing: settings.get_int('icon-spacing'),
         flush: settings.get_boolean('dock-flush'),
-        gaps: settings.get_value('group-gaps').deep_unpack(),
+        gaps: settings.get_value('group-starts').deep_unpack(),
         style: settings.get_string('dock-outline'),
         intensity: settings.get_int('outline-intensity'),
         light: settings.get_int('outline-light'),
@@ -200,7 +211,7 @@ export function syncAppearancePage(controls, settings) {
         row.visible = current.backgroundsEnabled;
     appearance.backgroundsOff.visible = !current.backgroundsEnabled;
     appearance.dock.description = current.groupsEnabled
-        ? _('Click between two favorites to add a gap, again to widen it, and once more to remove it. Gaps stay in place when apps move.')
+        ? _('Click between two favorites to add a gap, again to widen it, and once more to remove it. Drag a gap to move it. In the dock, right-click a favorite to start or merge a group.')
         : _('Turn on Groups in General to add gaps between favorites.');
     appearance.preview.can_target = current.groupsEnabled;
     appearance.intensity.adjustment.value = current.intensity;

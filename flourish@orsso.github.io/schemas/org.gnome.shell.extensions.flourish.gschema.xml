@@ -244,13 +244,13 @@
     <key name="groups-enabled" type="b">
       <default>false</default>
       <summary>Icon groups</summary>
-      <description>Show the gaps set in group-gaps.</description>
+      <description>Show the gaps set in group-starts.</description>
     </key>
 
-    <key name="group-gaps" type="a{us}">
+    <key name="group-starts" type="a{ss}">
       <default>{}</default>
       <summary>Group gaps</summary>
-      <description>Gaps between favorites, by the position of the favorite after the gap (the first is 0): small or normal.</description>
+      <description>Gaps between favorites, by the app id of the favorite that starts each group: small or normal.</description>
     </key>
 
     <key name="outline-enabled" type="b">
