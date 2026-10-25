@@ -5,12 +5,13 @@ import Gtk from 'gi://Gtk';
 import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 import {ExtensionState} from 'resource:///org/gnome/Shell/Extensions/js/misc/extensionUtils.js';
 
-import {DASH_TO_DOCK_BUILDS, PRESET_APPEARANCE, Preset, RecipePart, getBuiltInRecipe} from './lib/motion/catalog.js';
+import {DASH_TO_DOCK_BUILDS, Preset, RecipePart, getBuiltInRecipe} from './lib/motion/catalog.js';
 import {
     editCustomSetting,
     readActiveRecipe,
     resetAll,
     selectPreset,
+    setBooleanCommitted,
     switchToPresetFromCustom,
 } from './lib/motion/settings.js';
 import {buildAnimationPages, syncAnimationPages} from './lib/prefs/animationPages.js';
@@ -88,7 +89,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         controls.presets = new Map();
         for (const [preset, title] of PRESET_DETAILS) {
             const recipe = getBuiltInRecipe(preset);
-            const {button, preview} = createPresetCard(_(title), recipe, PRESET_APPEARANCE[preset]);
+            const {button, preview} = createPresetCard(_(title), recipe);
             button.connect('clicked', () => onPresetClicked({
                 window,
                 preset,
@@ -127,9 +128,10 @@ export default class FlourishPreferences extends ExtensionPreferences {
         essentials.add(featureGroup);
 
         const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
-        // Presets set these switches, so a change leaves the preset.
+        // Outside the presets: a change keeps the current one.
         controls.appearanceSwitches = APPEARANCE_SWITCHES.map(([key, title, subtitle]) => [
-            createSwitchRow(appearanceGroup, _(title), _(subtitle), editor(key), state),
+            createSwitchRow(appearanceGroup, _(title), _(subtitle),
+                value => setBooleanCommitted(settings, key, value), state),
             key,
         ]);
         essentials.add(appearanceGroup);
@@ -202,7 +204,7 @@ function confirmReset(window, settings) {
     dialog.present(window);
 }
 
-function createPresetCard(title, recipe, appearance) {
+function createPresetCard(title, recipe) {
     const button = new Gtk.ToggleButton({hexpand: true});
     button.add_css_class('card');
     const content = new Gtk.Box({
@@ -213,7 +215,7 @@ function createPresetCard(title, recipe, appearance) {
         margin_start: 6,
         margin_end: 6,
     });
-    const preview = new MotionPreview({recipe, appearance});
+    const preview = new MotionPreview({recipe});
     const titleLabel = new Gtk.Label({label: title});
     titleLabel.add_css_class('caption-heading');
     content.append(preview);

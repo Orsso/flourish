@@ -3,27 +3,10 @@ import {
     LaunchEffect,
     PressEffect,
     PressMode,
-    PRESET_APPEARANCE,
     Preset,
     easingProgress,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
-
-test('presets turn every feature on, from comfortable to tight glass', () => {
-    for (const preset of [Preset.SUBTLE, Preset.BALANCED, Preset.EXPRESSIVE]) {
-        for (const key of ['spacing-enabled', 'groups-enabled', 'backgrounds-enabled'])
-            assertEqual(PRESET_APPEARANCE[preset][key], true);
-        for (const key of ['show-hover-background', 'show-focused-app-background'])
-            assertEqual(PRESET_APPEARANCE[preset][key], false);
-    }
-    assertEqual(PRESET_APPEARANCE[Preset.SUBTLE]['icon-spacing'], 16);
-    assertEqual(PRESET_APPEARANCE[Preset.SUBTLE]['outline-enabled'], false);
-    assertEqual(PRESET_APPEARANCE[Preset.BALANCED]['icon-spacing'], 8);
-    assertEqual(PRESET_APPEARANCE[Preset.BALANCED]['outline-intensity'], 50);
-    assertEqual(PRESET_APPEARANCE[Preset.EXPRESSIVE]['icon-spacing'], 4);
-    assertEqual(PRESET_APPEARANCE[Preset.EXPRESSIVE]['dock-outline'], 'glass');
-    assertEqual(PRESET_APPEARANCE[Preset.EXPRESSIVE]['outline-intensity'], 30);
-});
 
 test('built-in recipes match the presets', () => {
     const subtle = getBuiltInRecipe(Preset.SUBTLE);

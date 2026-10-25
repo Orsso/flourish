@@ -187,26 +187,16 @@ test('selecting a preset preserves saved custom values', () => {
     assertEqual(settings.values['custom-hover-scale'], 1.27);
 });
 
-test('a preset turns the features on, hides the tiles and keeps the gaps', () => {
+test('a preset sets the motion and leaves the appearance alone', () => {
     const settings = new ImmediateSettings(Preset.CUSTOM);
-    settings.values['groups-enabled'] = false;
-    settings.values['show-hover-background'] = true;
+    settings.values['spacing-enabled'] = false;
+    settings.values['dock-outline'] = 'dark';
     selectPreset(settings, Preset.EXPRESSIVE);
-    assertEqual(settings.values['spacing-enabled'], true);
-    assertEqual(settings.values['icon-spacing'], 4);
-    assertEqual(settings.values['dock-outline'], 'glass');
-    assertEqual(settings.values['groups-enabled'], true);
-    assertEqual(settings.values['backgrounds-enabled'], true);
-    assertEqual(settings.values['show-hover-background'], false);
-    assertEqual(settings.values['group-gaps'], undefined);
-});
-
-test('an appearance edit leaves the preset like a motion edit', () => {
-    const settings = new ImmediateSettings(Preset.BALANCED);
-    editCustomSetting(settings, 'outline-intensity', 80);
-    assertEqual(settings.values['motion-profile'], Preset.CUSTOM);
-    assertEqual(settings.values['outline-intensity'], 80);
-    assertEqual(readActiveRecipe(settings).hover.scale, getBuiltInRecipe(Preset.BALANCED).hover.scale);
+    assertEqual(settings.values['motion-profile'], Preset.EXPRESSIVE);
+    switchToPresetFromCustom(settings, Preset.SUBTLE);
+    assertEqual(settings.values['spacing-enabled'], false);
+    assertEqual(settings.values['dock-outline'], 'dark');
+    assertEqual(settings.values['outline-enabled'], undefined);
 });
 
 // Defaults and user values, as get_user_value sees them.

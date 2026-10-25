@@ -4,7 +4,9 @@ import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
 import {GroupGap, OutlineLight, OutlineStyle} from '../motion/catalog.js';
-import {editCustomSetting, moveGroupGap, setBooleanCommitted, setGroupGap} from '../motion/settings.js';
+import {
+    moveGroupGap, setBooleanCommitted, setGroupGap, setIntCommitted, setStringCommitted,
+} from '../motion/settings.js';
 import {DockSample} from './dockSample.js';
 import {N_, createScaleRow, createSwitchRow} from './rows.js';
 
@@ -26,8 +28,7 @@ const OUTLINES = [
 ];
 // A click on a gap moves to the next step.
 const GAP_CYCLE = [null, GroupGap.SMALL, GroupGap.NORMAL];
-const OFF_HINT = N_('Off in General');
-const BACKGROUNDS_OFF_HINT = N_('Off in General: the dash and the dock keep their own tiles');
+const BACKGROUNDS_OFF_HINT = N_('The dash and the dock keep their own tiles');
 // The page column is about 600 px; the preview shrinks its icons to fit it.
 const PREVIEW_WIDTH = 540;
 const PREVIEW_ICON = 48;
@@ -62,32 +63,41 @@ export function buildAppearancePage(page, controls, settings, state) {
     dock.add(frame);
     page.add(dock);
 
-    // Each section follows its switch in General; off, it stays visible but greyed.
+    // Each section carries the switch it has in General; off, its rows stay visible but greyed.
     appearance.sections = [];
-    const section = (title, key) => {
+    const section = (title, key, setting) => {
         const group = new Adw.PreferencesGroup({title});
-        appearance.sections.push({group, key});
+        const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
+        toggle.update_property([Gtk.AccessibleProperty.LABEL], [title]);
+        toggle.connect('notify::active', () => {
+            if (!state.syncing)
+                setBooleanCommitted(settings, setting, toggle.active);
+        });
+        group.set_header_suffix(toggle);
+        const rows = [];
+        appearance.sections.push({key, toggle, rows});
         page.add(group);
-        return group;
+        return {group, rows};
     };
-    const layout = section(_('Icon spacing'), 'spacingEnabled');
-    addSegments(appearance, layout, _('Gap between icons'), SPACINGS, 'spacing', state,
-        value => editCustomSetting(settings, 'icon-spacing', value));
-    // Presets leave the dock where it is.
-    const position = addSegments(appearance, layout, _('Dock position'), POSITIONS, 'flush', state,
+    const layout = section(_('Icon spacing'), 'spacingEnabled', 'spacing-enabled');
+    const spacing = addSegments(appearance, layout.group, _('Gap between icons'), SPACINGS, 'spacing', state,
+        value => setIntCommitted(settings, 'icon-spacing', value));
+    const position = addSegments(appearance, layout.group, _('Dock position'), POSITIONS, 'flush', state,
         value => setBooleanCommitted(settings, 'dock-flush', value));
     position.subtitle = _('Dash to Dock and Ubuntu Dock');
+    layout.rows.push(spacing, position);
 
-    const outline = section(_('Outline'), 'outlineEnabled');
-    addSegments(appearance, outline, _('Style'), OUTLINES, 'style', state,
-        value => editCustomSetting(settings, 'dock-outline', value));
-    appearance.light = createScaleRow(outline, _('Light position'), OutlineLight.MIN, OutlineLight.MAX, OutlineLight.STEP,
-        value => editCustomSetting(settings, 'outline-light', Math.round(value)), state);
+    const outline = section(_('Outline'), 'outlineEnabled', 'outline-enabled');
+    const style = addSegments(appearance, outline.group, _('Style'), OUTLINES, 'style', state,
+        value => setStringCommitted(settings, 'dock-outline', value));
+    appearance.light = createScaleRow(outline.group, _('Light position'), OutlineLight.MIN, OutlineLight.MAX,
+        OutlineLight.STEP, value => setIntCommitted(settings, 'outline-light', Math.round(value)), state);
     appearance.light.scale.add_mark(0, Gtk.PositionType.BOTTOM, null);
-    appearance.intensity = createScaleRow(outline, _('Intensity'), 0, 100, 5,
-        value => editCustomSetting(settings, 'outline-intensity', Math.round(value)), state);
+    appearance.intensity = createScaleRow(outline.group, _('Intensity'), 0, 100, 5,
+        value => setIntCommitted(settings, 'outline-intensity', Math.round(value)), state);
+    outline.rows.push(style, appearance.light.row, appearance.intensity.row);
 
-    const backgrounds = section(_('Backgrounds'), 'backgroundsEnabled');
+    const backgrounds = section(_('Backgrounds'), 'backgroundsEnabled', 'backgrounds-enabled').group;
     // Off, one line replaces the switches so the list is not left empty.
     appearance.backgroundsOff = new Adw.ActionRow({title: _(BACKGROUNDS_OFF_HINT)});
     backgrounds.add(appearance.backgroundsOff);
@@ -96,7 +106,7 @@ export function buildAppearancePage(page, controls, settings, state) {
         ['focusTile', 'show-focused-app-background', _('Focused app background'), _('Marks the app that owns the focused window')],
     ]) {
         const row = createSwitchRow(backgrounds, title, subtitle,
-            enabled => editCustomSetting(settings, setting, enabled), state);
+            enabled => setBooleanCommitted(settings, setting, enabled), state);
         previewOnHover(appearance, row, key, true);
         appearance.switches.push({row, key});
     }
@@ -201,10 +211,10 @@ export function syncAppearancePage(controls, settings) {
         button.active = current[key] === value;
     for (const {row, key} of appearance.switches)
         row.active = current[key];
-    for (const {group, key} of appearance.sections) {
-        group.sensitive = current[key];
-        // The backgrounds say it in their own row.
-        group.description = current[key] || key === 'backgroundsEnabled' ? null : _(OFF_HINT);
+    for (const {key, toggle, rows} of appearance.sections) {
+        toggle.active = current[key];
+        for (const row of rows)
+            row.sensitive = current[key];
     }
     // Greyed switches would read as choices Flourish applies; the docks keep their own tiles.
     for (const {row} of appearance.switches)

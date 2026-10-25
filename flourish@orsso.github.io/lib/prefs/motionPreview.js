@@ -3,9 +3,8 @@ import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Gtk from 'gi://Gtk';
 
-import {OutlineLight, OutlineStyle, PressMode, RecipePart, ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
+import {PressMode, RecipePart, ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
 import {hoverActive, waveOffsets, waveFalloff} from '../motion/continuum.js';
-import {REFERENCE_INTENSITY, outlinePaint, paintOutline} from '../motion/outline.js';
 import {
     ATTENTION_SLIDE_DURATION,
     buildAttentionSegments,
@@ -44,7 +43,7 @@ const SWEEP_MS = 1500;
 const SWEEP_SETTLE_MS = 480;
 
 export const MotionPreview = GObject.registerClass(class MotionPreview extends Gtk.DrawingArea {
-    _init({recipe, part = null, appearance = {}, ...params}) {
+    _init({recipe, part = null, ...params}) {
         const inline = Boolean(part);
         const iconCount = part === RecipePart.HOVER ? hoverIconCount(recipe) : 1;
         super._init({
@@ -55,7 +54,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
             ...params,
         });
         this._selected = false;
-        this._appearance = appearance;
         this._part = part;
         this._iconCount = iconCount;
         this._visibleCount = iconCount;
@@ -462,10 +460,8 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const pad = 10;
         const dockHeight = 42;
         const count = ICON_COLORS.length;
-        // A preset card shows its spacing and outline on a 48 px icon dock, scaled.
-        const appearance = this._appearance;
-        const gap = (appearance['spacing-enabled'] ? appearance['icon-spacing'] : THEME_GAP) * iconSize / 48;
-        const step = iconSize + gap;
+        // The theme gap of a 48 px icon dock, scaled.
+        const step = iconSize + THEME_GAP * iconSize / 48;
         const middle = (count - 1) / 2;
         const transforms = Array.from({length: count}, (_, i) => this._iconTransforms(i, middle));
         const offsets = this._spacing(transforms, iconSize);
@@ -497,17 +493,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         roundedRectangle(cr, dockX, dockY, dockWidth, dockHeight, 13);
         cr.setSourceRGBA(0.16, 0.17, 0.20, 0.94);
         cr.fill();
-        // The card is dark, so a theme outline draws its light edge.
-        const paint = appearance['outline-enabled'] && outlinePaint(
-            appearance['dock-outline'] ?? OutlineStyle.AUTO,
-            appearance['outline-intensity'] ?? REFERENCE_INTENSITY,
-            appearance['outline-light'] ?? OutlineLight.MIN, true);
-        if (paint) {
-            cr.save();
-            cr.translate(dockX, dockY);
-            paintOutline(cr, dockWidth, dockHeight, 13, paint);
-            cr.restore();
-        }
 
         for (let i = 0; i < count; i++)
             drawIcon(cr, centers[i], iconTop, iconSize, ICON_COLORS[i], transforms[i]);

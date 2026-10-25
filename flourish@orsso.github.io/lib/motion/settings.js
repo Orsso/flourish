@@ -1,6 +1,6 @@
 import GLib from 'gi://GLib';
 
-import {OutlineStyle, PRESET_APPEARANCE, Preset, RecipePart, getBuiltInRecipe} from './catalog.js';
+import {OutlineStyle, Preset, RecipePart, getBuiltInRecipe} from './catalog.js';
 
 const DEFINITIONS = [
     ['custom-hover-enabled', 'boolean', RecipePart.HOVER, 'enabled'],
@@ -37,22 +37,7 @@ const DEFINITIONS = [
     ['custom-attention-peek', 'boolean', RecipePart.ATTENTION, 'peekWhenHidden'],
 ].map(([key, type, part, property]) => ({key, type, part, property}));
 
-// Appearance keys a preset sets, so editing one leaves the preset like a motion key.
-const APPEARANCE_DEFINITIONS = [
-    ['spacing-enabled', 'boolean'],
-    ['icon-spacing', 'int'],
-    ['groups-enabled', 'boolean'],
-    ['backgrounds-enabled', 'boolean'],
-    ['show-hover-background', 'boolean'],
-    ['show-focused-app-background', 'boolean'],
-    ['outline-enabled', 'boolean'],
-    ['dock-outline', 'string'],
-    ['outline-intensity', 'int'],
-    ['outline-light', 'int'],
-].map(([key, type]) => ({key, type}));
-
-const DEFINITION_BY_KEY = new Map([...DEFINITIONS, ...APPEARANCE_DEFINITIONS]
-    .map(item => [item.key, item]));
+const DEFINITION_BY_KEY = new Map(DEFINITIONS.map(item => [item.key, item]));
 
 // The stored profile key predates the preset wording.
 export function readActiveRecipe(settings) {
@@ -83,14 +68,8 @@ export function editCustomSetting(settings, key, value) {
 
 export function selectPreset(settings, preset) {
     settings.set_string('motion-profile', preset);
-    writePresetAppearance(settings, preset);
     // delay() sticks for this GSettings object, so presets call apply() too.
     settings.apply();
-}
-
-function writePresetAppearance(settings, preset) {
-    for (const [key, value] of Object.entries(PRESET_APPEARANCE[preset]))
-        write(settings, DEFINITION_BY_KEY.get(key), value);
 }
 
 export function setBooleanCommitted(settings, key, value) {
@@ -154,7 +133,6 @@ export function switchToPresetFromCustom(settings, preset) {
     settings.delay();
     writeCustomRecipe(settings, getBuiltInRecipe(preset));
     settings.set_string('motion-profile', preset);
-    writePresetAppearance(settings, preset);
     settings.apply();
 }
 
