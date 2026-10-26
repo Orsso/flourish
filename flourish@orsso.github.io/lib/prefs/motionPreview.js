@@ -118,6 +118,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const count = hoverIconCount(this._recipe);
         if (count === this._iconCount)
             return;
+        this._iconCount = count;
         const from = this._visibleCount;
         this._countAnimation.pause();
         this._countAnimation = animate(this, COUNT_GROW_MS, Adw.Easing.EASE_OUT_CUBIC, value => {
