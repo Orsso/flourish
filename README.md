@@ -58,8 +58,8 @@ This release was tested with:
 
 Other setups may work, but I have not tested them for this release.
 
-With Blur My Shell, only the dynamic dock blur follows magnification
-(tested with version 72).
+With Blur My Shell, the dock blur follows magnification
+(tested with version 76).
 
 ## Install
 
