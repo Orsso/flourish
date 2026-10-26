@@ -8,7 +8,7 @@ import {
     moveGroupGap, setBooleanCommitted, setGroupGap, setIntCommitted, setStringCommitted,
 } from '../motion/settings.js';
 import {DockSample} from './dockSample.js';
-import {N_, createScaleRow, createSwitchRow} from './rows.js';
+import {N_, createBadge, createScaleRow, createSwitchRow} from './rows.js';
 
 const SPACINGS = [
     [N_('Tight'), 4],
@@ -41,6 +41,7 @@ export function buildAppearancePage(page, controls, settings, state) {
     appearance.apps = apps;
 
     const dock = new Adw.PreferencesGroup({title: _('Your dock')});
+    dock.set_header_suffix(createBadge(_('Beta')));
     appearance.dock = dock;
     appearance.preview = new DockSample({
         apps,
@@ -88,7 +89,7 @@ export function buildAppearancePage(page, controls, settings, state) {
     layout.rows.push(spacing, position);
 
     const outline = section(_('Outline'), 'outlineEnabled', 'outline-enabled');
-    const style = addSegments(appearance, outline.group, _('Style'), OUTLINES, 'style', state,
+    const style = addSegments(appearance, outline.group, _('Color'), OUTLINES, 'style', state,
         value => setStringCommitted(settings, 'dock-outline', value));
     appearance.light = createScaleRow(outline.group, _('Light position'), OutlineLight.MIN, OutlineLight.MAX,
         OutlineLight.STEP, value => setIntCommitted(settings, 'outline-light', Math.round(value)), state);

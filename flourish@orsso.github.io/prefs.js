@@ -17,7 +17,7 @@ import {
 import {buildAnimationPages, syncAnimationPages} from './lib/prefs/animationPages.js';
 import {buildAppearancePage, syncAppearancePage} from './lib/prefs/appearancePage.js';
 import {MotionPreview} from './lib/prefs/motionPreview.js';
-import {N_, createSwitchRow} from './lib/prefs/rows.js';
+import {N_, createBadge, createSwitchRow} from './lib/prefs/rows.js';
 
 // Switched off, each part is left to the Shell, the dock or the theme.
 const APPEARANCE_SWITCHES = [
@@ -35,7 +35,7 @@ const PRESET_DETAILS = [
 
 export default class FlourishPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        // Narrower, libadwaita moves the six tabs to a bottom bar; taller fits Appearance.
+        // Narrower, libadwaita moves the six tabs to a bottom bar; taller fits Style.
         window.set_default_size(960, 760);
         // The Extensions app turns search off; rows on every tab are searchable.
         window.search_enabled = true;
@@ -56,7 +56,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         };
         if (controls.dockPresent)
             animations[RecipePart.ATTENTION] = page(_('Attention'), 'preferences-system-notifications-symbolic');
-        const appearance = page(_('Appearance'), 'preferences-desktop-appearance-symbolic');
+        const appearance = page(_('Style'), 'preferences-desktop-appearance-symbolic');
 
         const bannerGroup = new Adw.PreferencesGroup();
         controls.idleBanner = new Adw.Banner({
@@ -69,9 +69,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
             title: _('Presets'),
             description: _('Hover to preview. Click to apply.'),
         });
-        const customBadge = new Gtk.Label({label: _('Custom')});
-        customBadge.add_css_class('accent');
-        customBadge.add_css_class('caption-heading');
+        const customBadge = createBadge(_('Custom'));
         customBadge.visible = false;
         presetGroup.set_header_suffix(customBadge);
         controls.customBadge = customBadge;
@@ -127,7 +125,8 @@ export default class FlourishPreferences extends ExtensionPreferences {
         }
         essentials.add(featureGroup);
 
-        const appearanceGroup = new Adw.PreferencesGroup({title: _('Appearance')});
+        const appearanceGroup = new Adw.PreferencesGroup({title: _('Style')});
+        appearanceGroup.set_header_suffix(createBadge(_('Beta')));
         // Outside the presets: a change keeps the current one.
         controls.appearanceSwitches = APPEARANCE_SWITCHES.map(([key, title, subtitle]) => [
             createSwitchRow(appearanceGroup, _(title), _(subtitle),

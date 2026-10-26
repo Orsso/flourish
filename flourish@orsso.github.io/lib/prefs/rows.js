@@ -5,6 +5,11 @@ import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions
 // xgettext reads N_; the lookup happens where the string is used.
 export const N_ = s => s;
 
+// Accent text beside a group title.
+export function createBadge(label) {
+    return new Gtk.Label({label, valign: Gtk.Align.START, css_classes: ['accent', 'caption-heading']});
+}
+
 export function createSwitchRow(group, title, subtitle, callback, state, help = null) {
     let row, toggle;
     // A SwitchRow packs its switch first, so a help button can only follow it.
