@@ -8,7 +8,9 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
 import {GroupGap, OutlineStyle} from './lib/motion/catalog.js';
-import {groupGaps, migrateAppearance, passGaps, readActiveRecipe} from './lib/motion/settings.js';
+import {
+    groupGaps, migrateAppearance, passGaps, readActiveRecipe, readGroupGaps, setGroupGap, writeGroupGaps,
+} from './lib/motion/settings.js';
 import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
 import {DockIntegration} from './lib/runtime/dockIntegration.js';
@@ -82,16 +84,19 @@ export default class FlourishExtension extends Extension {
         this._launchEngine.enable();
 
         this._syncIdleId = 0;
-        this._settings.connectObject('changed', () => {
-            // A preset switch writes many keys at once.
-            if (this._syncIdleId)
-                return;
-            this._syncIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                this._syncIdleId = 0;
-                this._syncSettings();
-                return GLib.SOURCE_REMOVE;
-            });
-        }, this);
+        this._settings.connectObject(
+            'changed', () => {
+                // A preset switch writes many keys at once.
+                if (this._syncIdleId)
+                    return;
+                this._syncIdleId = GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+                    this._syncIdleId = 0;
+                    this._syncSettings();
+                    return GLib.SOURCE_REMOVE;
+                });
+            },
+            'changed::groups-enabled', () => this._syncGroups(),
+            'changed::group-gaps', () => this._syncGroups(), this);
         // Same recipe, new transform: it depends on the animations setting.
         St.Settings.get().connectObject('notify::enable-animations', () => {
             this._dockIntegration.setRecipe(this._recipe);
@@ -106,16 +111,17 @@ export default class FlourishExtension extends Extension {
         }
         this._settings.disconnectObject(this);
         St.Settings.get().disconnectObject(this);
-        AppFavorites.getAppFavorites().disconnectObject(this);
-        this._favoriteIds = null;
 
         this._launchEngine.disable();
         this._launchEngine = null;
+        AppFavorites.getAppFavorites().disconnectObject(this);
+        this._favoriteIds = null;
         global.stage.disconnectObject(this);
         Main.overview.disconnectObject(this);
         this._attentionEngine.disable();
         this._attentionEngine = null;
         this._syncSpacing([]);
+        this._spacingClasses = null;
         for (const style of this._styles)
             style.disable();
         this._styles = null;
@@ -134,7 +140,6 @@ export default class FlourishExtension extends Extension {
         this._recipe = readActiveRecipe(this._settings);
         this._dockIntegration.setRecipe(this._recipe);
         this._dashIntegration.setRecipe(this._recipe);
-        this._syncGroups();
         if (this._syncStyles())
             this._refreshStyles();
     }
@@ -142,38 +147,23 @@ export default class FlourishExtension extends Extension {
     // The pinned list, not the installed one: an app missing for a while moves no gap.
     _onFavoritesChanged() {
         const pinned = pinnedIds();
-        const gaps = this._readGroupGaps();
+        const gaps = readGroupGaps(this._settings);
         const passed = passGaps(this._favoriteIds, pinned, gaps);
         this._favoriteIds = pinned;
         if (passed !== gaps)
-            this._writeGroupGaps(passed);
+            writeGroupGaps(this._settings, passed);
         this._syncGroups();
     }
 
-    _readGroupGaps() {
-        return this._settings.get_value('group-starts').deep_unpack();
-    }
-
-    _writeGroupGaps(gaps) {
-        this._settings.set_value('group-starts', new GLib.Variant('a{ss}', gaps));
-    }
-
     _syncGroups() {
-        const favorites = favoriteIds();
-        // Groups off: no gap and no menu switch.
+        const favorites = installedFavoriteIds();
+        // Groups off: no gap and no menu item.
         const gaps = this._settings.get_boolean('groups-enabled')
-            ? groupGaps(favorites, this._readGroupGaps()) : new Map();
+            ? groupGaps(favorites, readGroupGaps(this._settings)) : new Map();
         const groups = {
             gaps,
             createMenuItem: id => this._createGroupItem(id, gaps.get(id)),
-            // Above the Quit block, where hands expect Quit to stay last. By actor:
-            // a submenu adds its own child to the box, so menu positions drift.
-            moveAboveQuit: (menu, section) => {
-                const separator = menu.box.get_children()
-                    .findLast(child => child instanceof PopupMenu.PopupSeparatorMenuItem);
-                if (separator)
-                    menu.box.set_child_below_sibling(section.actor, separator);
-            },
+            moveAboveQuit,
         };
         this._dockIntegration.setGroups(groups);
         this._dashIntegration.setGroups(groups);
@@ -183,14 +173,8 @@ export default class FlourishExtension extends Extension {
     _createGroupItem(id, gap) {
         const section = new PopupMenu.PopupMenuSection();
         section.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
-        section.addAction(gap ? _('Merge with Previous Group') : _('Start New Group Here'), () => {
-            const gaps = this._readGroupGaps();
-            if (gap)
-                delete gaps[id];
-            else
-                gaps[id] = GroupGap.NORMAL;
-            this._writeGroupGaps(gaps);
-        });
+        section.addAction(gap ? _('Merge with Previous Group') : _('Start New Group Here'),
+            () => setGroupGap(this._settings, id, gap ? null : GroupGap.NORMAL));
         return section;
     }
 
@@ -233,7 +217,7 @@ export default class FlourishExtension extends Extension {
         ];
         this._dockIntegration.setOutline(...outline);
         this._dashIntegration.setOutline(...outline);
-        const spacing = this._settings.get_int('icon-spacing');
+        const spacing = this._settings.get_string('icon-spacing');
         const customSpacing = this._settings.get_boolean('spacing-enabled');
         // No short-circuit: every sheet must sync.
         const changed = [hideHover, hideHover, backgrounds && !focused, backgrounds && focused, customSpacing, true]
@@ -264,10 +248,17 @@ export default class FlourishExtension extends Extension {
     }
 }
 
-function favoriteIds() {
+function installedFavoriteIds() {
     return AppFavorites.getAppFavorites().getFavorites().map(app => app.get_id());
 }
 
 function pinnedIds() {
     return global.settings.get_strv('favorite-apps');
+}
+
+// Above the last separator so Quit stays last; by actor, as a submenu shifts the box indices.
+function moveAboveQuit(menu, section) {
+    const separator = menu.box.get_children().findLast(child => child instanceof PopupMenu.PopupSeparatorMenuItem);
+    if (separator)
+        menu.box.set_child_below_sibling(section.actor, separator);
 }

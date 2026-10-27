@@ -3,7 +3,7 @@ import Cairo from 'cairo';
 import {OutlineLight, OutlineStyle} from './catalog.js';
 
 // Intensity at which the light and dark edges match 1.2.
-export const REFERENCE_INTENSITY = 60;
+const REFERENCE_INTENSITY = 60;
 const EDGES = {
     [OutlineStyle.LIGHT]: {shade: 1, alpha: 0.18},
     [OutlineStyle.DARK]: {shade: 0, alpha: 0.35},
@@ -30,33 +30,30 @@ export function outlinePaint(style, intensity, light, darkScheme) {
     const edge = style === OutlineStyle.AUTO
         ? EDGES[darkScheme ? OutlineStyle.LIGHT : OutlineStyle.DARK]
         : EDGES[style];
-    return {shade: edge.shade, light: null, top: alpha(edge.alpha), bottom: alpha(edge.alpha)};
+    return {shade: edge.shade, light: null, alpha: alpha(edge.alpha)};
 }
 
-export function roundedRect(cr, inset, width, height, radius) {
-    const r = Math.max(0, Math.min(radius - inset, width / 2 - inset, height / 2 - inset));
+export function roundedRect(cr, x, y, width, height, radius) {
+    const r = Math.max(0, Math.min(radius, width / 2, height / 2));
     cr.newSubPath();
-    cr.arc(width - inset - r, inset + r, r, -Math.PI / 2, 0);
-    cr.arc(width - inset - r, height - inset - r, r, 0, Math.PI / 2);
-    cr.arc(inset + r, height - inset - r, r, Math.PI / 2, Math.PI);
-    cr.arc(inset + r, inset + r, r, Math.PI, 3 * Math.PI / 2);
+    cr.arc(x + width - r, y + r, r, -Math.PI / 2, 0);
+    cr.arc(x + width - r, y + height - r, r, 0, Math.PI / 2);
+    cr.arc(x + r, y + height - r, r, Math.PI / 2, Math.PI);
+    cr.arc(x + r, y + r, r, Math.PI, 3 * Math.PI / 2);
     cr.closePath();
 }
 
-// Shared by the Shell outline and the preference samples.
+// Shared by the Shell outline and the preference samples; a 1 px line centered on the edge pixels.
 export function paintOutline(cr, width, height, radius, paint) {
     const {shade} = paint;
-    const stroke = (source, lineWidth) => {
-        roundedRect(cr, lineWidth / 2, width, height, radius);
-        cr.setSource(source);
-        cr.setLineWidth(lineWidth);
+    const stroke = setSource => {
+        roundedRect(cr, 0.5, 0.5, width - 1, height - 1, radius - 0.5);
+        setSource();
+        cr.setLineWidth(1);
         cr.stroke();
     };
     if (paint.light === null) {
-        const edge = new Cairo.LinearGradient(0, 0, 0, height);
-        edge.addColorStopRGBA(0, shade, shade, shade, paint.top);
-        edge.addColorStopRGBA(1, shade, shade, shade, paint.bottom);
-        stroke(edge, 1);
+        stroke(() => cr.setSourceRGBA(shade, shade, shade, paint.alpha));
         return;
     }
     // The light runs along the top edge and turns into the corner at either end.
@@ -68,12 +65,12 @@ export function paintOutline(cr, width, height, radius, paint) {
     rim.addColorStopRGBA(0, shade, shade, shade, paint.near);
     rim.addColorStopRGBA(0.5, shade, shade, shade, paint.middle);
     rim.addColorStopRGBA(1, shade, shade, shade, paint.far);
-    stroke(rim, 1);
+    stroke(() => cr.setSource(rim));
     const reach = Math.max(width, height);
     for (const [gx, gy, alpha, extent] of [[x, y, paint.glint, 0.18], [farX, farY, paint.counter, 0.12]]) {
         const glint = new Cairo.RadialGradient(gx, gy, 0, gx, gy, reach * extent);
         glint.addColorStopRGBA(0, shade, shade, shade, alpha);
         glint.addColorStopRGBA(1, shade, shade, shade, 0);
-        stroke(glint, 1);
+        stroke(() => cr.setSource(glint));
     }
 }

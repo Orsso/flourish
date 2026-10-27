@@ -1,4 +1,3 @@
-import Gio from 'gi://Gio';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -22,9 +21,7 @@ export class DashIntegration {
 
     constructor({scheduler}) {
         this.#scheduler = scheduler;
-        this.#outline = new SurfaceOutline({
-            interfaceSettings: new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}),
-        });
+        this.#outline = new SurfaceOutline();
     }
 
     enable(recipe) {

@@ -6,13 +6,12 @@ import GObject from 'gi://GObject';
 import Graphene from 'gi://Graphene';
 import Gtk from 'gi://Gtk';
 
-import {GroupGap} from '../motion/catalog.js';
+import {GroupGap, ICON_HALO, ICON_SPACING_GAPS} from '../motion/catalog.js';
 import {outlinePaint, paintOutline, roundedRect} from '../motion/outline.js';
 
-// Real dock lengths, scaled to the sample: 48 px icons, 6 px halo, 16 px theme gap.
-const REAL_ICON = 48;
-const HALO = 6;
-const THEME_GAP = 16;
+// Real dock lengths, scaled to the samples.
+export const REAL_ICON = 48;
+export const THEME_GAP = 16;
 const GROUP_GAPS = {[GroupGap.SMALL]: 16, [GroupGap.NORMAL]: 32};
 const PADDING = 10;
 // Past this many pixels, a press on a gap drags it instead of clicking.
@@ -38,10 +37,10 @@ export function accentColor() {
     return manager.get_accent_color_rgba ? manager.get_accent_color_rgba() : DEFAULT_ACCENT;
 }
 
-// Icon and gap slots along the sample, in widget pixels.
-export function sampleLayout({count, iconSize, spacing, gaps = {}}) {
+// Icon and gap slots along the sample, in widget pixels; no spacing keeps the theme gap.
+export function sampleLayout({count, iconSize, spacing = null, gaps = {}}) {
     const scale = iconSize / REAL_ICON;
-    const gap = (spacing < 0 ? THEME_GAP : spacing) * scale;
+    const gap = (ICON_SPACING_GAPS[spacing] ?? THEME_GAP) * scale;
     const padding = PADDING * scale;
     const icons = [];
     const slots = [];
@@ -130,7 +129,7 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
     vfunc_measure(orientation) {
         if (orientation === Gtk.Orientation.HORIZONTAL)
             return [0, this._width, -1, -1];
-        const height = sampleLayout({count: 0, iconSize: this._iconSize, spacing: -1}).height + PILL_ROOM;
+        const height = sampleLayout({count: 0, iconSize: this._iconSize}).height + PILL_ROOM;
         return [height, height, -1, -1];
     }
 
@@ -146,8 +145,6 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
     }
 
     vfunc_snapshot(snapshot) {
-        if (!this._state)
-            return;
         const {icons, width, height, scale} = this._layout;
         const fit = this._fit();
         snapshot.translate(new Graphene.Point().init(fit.x, fit.y));
@@ -156,17 +153,15 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
         const radius = height * 0.32;
         const cr = snapshot.append_cairo(new Graphene.Rect().init(-PILL.width, -PILL_ROOM, width + 2 * PILL.width,
             height + PILL_ROOM));
-        roundedRect(cr, 0, width, height, radius);
+        roundedRect(cr, 0, 0, width, height, radius);
         // Darker than a card in either scheme, like the Shell's own dock.
         cr.setSourceRGBA(...(dark ? [0.1, 0.1, 0.11, 1] : [0.84, 0.84, 0.86, 1]));
         cr.fill();
         const shade = dark ? 1 : 0;
         const tile = (index, alpha) => {
-            const halo = HALO * scale;
-            cr.save();
-            cr.translate(icons[index] - halo, height / 2 - this._iconSize / 2 - halo);
-            roundedRect(cr, 0, this._iconSize + 2 * halo, this._iconSize + 2 * halo, 8 * scale + halo);
-            cr.restore();
+            const halo = ICON_HALO * scale;
+            roundedRect(cr, icons[index] - halo, height / 2 - this._iconSize / 2 - halo,
+                this._iconSize + 2 * halo, this._iconSize + 2 * halo, 8 * scale + halo);
             cr.setSourceRGBA(shade, shade, shade, alpha);
             cr.fill();
         };
@@ -195,7 +190,6 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
         }
     }
 
-    // The aimed slot in the accent: a gap is tinted whole, a bare slot gets a bar; the pill says what happens.
     _drawMark(cr, slot, glyph) {
         if (!slot)
             return;
@@ -207,17 +201,11 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
             cr.setSourceRGBA(red, green, blue, 0.3);
         } else {
             const bar = Math.max(3, 4 * scale);
-            cr.save();
-            cr.translate(middle - bar / 2, 0);
-            roundedRect(cr, 0, bar, height, bar / 2);
-            cr.restore();
+            roundedRect(cr, middle - bar / 2, 0, bar, height, bar / 2);
             cr.setSourceRGBA(red, green, blue, 1);
         }
         cr.fill();
-        cr.save();
-        cr.translate(middle - PILL.width / 2, PILL.bottom - PILL.height);
-        roundedRect(cr, 0, PILL.width, PILL.height, PILL.height / 2);
-        cr.restore();
+        roundedRect(cr, middle - PILL.width / 2, PILL.bottom - PILL.height, PILL.width, PILL.height, PILL.height / 2);
         cr.moveTo(middle - 4, PILL.bottom);
         cr.lineTo(middle, PILL.tip);
         cr.lineTo(middle + 4, PILL.bottom);
@@ -245,8 +233,6 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
     }
 
     _slotAt(widgetX) {
-        if (!this._layout)
-            return null;
         const fit = this._fit();
         const x = (widgetX - fit.x) / fit.factor;
         // Half an icon on each side keeps narrow slots easy to hit.

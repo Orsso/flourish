@@ -50,8 +50,11 @@ const BOUNDED_KEYS = [
     ['custom-attention-reminders', AttentionReminders],
 ];
 
-test('icon spacing spans the catalog gaps', () => {
-    assertDeepEqual(rangeOf('icon-spacing'), {min: IconSpacing.MIN, max: IconSpacing.MAX});
+test('icon spacing offers the catalog sizes', () => {
+    const [, contents] = GLib.file_get_contents(SCHEMA_PATH);
+    const values = new TextDecoder().decode(contents)
+        .match(/<enum id="org\.gnome\.shell\.extensions\.flourish\.icon-spacing">([^]*?)<\/enum>/)[1];
+    assertDeepEqual([...values.matchAll(/nick="([a-z]+)"/g)].map(match => match[1]), Object.values(IconSpacing));
 });
 
 test('the outline light spans the catalog positions', () => {

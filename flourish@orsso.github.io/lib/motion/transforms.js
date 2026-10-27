@@ -315,8 +315,7 @@ export function shouldRetreatOnHandoff({
     return overviewVisible && !overviewVisibleTarget && dashContainsTarget;
 }
 
-// Only the build the docks come from can take them away: Ubuntu Dock loading
-// disabled next to Dash to Dock leaves Dash to Dock's docks alone.
+// Only the build the docks come from can take them away, not a disabled Ubuntu Dock next to Dash to Dock.
 export function shouldReattachDock({uuid, active, attachedUuid}) {
     if (!DASH_TO_DOCK_BUILDS.includes(uuid))
         return false;

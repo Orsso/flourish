@@ -47,6 +47,13 @@
     <value nick="glass" value="4"/>
   </enum>
 
+  <enum id="org.gnome.shell.extensions.flourish.icon-spacing">
+    <value nick="tight" value="0"/>
+    <value nick="compact" value="1"/>
+    <value nick="comfortable" value="2"/>
+    <value nick="airy" value="3"/>
+  </enum>
+
   <schema id="org.gnome.shell.extensions.flourish"
           path="/org/gnome/shell/extensions/flourish/">
     <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
@@ -213,13 +220,13 @@
     <key name="show-hover-background" type="b">
       <default>true</default>
       <summary>Show the hover background</summary>
-      <description>When false, hide the hover tile behind the icon.</description>
+      <description>With backgrounds-enabled, false hides the hover tile behind the icon.</description>
     </key>
 
     <key name="show-focused-app-background" type="b">
       <default>true</default>
       <summary>Show the focused app background</summary>
-      <description>Mark the app that owns the focused window in the dash or dock.</description>
+      <description>With backgrounds-enabled, mark the app that owns the focused window in the dash or dock.</description>
     </key>
 
     <key name="spacing-enabled" type="b">
@@ -228,11 +235,10 @@
       <description>When false, the theme or the dock decides the gap between icons.</description>
     </key>
 
-    <key name="icon-spacing" type="i">
-      <default>16</default>
-      <range min="0" max="24"/>
+    <key name="icon-spacing" enum="org.gnome.shell.extensions.flourish.icon-spacing">
+      <default>'comfortable'</default>
       <summary>Icon spacing</summary>
-      <description>Gap between icons in pixels, in steps of 2.</description>
+      <description>Gap between icons with spacing-enabled: tight 4 px, compact 8, comfortable 16, airy 24.</description>
     </key>
 
     <key name="dock-flush" type="b">
@@ -244,13 +250,13 @@
     <key name="groups-enabled" type="b">
       <default>false</default>
       <summary>Icon groups</summary>
-      <description>Show the gaps set in group-starts.</description>
+      <description>Show the gaps set in group-gaps and the group item in the icon menu.</description>
     </key>
 
-    <key name="group-starts" type="a{ss}">
+    <key name="group-gaps" type="a{ss}">
       <default>{}</default>
       <summary>Group gaps</summary>
-      <description>Gaps between favorites, by the app id of the favorite that starts each group: small or normal.</description>
+      <description>The gap before a favorite, by app id: small or normal. The first favorite never shows one.</description>
     </key>
 
     <key name="outline-enabled" type="b">
@@ -261,8 +267,8 @@
 
     <key name="dock-outline" enum="org.gnome.shell.extensions.flourish.dock-outline">
       <default>'auto'</default>
-      <summary>Outline</summary>
-      <description>Draw an edge around the dock and dash background. Auto follows the color scheme; glass catches a light along the edge.</description>
+      <summary>Outline color</summary>
+      <description>The edge drawn around the dock and dash background with outline-enabled. Auto, shown as Theme, follows the color scheme; glass catches a light along the edge.</description>
     </key>
 
     <key name="outline-intensity" type="i">

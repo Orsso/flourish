@@ -1,4 +1,3 @@
-import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import St from 'gi://St';
 import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -36,9 +35,7 @@ export class DockIntegration {
     }) {
         this.#scheduler = scheduler;
         this.#onUrgentChanged = onUrgentChanged;
-        this.#outline = new SurfaceOutline({
-            interfaceSettings: new Gio.Settings({schema_id: 'org.gnome.desktop.interface'}),
-        });
+        this.#outline = new SurfaceOutline();
     }
 
     enable(recipe) {

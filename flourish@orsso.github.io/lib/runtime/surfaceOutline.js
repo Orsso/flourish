@@ -1,24 +1,27 @@
 import Clutter from 'gi://Clutter';
+import Gio from 'gi://Gio';
 import St from 'gi://St';
 
-import {OutlineLight, OutlineStyle} from '../motion/catalog.js';
-import {REFERENCE_INTENSITY, outlinePaint, paintOutline} from '../motion/outline.js';
+import {OutlineStyle} from '../motion/catalog.js';
+import {outlinePaint, paintOutline} from '../motion/outline.js';
 
 // Drawn over the background so it follows the shape without restyling foreign actors.
 export class SurfaceOutline {
     #areas = new Map();
-    #interfaceSettings;
+    #interfaceSettings = new Gio.Settings({schema_id: 'org.gnome.desktop.interface'});
     #paint = null;
     #style = OutlineStyle.NONE;
-    #intensity = REFERENCE_INTENSITY;
-    #light = OutlineLight.MIN;
+    #intensity;
+    #light;
 
-    constructor({interfaceSettings}) {
-        this.#interfaceSettings = interfaceSettings;
-        interfaceSettings.connectObject('changed::color-scheme', () => this.#sync(), this);
+    constructor() {
+        this.#interfaceSettings.connectObject('changed::color-scheme', () => this.#sync(), this);
     }
 
+    // Any settings change reaches here; only a new outline repaints.
     setStyle(style, intensity, light) {
+        if (style === this.#style && intensity === this.#intensity && light === this.#light)
+            return;
         this.#style = style;
         this.#intensity = intensity;
         this.#light = light;
@@ -26,8 +29,6 @@ export class SurfaceOutline {
     }
 
     track(background, getRadius) {
-        if (this.#areas.has(background))
-            return;
         const area = new St.DrawingArea({visible: this.#paint !== null});
         area.add_constraint(new Clutter.BindConstraint({
             source: background,

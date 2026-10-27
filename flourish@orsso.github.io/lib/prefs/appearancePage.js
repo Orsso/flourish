@@ -3,18 +3,16 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {GroupGap, OutlineLight, OutlineStyle} from '../motion/catalog.js';
-import {
-    moveGroupGap, setBooleanCommitted, setGroupGap, setIntCommitted, setStringCommitted,
-} from '../motion/settings.js';
+import {GroupGap, IconSpacing, OutlineLight, OutlineStyle} from '../motion/catalog.js';
+import {moveGroupGap, readGroupGaps, setGroupGap} from '../motion/settings.js';
 import {DockSample} from './dockSample.js';
 import {N_, createBadge, createScaleRow, createSwitchRow} from './rows.js';
 
 const SPACINGS = [
-    [N_('Tight'), 4],
-    [N_('Compact'), 8],
-    [N_('Comfortable'), 16],
-    [N_('Airy'), 24],
+    [N_('Tight'), IconSpacing.TIGHT],
+    [N_('Compact'), IconSpacing.COMPACT],
+    [N_('Comfortable'), IconSpacing.COMFORTABLE],
+    [N_('Airy'), IconSpacing.AIRY],
 ];
 const POSITIONS = [
     [N_('Floating'), false],
@@ -64,7 +62,7 @@ export function buildAppearancePage(page, controls, settings, state) {
     dock.add(frame);
     page.add(dock);
 
-    // Each section carries the switch it has in General; off, its rows stay visible but greyed.
+    // Each section repeats its General switch; off greys its rows.
     appearance.sections = [];
     const section = (title, key, setting) => {
         const group = new Adw.PreferencesGroup({title});
@@ -72,7 +70,7 @@ export function buildAppearancePage(page, controls, settings, state) {
         toggle.update_property([Gtk.AccessibleProperty.LABEL], [title]);
         toggle.connect('notify::active', () => {
             if (!state.syncing)
-                setBooleanCommitted(settings, setting, toggle.active);
+                settings.set_boolean(setting, toggle.active);
         });
         group.set_header_suffix(toggle);
         const rows = [];
@@ -82,20 +80,20 @@ export function buildAppearancePage(page, controls, settings, state) {
     };
     const layout = section(_('Icon spacing'), 'spacingEnabled', 'spacing-enabled');
     const spacing = addSegments(appearance, layout.group, _('Gap between icons'), SPACINGS, 'spacing', state,
-        value => setIntCommitted(settings, 'icon-spacing', value));
+        value => settings.set_string('icon-spacing', value));
     const position = addSegments(appearance, layout.group, _('Dock position'), POSITIONS, 'flush', state,
-        value => setBooleanCommitted(settings, 'dock-flush', value));
+        value => settings.set_boolean('dock-flush', value));
     position.subtitle = _('Dash to Dock and Ubuntu Dock');
     layout.rows.push(spacing, position);
 
     const outline = section(_('Outline'), 'outlineEnabled', 'outline-enabled');
     const style = addSegments(appearance, outline.group, _('Color'), OUTLINES, 'style', state,
-        value => setStringCommitted(settings, 'dock-outline', value));
+        value => settings.set_string('dock-outline', value));
     appearance.light = createScaleRow(outline.group, _('Light position'), OutlineLight.MIN, OutlineLight.MAX,
-        OutlineLight.STEP, value => setIntCommitted(settings, 'outline-light', Math.round(value)), state);
+        OutlineLight.STEP, value => settings.set_int('outline-light', Math.round(value)), state);
     appearance.light.scale.add_mark(0, Gtk.PositionType.BOTTOM, null);
     appearance.intensity = createScaleRow(outline.group, _('Intensity'), 0, 100, 5,
-        value => setIntCommitted(settings, 'outline-intensity', Math.round(value)), state);
+        value => settings.set_int('outline-intensity', Math.round(value)), state);
     outline.rows.push(style, appearance.light.row, appearance.intensity.row);
 
     const backgrounds = section(_('Backgrounds'), 'backgroundsEnabled', 'backgrounds-enabled').group;
@@ -107,18 +105,24 @@ export function buildAppearancePage(page, controls, settings, state) {
         ['focusTile', 'show-focused-app-background', _('Focused app background'), _('Marks the app that owns the focused window')],
     ]) {
         const row = createSwitchRow(backgrounds, title, subtitle,
-            enabled => setBooleanCommitted(settings, setting, enabled), state);
+            enabled => settings.set_boolean(setting, enabled), state);
         previewOnHover(appearance, row, key, true);
         appearance.switches.push({row, key});
     }
 
-    favorites.connect('changed::favorite-apps', () => {
+    const favoritesId = favorites.connect('changed::favorite-apps', () => {
         const changed = installedFavorites(favorites);
         appearance.apps = changed;
         appearance.preview.setApps(changed, previewIconSize(changed.length));
         syncAppearancePage(controls, settings);
     });
-    Adw.StyleManager.get_default().connect('notify::dark', () => refreshPreview(appearance));
+    const styleManager = Adw.StyleManager.get_default();
+    const darkId = styleManager.connect('notify::dark', () => refreshPreview(appearance));
+    // The preferences process outlives the window.
+    return () => {
+        favorites.disconnect(favoritesId);
+        styleManager.disconnect(darkId);
+    };
 }
 
 // The Shell skips favorites that are not installed, so positions count installed ones only.
@@ -174,13 +178,11 @@ function previewOnHover(appearance, widget, key, value) {
 }
 
 function refreshPreview(appearance) {
-    if (!appearance.current)
-        return;
     const {current} = appearance;
     // The preview shows what the dock shows: a switched off part is native.
     const shown = {
         ...current,
-        spacing: current.spacingEnabled ? current.spacing : -1,
+        spacing: current.spacingEnabled ? current.spacing : null,
         gaps: current.groupsEnabled ? gapPositions(appearance.apps, current.gaps) : {},
         style: current.outlineEnabled ? current.style : OutlineStyle.NONE,
         // Nothing is hovered at rest; hovering the Hover background row shows the tile.
@@ -198,9 +200,9 @@ export function syncAppearancePage(controls, settings) {
         groupsEnabled: settings.get_boolean('groups-enabled'),
         outlineEnabled: settings.get_boolean('outline-enabled'),
         backgroundsEnabled: settings.get_boolean('backgrounds-enabled'),
-        spacing: settings.get_int('icon-spacing'),
+        spacing: settings.get_string('icon-spacing'),
         flush: settings.get_boolean('dock-flush'),
-        gaps: settings.get_value('group-starts').deep_unpack(),
+        gaps: readGroupGaps(settings),
         style: settings.get_string('dock-outline'),
         intensity: settings.get_int('outline-intensity'),
         light: settings.get_int('outline-light'),
@@ -210,16 +212,16 @@ export function syncAppearancePage(controls, settings) {
     const {current} = appearance;
     for (const {button, key, value} of appearance.segments)
         button.active = current[key] === value;
-    for (const {row, key} of appearance.switches)
+    for (const {row, key} of appearance.switches) {
         row.active = current[key];
+        // Hidden, not greyed: off, the docks keep their own tiles.
+        row.visible = current.backgroundsEnabled;
+    }
     for (const {key, toggle, rows} of appearance.sections) {
         toggle.active = current[key];
         for (const row of rows)
             row.sensitive = current[key];
     }
-    // Greyed switches would read as choices Flourish applies; the docks keep their own tiles.
-    for (const {row} of appearance.switches)
-        row.visible = current.backgroundsEnabled;
     appearance.backgroundsOff.visible = !current.backgroundsEnabled;
     appearance.dock.description = current.groupsEnabled
         ? _('Click between two favorites to add a gap, again to widen it, and once more to remove it. Drag a gap to move it. In the dock, right-click a favorite to start or merge a group.')

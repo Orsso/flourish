@@ -55,9 +55,9 @@ export function writeCustomRecipe(settings, recipe) {
         write(settings, item, recipe[item.part][item.property]);
 }
 
+// The batch writers take a delayed GSettings and apply it once.
 export function editCustomSetting(settings, key, value) {
     const item = DEFINITION_BY_KEY.get(key);
-    settings.delay();
     const currentPreset = settings.get_string('motion-profile');
     if (currentPreset !== Preset.CUSTOM)
         writeCustomRecipe(settings, getBuiltInRecipe(currentPreset));
@@ -68,23 +68,6 @@ export function editCustomSetting(settings, key, value) {
 
 export function selectPreset(settings, preset) {
     settings.set_string('motion-profile', preset);
-    // delay() sticks for this GSettings object, so presets call apply() too.
-    settings.apply();
-}
-
-export function setBooleanCommitted(settings, key, value) {
-    settings.set_boolean(key, value);
-    settings.apply();
-}
-
-export function setIntCommitted(settings, key, value) {
-    settings.set_int(key, value);
-    settings.apply();
-}
-
-export function setStringCommitted(settings, key, value) {
-    settings.set_string(key, value);
-    settings.apply();
 }
 
 // The gap before each favorite after the first, keyed by app id; null means no gap.
@@ -92,8 +75,7 @@ export function groupGaps(favoriteIds, stored) {
     return new Map(favoriteIds.slice(1).map(id => [id, stored[id] ?? null]));
 }
 
-// A group keeps its edge when its first app leaves: the next app that stays starts it.
-// Dash to Dock moves an app as a removal then an insertion, so only removals count.
+// A group keeps its edge when its first app leaves; a Shell move is a removal then an insertion.
 export function passGaps(before, after, stored) {
     const passed = {...stored};
     let changed = false;
@@ -110,27 +92,32 @@ export function passGaps(before, after, stored) {
     return changed ? passed : stored;
 }
 
+export function readGroupGaps(settings) {
+    return settings.get_value('group-gaps').deep_unpack();
+}
+
+export function writeGroupGaps(settings, gaps) {
+    settings.set_value('group-gaps', new GLib.Variant('a{ss}', gaps));
+}
+
 export function setGroupGap(settings, id, gap) {
-    const gaps = settings.get_value('group-starts').deep_unpack();
+    const gaps = readGroupGaps(settings);
     if (gap)
         gaps[id] = gap;
     else
         delete gaps[id];
-    settings.set_value('group-starts', new GLib.Variant('a{ss}', gaps));
-    settings.apply();
+    writeGroupGaps(settings, gaps);
 }
 
 // One write, so a dragged gap never shows twice.
 export function moveGroupGap(settings, from, to) {
-    const gaps = settings.get_value('group-starts').deep_unpack();
+    const gaps = readGroupGaps(settings);
     gaps[to] = gaps[from];
     delete gaps[from];
-    settings.set_value('group-starts', new GLib.Variant('a{ss}', gaps));
-    settings.apply();
+    writeGroupGaps(settings, gaps);
 }
 
 export function switchToPresetFromCustom(settings, preset) {
-    settings.delay();
     writeCustomRecipe(settings, getBuiltInRecipe(preset));
     settings.set_string('motion-profile', preset);
     settings.apply();
@@ -138,9 +125,8 @@ export function switchToPresetFromCustom(settings, preset) {
 
 // Every key back to its default, so Flourish changes nothing; the gaps wait for Groups.
 export function resetAll(settings) {
-    settings.delay();
     for (const key of settings.settings_schema.list_keys()) {
-        if (key !== 'group-starts')
+        if (key !== 'group-gaps')
             settings.reset(key);
     }
     settings.apply();

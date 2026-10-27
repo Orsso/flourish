@@ -8,9 +8,9 @@ test('no outline draws nothing, at any intensity', () => {
 
 test('the default intensity keeps the 1.2 light and dark edges', () => {
     assertDeepEqual(outlinePaint(OutlineStyle.LIGHT, 60, OutlineLight.MIN, false),
-        {shade: 1, light: null, top: 0.18, bottom: 0.18});
+        {shade: 1, light: null, alpha: 0.18});
     assertDeepEqual(outlinePaint(OutlineStyle.DARK, 60, OutlineLight.MIN, false),
-        {shade: 0, light: null, top: 0.35, bottom: 0.35});
+        {shade: 0, light: null, alpha: 0.35});
 });
 
 test('auto draws a light edge on a dark scheme and a dark edge otherwise', () => {
@@ -19,8 +19,8 @@ test('auto draws a light edge on a dark scheme and a dark edge otherwise', () =>
 });
 
 test('intensity scales every style and never exceeds full opacity', () => {
-    assertClose(outlinePaint(OutlineStyle.DARK, 30, 0, false).top, 0.175);
-    assertEqual(outlinePaint(OutlineStyle.DARK, 100, 0, false).top <= 1, true);
+    assertClose(outlinePaint(OutlineStyle.DARK, 30, 0, false).alpha, 0.175);
+    assertEqual(outlinePaint(OutlineStyle.DARK, 100, 0, false).alpha <= 1, true);
     assertEqual(outlinePaint(OutlineStyle.GLASS, 100, 0, false).glint <= 1, true);
 });
 

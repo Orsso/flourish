@@ -130,7 +130,17 @@ export const AttentionCycles = {MIN: 1, MAX: 10};
 export const AttentionCyclePause = {MIN: 0, MAX: 1000};
 export const AttentionInterval = {MIN: 2, MAX: 60};
 export const AttentionReminders = {MIN: 1, MAX: 30};
-export const IconSpacing = {MIN: 0, MAX: 24, STEP: 2};
+
+export const IconSpacing = {TIGHT: 'tight', COMPACT: 'compact', COMFORTABLE: 'comfortable', AIRY: 'airy'};
+// Gap between icon images, in pixels.
+export const ICON_SPACING_GAPS = {
+    [IconSpacing.TIGHT]: 4,
+    [IconSpacing.COMPACT]: 8,
+    [IconSpacing.COMFORTABLE]: 16,
+    [IconSpacing.AIRY]: 24,
+};
+// Theme halo padding on each side of an icon; the dash, Dash to Dock and Ubuntu Dock all use 6.
+export const ICON_HALO = 6;
 
 export const GroupGap = {SMALL: 'small', NORMAL: 'normal'};
 

@@ -6,9 +6,7 @@ import {
     readActiveRecipe,
     resetAll,
     selectPreset,
-    setBooleanCommitted,
     setGroupGap,
-    setStringCommitted,
     switchToPresetFromCustom,
     writeCustomRecipe,
 } from '../flourish@orsso.github.io/lib/motion/settings.js';
@@ -27,12 +25,7 @@ class ImmediateSettings {
     constructor(preset = Preset.BALANCED) {
         this.values = {'motion-profile': preset};
         this.applyCount = 0;
-        this.delayCount = 0;
         writeCustomRecipe(this, getBuiltInRecipe(Preset.BALANCED));
-    }
-
-    delay() {
-        this.delayCount++;
     }
 
     apply() {
@@ -134,39 +127,16 @@ class DelayedSettings {
     }
 }
 
-test('selecting a preset writes through after a custom edit', () => {
+test('the batch writers commit a delayed settings object', () => {
     const settings = new DelayedSettings(Preset.BALANCED);
+    settings.delay();
     editCustomSetting(settings, 'custom-hover-scale', 1.18);
     assertEqual(settings.committed['motion-profile'], Preset.CUSTOM);
-    selectPreset(settings, Preset.SUBTLE);
-    assertEqual(settings.committed['motion-profile'], Preset.SUBTLE);
-});
-
-test('switching from custom to a preset writes recipe and preset', () => {
-    const settings = new DelayedSettings(Preset.BALANCED);
-    editCustomSetting(settings, 'custom-hover-scale', 1.18);
+    assertEqual(settings.committed['custom-hover-scale'], 1.18);
     switchToPresetFromCustom(settings, Preset.SUBTLE);
     assertEqual(settings.committed['motion-profile'], Preset.SUBTLE);
     assertEqual(settings.committed['custom-hover-scale'], 1.04);
     assertEqual(settings.committed['custom-launch-repeat-pause'], 400);
-});
-
-test('background visibility writes through after a custom edit', () => {
-    const settings = new DelayedSettings(Preset.BALANCED);
-
-    editCustomSetting(settings, 'custom-hover-scale', 1.18);
-    setBooleanCommitted(settings, 'show-hover-background', true);
-    setBooleanCommitted(settings, 'show-focused-app-background', true);
-
-    assertEqual(settings.committed['show-hover-background'], true);
-    assertEqual(settings.committed['show-focused-app-background'], true);
-});
-
-test('the dock outline writes through without touching the preset', () => {
-    const settings = new DelayedSettings(Preset.BALANCED);
-    setStringCommitted(settings, 'dock-outline', 'dark');
-    assertEqual(settings.committed['dock-outline'], 'dark');
-    assertEqual(settings.committed['motion-profile'], Preset.BALANCED);
 });
 
 test('editing a preset copies it to custom before applying the edit', () => {
@@ -206,8 +176,6 @@ class StoredSettings {
         this.settings_schema = {list_keys: () => Object.keys(this.user)};
     }
 
-    delay() {}
-
     apply() {}
 
     reset(key) {
@@ -231,10 +199,10 @@ test('reset all clears every stored key but the group gaps', () => {
     const settings = new StoredSettings({
         'motion-profile': 'expressive',
         'groups-enabled': true,
-        'group-starts': {firefox: 'small'},
+        'group-gaps': {firefox: 'small'},
     });
     resetAll(settings);
-    assertDeepEqual(settings.user, {'group-starts': {firefox: 'small'}});
+    assertDeepEqual(settings.user, {'group-gaps': {firefox: 'small'}});
 });
 
 test('1.2 outlines and backgrounds turn their new switch on', () => {
@@ -375,13 +343,13 @@ test('every attention key round-trips through custom', () => {
 
 test('a group gap is written, removed or moved per app in one write', () => {
     let stored = {b: 'small'};
-    let applied = 0;
+    let writes = 0;
     const settings = {
         get_value: () => ({deep_unpack: () => ({...stored})}),
         set_value: (key, value) => {
             stored = value.deep_unpack();
+            writes++;
         },
-        apply: () => applied++,
     };
     setGroupGap(settings, 'd', 'normal');
     assertDeepEqual(stored, {b: 'small', d: 'normal'});
@@ -389,5 +357,5 @@ test('a group gap is written, removed or moved per app in one write', () => {
     assertDeepEqual(stored, {d: 'normal'});
     moveGroupGap(settings, 'd', 'e');
     assertDeepEqual(stored, {e: 'normal'});
-    assertEqual(applied, 3);
+    assertEqual(writes, 3);
 });

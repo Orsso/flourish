@@ -403,7 +403,7 @@ class WaveRow {
     }
 
     // Pointer position along the row in icons, or null.
-    #waveShape() {
+    #wavePosition() {
         // The overview dash keeps its allocation while hidden.
         if (this.#pointer === null || this.#holds.size > 0 || !this.#box.mapped ||
             !this.#context.isAvailable())
@@ -453,7 +453,7 @@ class WaveRow {
     }
 
     #syncWave() {
-        const position = this.#waveShape();
+        const position = this.#wavePosition();
         let env;
         if (position !== null) {
             const {hover} = this.#recipe;

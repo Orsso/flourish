@@ -14,46 +14,46 @@ test('the packaged spacing stylesheet matches its generator', () => {
 
 test('below twice the halo the gap moves into the halo padding', () => {
     const css = iconSpacingCss();
-    assertEqual(css.includes('.flourish-spacing-8 #dash .dash-item-container .overview-tile .overview-icon,'), true);
+    assertEqual(css.includes('.flourish-spacing-compact #dash .dash-item-container .overview-tile .overview-icon,'), true);
     assertEqual(css.includes('padding: 2px 0 6px 0 !important;'), true);
-    assertEqual(css.includes('.flourish-spacing-12 #dash .dash-item-container .overview-tile .overview-icon'), false);
+    assertEqual(css.includes('.flourish-spacing-comfortable #dash .dash-item-container .overview-tile .overview-icon'), false);
 });
 
 test('the favorites separator gets the room of a small group gap', () => {
     const css = iconSpacingCss();
-    assertEqual(css.includes('.flourish-spacing-4 #dashtodockContainer.left #dash .dash-separator'), true);
+    assertEqual(css.includes('.flourish-spacing-tight #dashtodockContainer.left #dash .dash-separator'), true);
     assertEqual(css.includes('margin-left: 8px !important;\n    margin-right: 8px !important;'), true);
 });
 
 test('the row ends get the inset the icons have across the row', () => {
     const css = iconSpacingCss();
-    assertEqual(css.includes(`.flourish-spacing-4 #dashtodockContainer.bottom.shrink #dash #dashtodockDashContainer,
-.flourish-spacing-4 #dashtodockContainer.top.shrink #dash #dashtodockDashContainer {
+    assertEqual(css.includes(`.flourish-spacing-tight #dashtodockContainer.bottom.shrink #dash #dashtodockDashContainer,
+.flourish-spacing-tight #dashtodockContainer.top.shrink #dash #dashtodockDashContainer {
     padding-left: 6px !important;`), true);
-    assertEqual(css.includes(`.flourish-spacing-4 #dashtodockContainer.right.shrink #dash #dashtodockDashContainer {
+    assertEqual(css.includes(`.flourish-spacing-tight #dashtodockContainer.right.shrink #dash #dashtodockDashContainer {
     padding-top: 9px !important;
     padding-bottom: 5px !important;`), true);
 });
 
 test('a flush dock fills its background and pads its tiles evenly', () => {
     const css = iconSpacingCss();
-    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-background {
+    assertEqual(css.includes(`.flourish-spacing-tight.flourish-flush #dashtodockContainer.right #dash .dash-background {
     margin: 0 !important;`), true);
-    assertEqual(css.includes(`.flourish-spacing-12.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
+    assertEqual(css.includes(`.flourish-spacing-comfortable.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
     padding-top: 3px !important;
     padding-bottom: 3px !important;`), true);
-    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash #dashtodockDashContainer {
+    assertEqual(css.includes(`.flourish-spacing-tight.flourish-flush #dashtodockContainer.top.shrink #dash #dashtodockDashContainer {
     padding-left: 7px !important;`), true);
 });
 
 test('a flush dock keeps the screen edge on its tiles below twice the halo', () => {
     const css = iconSpacingCss();
-    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
+    assertEqual(css.includes(`.flourish-spacing-tight.flourish-flush #dashtodockContainer.right #dash .dash-item-container {
     margin: 0 !important;`), true);
-    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
+    assertEqual(css.includes(`.flourish-spacing-tight.flourish-flush #dashtodockContainer.top.shrink #dash .dash-item-container .overview-tile {
     padding-top: 9px !important;
     padding-bottom: 5px !important;`), true);
-    assertEqual(css.includes(`.flourish-spacing-4.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
+    assertEqual(css.includes(`.flourish-spacing-tight.flourish-flush #dashtodockContainer.right #dash .dash-item-container .overview-tile {
     padding-left: 14px !important;
     padding-right: 14px !important;`), true);
 });

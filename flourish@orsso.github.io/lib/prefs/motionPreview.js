@@ -5,6 +5,7 @@ import Gtk from 'gi://Gtk';
 
 import {PressMode, RecipePart, ScreenEdge, resolveAnimationMode} from '../motion/catalog.js';
 import {hoverActive, waveOffsets, waveFalloff} from '../motion/continuum.js';
+import {roundedRect} from '../motion/outline.js';
 import {
     ATTENTION_SLIDE_DURATION,
     buildAttentionSegments,
@@ -23,7 +24,7 @@ import {
     DemoPhase,
     PHASE_WAIT_MS,
 } from './demoSequence.js';
-import {accentColor} from './dockSample.js';
+import {REAL_ICON, THEME_GAP, accentColor} from './dockSample.js';
 
 const IDENTITY = {
     scaleX: 1,
@@ -465,8 +466,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const pad = 10;
         const dockHeight = 42;
         const count = ICON_COLORS.length;
-        // The theme gap of a 48 px icon dock, scaled.
-        const step = iconSize + THEME_GAP * iconSize / 48;
+        const step = iconSize + THEME_GAP * iconSize / REAL_ICON;
         const middle = (count - 1) / 2;
         const transforms = Array.from({length: count}, (_, i) => this._iconTransforms(i, middle));
         const offsets = this._spacing(transforms, iconSize);
@@ -482,7 +482,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         const dockY = height - dockHeight - 8;
         const iconTop = dockY + (dockHeight - iconSize) / 2;
 
-        roundedRectangle(cr, 1, 1, width - 2, height - 2, 14);
+        roundedRect(cr, 1, 1, width - 2, height - 2, 14);
         cr.setSourceRGBA(0.08, 0.09, 0.11, 1);
         cr.fillPreserve();
         cr.setLineWidth(this._selected ? 2 : 1);
@@ -496,7 +496,7 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         cr.translate(centerX, dockY + dockHeight);
         cr.scale(fit, fit);
         cr.translate(-centerX, -(dockY + dockHeight));
-        roundedRectangle(cr, dockX, dockY, dockWidth, dockHeight, 13);
+        roundedRect(cr, dockX, dockY, dockWidth, dockHeight, 13);
         cr.setSourceRGBA(0.16, 0.17, 0.20, 0.94);
         cr.fill();
 
@@ -571,7 +571,6 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
 
 const REFERENCE_ICON_SIZE = 46;
 
-const THEME_GAP = 16;
 const ICON_COLORS = [
     [0.90, 0.42, 0.31],
     [0.95, 0.74, 0.30],
@@ -631,17 +630,17 @@ function drawIcon(cr, centerX, top, size, color, {motion, launch, launchPivot, p
         top + pivotY + translationY + peekLift);
     cr.scale(motion.scaleX * launch.scaleX, motion.scaleY * launch.scaleY);
     cr.rotate(launch.rotation * Math.PI / 180);
-    roundedRectangle(cr, -pivotX, -pivotY, size, size, radius);
+    roundedRect(cr, -pivotX, -pivotY, size, size, radius);
     cr.setSourceRGBA(...color, peek);
     cr.fill();
-    roundedRectangle(
+    roundedRect(
         cr, -pivotX + 0.5, -pivotY + 0.5, size - 1, size - 1, radius);
     cr.setSourceRGBA(1, 1, 1, 0.10 * peek);
     cr.setLineWidth(1);
     cr.stroke();
     const dim = 1 - (1 - motion.dim) * (1 - launch.dim);
     if (dim > 0) {
-        roundedRectangle(cr, -pivotX, -pivotY, size, size, radius);
+        roundedRect(cr, -pivotX, -pivotY, size, size, radius);
         cr.setSourceRGBA(0, 0, 0, dim * peek);
         cr.fill();
     }
@@ -658,13 +657,3 @@ function animate(widget, duration, easing, onValue, onDone = null) {
     return animation;
 }
 
-function roundedRectangle(cr, x, y, width, height, radius) {
-    const right = x + width;
-    const bottom = y + height;
-    cr.newSubPath();
-    cr.arc(right - radius, y + radius, radius, -Math.PI / 2, 0);
-    cr.arc(right - radius, bottom - radius, radius, 0, Math.PI / 2);
-    cr.arc(x + radius, bottom - radius, radius, Math.PI / 2, Math.PI);
-    cr.arc(x + radius, y + radius, radius, Math.PI, Math.PI * 1.5);
-    cr.closePath();
-}

@@ -11,7 +11,6 @@ import {
     readActiveRecipe,
     resetAll,
     selectPreset,
-    setBooleanCommitted,
     switchToPresetFromCustom,
 } from './lib/motion/settings.js';
 import {buildAnimationPages, syncAnimationPages} from './lib/prefs/animationPages.js';
@@ -35,11 +34,14 @@ const PRESET_DETAILS = [
 
 export default class FlourishPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        // Narrower, libadwaita moves the six tabs to a bottom bar; taller fits Style.
+        // Narrower, libadwaita moves the tabs to a bottom bar; taller fits Style.
         window.set_default_size(960, 760);
         // The Extensions app turns search off; rows on every tab are searchable.
         window.search_enabled = true;
         const settings = this.getSettings();
+        // Recipe batches go through a delayed copy, so every other write applies at once.
+        const batch = this.getSettings();
+        batch.delay();
         const state = {syncing: false};
         const controls = {dockPresent: dashToDockEnabled()};
 
@@ -94,6 +96,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
                 title: _(title),
                 state,
                 settings,
+                batch,
                 controls,
             }));
             const hover = new Gtk.EventControllerMotion();
@@ -105,7 +108,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         }
 
         const featureGroup = new Adw.PreferencesGroup({title: _('Motion')});
-        const editor = key => value => editCustomSetting(settings, key, value);
+        const editor = key => value => editCustomSetting(batch, key, value);
         controls.hoverEnabled = createSwitchRow(
             featureGroup, _('Hover motion'),
             _('Magnification and elevation around the pointer'),
@@ -129,8 +132,7 @@ export default class FlourishPreferences extends ExtensionPreferences {
         appearanceGroup.set_header_suffix(createBadge(_('Beta')));
         // Outside the presets: a change keeps the current one.
         controls.appearanceSwitches = APPEARANCE_SWITCHES.map(([key, title, subtitle]) => [
-            createSwitchRow(appearanceGroup, _(title), _(subtitle),
-                value => setBooleanCommitted(settings, key, value), state),
+            createSwitchRow(appearanceGroup, _(title), _(subtitle), value => settings.set_boolean(key, value), state),
             key,
         ]);
         essentials.add(appearanceGroup);
@@ -142,19 +144,25 @@ export default class FlourishPreferences extends ExtensionPreferences {
         });
         const resetButton = new Gtk.Button({label: _('Reset'), valign: Gtk.Align.CENTER});
         resetButton.add_css_class('destructive-action');
-        resetButton.connect('clicked', () => confirmReset(window, settings));
+        resetButton.connect('clicked', () => confirm(window, {
+            heading: _('Reset all settings?'),
+            body: _('Every Flourish setting goes back to its default. Your group gaps are kept for when you turn Groups back on. Flourish will change nothing until you pick a preset or turn on a feature.'),
+            label: _('Reset'),
+            onConfirm: () => resetAll(batch),
+        }));
         resetRow.add_suffix(resetButton);
         resetGroup.add(resetRow);
         essentials.add(resetGroup);
 
-        buildAppearancePage(appearance, controls, settings, state);
-        buildAnimationPages(animations, controls, settings, state);
+        const disposeAppearance = buildAppearancePage(appearance, controls, settings, state);
+        buildAnimationPages(animations, controls, batch, state);
 
         const sync = () => syncControls(settings, controls, state);
         const changedId = settings.connect('changed', sync);
         sync();
         window.connect('close-request', () => {
             settings.disconnect(changedId);
+            disposeAppearance();
             return false;
         });
     }
@@ -186,20 +194,14 @@ function syncControls(settings, controls, state) {
     state.syncing = false;
 }
 
-function confirmReset(window, settings) {
-    const dialog = new Adw.AlertDialog({
-        heading: _('Reset all settings?'),
-        body: _('Every Flourish setting goes back to its default. Your group gaps are kept for when you turn Groups back on. Flourish will change nothing until you pick a preset or turn on a feature.'),
-    });
+function confirm(window, {heading, body, label, onConfirm, onCancel = () => {}}) {
+    const dialog = new Adw.AlertDialog({heading, body});
     dialog.add_response('cancel', _('Cancel'));
-    dialog.add_response('reset', _('Reset'));
-    dialog.set_response_appearance('reset', Adw.ResponseAppearance.DESTRUCTIVE);
+    dialog.add_response('confirm', label);
+    dialog.set_response_appearance('confirm', Adw.ResponseAppearance.DESTRUCTIVE);
     dialog.set_default_response('cancel');
     dialog.set_close_response('cancel');
-    dialog.connect('response', (_dialog, response) => {
-        if (response === 'reset')
-            resetAll(settings);
-    });
+    dialog.connect('response', (_dialog, response) => (response === 'confirm' ? onConfirm : onCancel)());
     dialog.present(window);
 }
 
@@ -223,7 +225,7 @@ function createPresetCard(title, recipe) {
     return {button, preview};
 }
 
-function onPresetClicked({window, preset, title, state, settings, controls}) {
+function onPresetClicked({window, preset, title, state, settings, batch, controls}) {
     if (state.syncing)
         return;
     const current = settings.get_string('motion-profile');
@@ -235,22 +237,13 @@ function onPresetClicked({window, preset, title, state, settings, controls}) {
         selectPreset(settings, preset);
         return;
     }
-    const dialog = new Adw.AlertDialog({
+    confirm(window, {
         heading: _('Switch to %s?').replace('%s', title),
         body: _('Your Custom recipe will be abandoned and replaced by the %s preset values.').replace('%s', title),
+        label: _('Switch'),
+        onConfirm: () => switchToPresetFromCustom(batch, preset),
+        onCancel: () => syncControls(settings, controls, state),
     });
-    dialog.add_response('cancel', _('Cancel'));
-    dialog.add_response('switch', _('Switch'));
-    dialog.set_response_appearance('switch', Adw.ResponseAppearance.DESTRUCTIVE);
-    dialog.set_default_response('cancel');
-    dialog.set_close_response('cancel');
-    dialog.connect('response', (_dialog, response) => {
-        if (response === 'switch')
-            switchToPresetFromCustom(settings, preset);
-        else
-            syncControls(settings, controls, state);
-    });
-    dialog.present(window);
 }
 
 // Ubuntu enables its dock through the session mode, not enabled-extensions.
