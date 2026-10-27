@@ -38,7 +38,6 @@ build:
 		--extra-source=dash-hover-background-hidden.css \
 		--extra-source=dash-focused-app-background.css \
 		--extra-source=icon-spacing.css \
-		--extra-source=group-gaps.css \
 		--extra-source=../README.md \
 		--extra-source=../LICENSE \
 		$(UUID)

@@ -20,24 +20,24 @@ required=(
     lib/prefs/motionPreview.js
     lib/prefs/rows.js
     lib/runtime/attentionEngine.js
-    lib/runtime/backgroundStyle.js
     lib/runtime/dashIntegration.js
     lib/runtime/deferredLaunchEnds.js
     lib/runtime/dockIntegration.js
-    lib/runtime/dockVisibility.js
-    lib/runtime/surfaceOutline.js
     lib/runtime/dockOverflow.js
+    lib/runtime/dockVisibility.js
     lib/runtime/focusHighlight.js
     lib/runtime/geometry.js
     lib/runtime/iconClone.js
-    lib/runtime/iconDim.js
     lib/runtime/iconDecorations.js
+    lib/runtime/iconDim.js
     lib/runtime/iconFollower.js
     lib/runtime/iconGroup.js
     lib/runtime/iconMotionController.js
     lib/runtime/launchEngine.js
     lib/runtime/liveRegistry.js
     lib/runtime/motionSurface.js
+    lib/runtime/stylesheet.js
+    lib/runtime/surfaceOutline.js
     metadata.json
     prefs.js
     schemas/org.gnome.shell.extensions.flourish.gschema.xml
@@ -46,7 +46,7 @@ required=(
     dash-hover-background-hidden.css
     dash-focused-app-background.css
     icon-spacing.css
-    group-gaps.css
+    stylesheet.css
 )
 
 for path in "${required[@]}"; do

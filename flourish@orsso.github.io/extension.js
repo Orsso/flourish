@@ -15,16 +15,15 @@ import {AttentionEngine} from './lib/runtime/attentionEngine.js';
 import {DashIntegration} from './lib/runtime/dashIntegration.js';
 import {DockIntegration} from './lib/runtime/dockIntegration.js';
 import {LaunchEngine} from './lib/runtime/launchEngine.js';
-import {BackgroundStyle} from './lib/runtime/backgroundStyle.js';
+import {Stylesheet} from './lib/runtime/stylesheet.js';
 
-// In the order of the flags in _syncStyles.
+// The Shell loads stylesheet.css itself, for the whole time Flourish is enabled.
 const STYLESHEETS = [
     'dock-hover-background-hidden.css',
     'dash-hover-background-hidden.css',
     'dock-focused-app-background-hidden.css',
     'dash-focused-app-background.css',
     'icon-spacing.css',
-    'group-gaps.css',
 ];
 
 export default class FlourishExtension extends Extension {
@@ -53,8 +52,7 @@ export default class FlourishExtension extends Extension {
         });
 
         this._spacingClasses = [];
-        this._styles = STYLESHEETS.map(cssFileName =>
-            new BackgroundStyle({extension: this, cssFileName}));
+        this._styles = Object.fromEntries(STYLESHEETS.map(name => [name, new Stylesheet(this.dir.get_child(name))]));
         this._syncStyles();
 
         this._attentionEngine = new AttentionEngine({
@@ -122,7 +120,7 @@ export default class FlourishExtension extends Extension {
         this._attentionEngine = null;
         this._syncSpacing([]);
         this._spacingClasses = null;
-        for (const style of this._styles)
+        for (const style of Object.values(this._styles))
             style.disable();
         this._styles = null;
         // Dock widgets restyle through the controllers, so before those go.
@@ -219,9 +217,16 @@ export default class FlourishExtension extends Extension {
         this._dashIntegration.setOutline(...outline);
         const spacing = this._settings.get_string('icon-spacing');
         const customSpacing = this._settings.get_boolean('spacing-enabled');
+        const sheets = {
+            'dock-hover-background-hidden.css': hideHover,
+            'dash-hover-background-hidden.css': hideHover,
+            'dock-focused-app-background-hidden.css': backgrounds && !focused,
+            'dash-focused-app-background.css': backgrounds && focused,
+            'icon-spacing.css': customSpacing,
+        };
         // No short-circuit: every sheet must sync.
-        const changed = [hideHover, hideHover, backgrounds && !focused, backgrounds && focused, customSpacing, true]
-            .map((enabled, index) => this._styles[index].setEnabled(enabled))
+        const changed = Object.entries(sheets)
+            .map(([name, enabled]) => this._styles[name].setEnabled(enabled))
             .includes(true);
         // After the sheets: the icon size pass needs the spacing rules loaded.
         const flush = this._settings.get_boolean('dock-flush') ? ['flourish-flush'] : [];

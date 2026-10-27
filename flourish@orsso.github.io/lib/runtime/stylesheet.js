@@ -1,11 +1,10 @@
-import Gio from 'gi://Gio';
 import St from 'gi://St';
 
-export class BackgroundStyle {
+export class Stylesheet {
     #file;
 
-    constructor({extension, cssFileName}) {
-        this.#file = Gio.File.new_for_path(`${extension.path}/${cssFileName}`);
+    constructor(file) {
+        this.#file = file;
     }
 
     // True when a stylesheet was loaded or unloaded.
