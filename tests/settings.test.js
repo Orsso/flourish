@@ -210,6 +210,9 @@ test('1.2 outlines and backgrounds turn their new switch on', () => {
     migrateAppearance(outlined);
     assertEqual(outlined.user['outline-enabled'], true);
     assertEqual(outlined.user['backgrounds-enabled'], true);
+    // The tile left at its 1.2 default stays hidden under the new true default.
+    assertEqual(outlined.user['show-focused-app-background'], false);
+    assertEqual(outlined.user['show-hover-background'], true);
     const none = new StoredSettings({'dock-outline': 'none'});
     migrateAppearance(none);
     assertDeepEqual(none.user, {});

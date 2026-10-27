@@ -140,10 +140,14 @@ export function migrateAppearance(settings) {
         else
             settings.set_boolean('outline-enabled', true);
     }
-    if (settings.get_user_value('backgrounds-enabled') === null &&
-        ['show-hover-background', 'show-focused-app-background']
-            .some(key => settings.get_user_value(key) !== null))
-        settings.set_boolean('backgrounds-enabled', true);
+    const tiles = ['show-hover-background', 'show-focused-app-background'];
+    if (settings.get_user_value('backgrounds-enabled') !== null ||
+        tiles.every(key => settings.get_user_value(key) === null))
+        return;
+    settings.set_boolean('backgrounds-enabled', true);
+    // 1.2 defaulted both tiles to false; the untouched one keeps it.
+    for (const key of tiles.filter(tile => settings.get_user_value(tile) === null))
+        settings.set_boolean(key, false);
 }
 
 function write(settings, item, value) {
