@@ -47,9 +47,10 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
     _init({recipe, part = null, ...params}) {
         const inline = Boolean(part);
         const iconCount = part === RecipePart.HOVER ? hoverIconCount(recipe) : 1;
+        const spread = part === RecipePart.HOVER ? hoverSpread(recipe) : 0;
         super._init({
             height_request: inline ? 72 : 120,
-            width_request: inline ? inlineWidth(iconCount) : -1,
+            width_request: inline ? inlineWidth(iconCount, spread) : -1,
             hexpand: !inline,
             valign: inline ? Gtk.Align.CENTER : Gtk.Align.FILL,
             ...params,
@@ -116,14 +117,16 @@ export const MotionPreview = GObject.registerClass(class MotionPreview extends G
         if (this._part !== RecipePart.HOVER)
             return;
         const count = hoverIconCount(this._recipe);
-        if (count === this._iconCount)
+        if (count === this._iconCount) {
+            this.width_request = inlineWidth(this._visibleCount, hoverSpread(this._recipe));
             return;
+        }
         this._iconCount = count;
         const from = this._visibleCount;
         this._countAnimation.pause();
         this._countAnimation = animate(this, COUNT_GROW_MS, Adw.Easing.EASE_OUT_CUBIC, value => {
             this._visibleCount = from + (count - from) * value;
-            this.width_request = inlineWidth(this._visibleCount);
+            this.width_request = inlineWidth(this._visibleCount, hoverSpread(this._recipe));
             this.queue_draw();
         });
     }
@@ -587,8 +590,13 @@ function hoverIconCount(recipe) {
     return 2 * recipe.hover.reach + 1;
 }
 
-function inlineWidth(count) {
-    return Math.round(count * INLINE_STEP + 22);
+function inlineWidth(count, spread) {
+    return Math.round(count * INLINE_STEP + 22 + spread);
+}
+
+// Dynamic spacing widens the row by the icons' growth; the wave levels sum to the reach.
+function hoverSpread({hover}) {
+    return hover.dynamicSpacing ? INLINE_ICON_SIZE * (hover.scale - 1) * hover.reach : 0;
 }
 
 // Pair d shrinks while the count crosses 2d..2d+1, ahead of the frame edge.
