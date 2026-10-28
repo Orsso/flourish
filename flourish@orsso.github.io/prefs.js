@@ -22,7 +22,7 @@ import {N_, createBadge, createSwitchRow} from './lib/prefs/rows.js';
 const APPEARANCE_SWITCHES = [
     ['spacing-enabled', N_('Icon Spacing'), N_('Set the gap between icons')],
     ['groups-enabled', N_('Groups'), N_('Gaps between groups of favorites')],
-    ['outline-enabled', N_('Outline'), N_('An edge around the dock background')],
+    ['outline-enabled', N_('Outline'), N_('A thin line around the dash or dock')],
     ['backgrounds-enabled', N_('Backgrounds'), N_('Hide or add the hover and focused app tiles')],
 ];
 

@@ -6,7 +6,7 @@ import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions
 import {GroupGap, IconSpacing, OutlineLight, OutlineStyle} from '../motion/catalog.js';
 import {moveGroupGap, readGroupGaps, setGroupGap} from '../motion/settings.js';
 import {DockSample} from './dockSample.js';
-import {N_, createBadge, createScaleRow, createSwitchRow} from './rows.js';
+import {N_, createScaleRow, createSwitchRow} from './rows.js';
 
 const SPACINGS = [
     [N_('Tight'), IconSpacing.TIGHT],
@@ -38,9 +38,26 @@ export function buildAppearancePage(page, controls, settings, state) {
     const apps = installedFavorites(favorites);
     appearance.apps = apps;
 
-    const dock = new Adw.PreferencesGroup({title: _('Your Dock')});
-    dock.set_header_suffix(createBadge(_('Beta')));
-    appearance.dock = dock;
+    // Each section repeats its General switch; off greys its rows.
+    appearance.sections = [];
+    const section = (title, key, setting) => {
+        const group = new Adw.PreferencesGroup({title});
+        const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
+        toggle.update_property([Gtk.AccessibleProperty.LABEL], [title]);
+        toggle.connect('notify::active', () => {
+            if (!state.syncing)
+                settings.set_boolean(setting, toggle.active);
+        });
+        group.set_header_suffix(toggle);
+        const rows = [];
+        appearance.sections.push({key, toggle, rows});
+        page.add(group);
+        return {group, rows};
+    };
+
+    const groups = section(_('Groups'), 'groupsEnabled', 'groups-enabled').group;
+    // One text on and off, so the switch never moves under the pointer.
+    groups.description = _('Click between two apps to add a gap, click again to change it. Drag a gap to move it. You can also right-click an app to start or merge a group.');
     appearance.preview = new DockSample({
         apps,
         iconSize: previewIconSize(apps.length),
@@ -59,25 +76,8 @@ export function buildAppearancePage(page, controls, settings, state) {
     });
     const frame = new Gtk.Frame({child: appearance.preview});
     frame.add_css_class('view');
-    dock.add(frame);
-    page.add(dock);
+    groups.add(frame);
 
-    // Each section repeats its General switch; off greys its rows.
-    appearance.sections = [];
-    const section = (title, key, setting) => {
-        const group = new Adw.PreferencesGroup({title});
-        const toggle = new Gtk.Switch({valign: Gtk.Align.CENTER});
-        toggle.update_property([Gtk.AccessibleProperty.LABEL], [title]);
-        toggle.connect('notify::active', () => {
-            if (!state.syncing)
-                settings.set_boolean(setting, toggle.active);
-        });
-        group.set_header_suffix(toggle);
-        const rows = [];
-        appearance.sections.push({key, toggle, rows});
-        page.add(group);
-        return {group, rows};
-    };
     const layout = section(_('Icon Spacing'), 'spacingEnabled', 'spacing-enabled');
     const spacing = addSegments(appearance, layout.group, _('Gap Between Icons'), SPACINGS, 'spacing', state,
         value => settings.set_string('icon-spacing', value));
@@ -223,9 +223,6 @@ export function syncAppearancePage(controls, settings) {
             row.sensitive = current[key];
     }
     appearance.backgroundsOff.visible = !current.backgroundsEnabled;
-    appearance.dock.description = current.groupsEnabled
-        ? _('Click between two favorites to add a gap, again to widen it, and once more to remove it. Drag a gap to move it. In the dock, right-click a favorite to start or merge a group.')
-        : _('Turn on Groups in General to add gaps between favorites.');
     appearance.preview.can_target = current.groupsEnabled;
     appearance.intensity.adjustment.value = current.intensity;
     appearance.light.adjustment.value = current.light;
