@@ -35,8 +35,8 @@ It relies on a few private or undocumented members:
   and the window manager's `_getNthFavoriteApp`.
 - Dash to Dock: `_allDocks`, each dock's `monitorIndex` and `position`, the
   slider's `slide-x`, the manager's settings, the icons' `urgent` and
-  `focused` flags and `_menu`, and `iconAnimator.addAnimation`, overridden to replace
-  the urgent wiggle.
+  `focused` flags and `_menu`, and `iconAnimator`, to replace the urgent
+  wiggle.
 - Blur My Shell: `is_static`, and `dash`, `background` and
   `background_group` in `global.blur_my_shell._dash_to_dock_blur.dashes`,
   plus the corner radius of that background's blur effect
@@ -45,6 +45,10 @@ It relies on a few private or undocumented members:
 On a dock, magnified icons overflow through a wider clip, a paint and pick
 effect on the scroll view, and detached scroll adjustments while the row
 fits. The background follows the wave through a layout constraint.
+
+The outline is drawn inside the dash or dock background. Group gaps are icon
+margins, which the dash's `_adjustIconSize` takes into account. App menus get
+one extra item for groups.
 
 ## Compatibility
 
