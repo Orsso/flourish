@@ -42,16 +42,16 @@ export function buildAnimationPages(pages, controls, settings, state) {
         value => editCustomSetting(settings, 'custom-hover-lift', Math.round(value)), state,
         _('px'));
     controls.hoverDuration = createSpinRow(
-        hover.group, _('Transition duration'), 80, 800, 10,
+        hover.group, _('Transition Duration'), 80, 800, 10,
         value => editCustomSetting(settings, 'custom-hover-duration', Math.round(value)), state,
         _('ms'));
     controls.hoverEasing = createComboRow(
-        hover.group, _('Transition curve'),
+        hover.group, _('Transition Curve'),
         [
             [_('Linear'), Easing.LINEAR],
-            [_('Ease out (quad)'), Easing.EASE_OUT_QUAD],
-            [_('Ease out (cubic)'), Easing.EASE_OUT_CUBIC],
-            [_('Ease out (back)'), Easing.EASE_OUT_BACK],
+            [_('Ease Out (Quad)'), Easing.EASE_OUT_QUAD],
+            [_('Ease Out (Cubic)'), Easing.EASE_OUT_CUBIC],
+            [_('Ease Out (Back)'), Easing.EASE_OUT_BACK],
         ], value => editCustomSetting(settings, 'custom-hover-easing', value), state);
     controls.reach = createSpinRow(
         hover.group, _('Reach'), Reach.MIN, Reach.MAX, 1,
@@ -59,7 +59,7 @@ export function buildAnimationPages(pages, controls, settings, state) {
         _('Reach on each side of the pointer, in icon steps'));
     holdWhileSliding(controls.hoverScale, hover);
     controls.dynamicSpacing = createSwitchRow(
-        hover.group, _('Dynamic spacing'),
+        hover.group, _('Dynamic Spacing'),
         _('Move neighboring icons apart as they grow'),
         enabled => editCustomSetting(settings, 'custom-hover-dynamic-spacing', enabled), state,
         _('When off, icons keep their positions and may overlap at high magnification. ' +
@@ -69,9 +69,9 @@ export function buildAnimationPages(pages, controls, settings, state) {
     controls.pressMode = createComboRow(
         press.group, _('Trigger'),
         [
-            [_('Clicks only'), PressMode.CLICKS_ONLY],
-            [_('Launches only'), PressMode.LAUNCHES_ONLY],
-            [_('Clicks and launches'), PressMode.CLICKS_AND_LAUNCHES],
+            [_('Clicks Only'), PressMode.CLICKS_ONLY],
+            [_('Launches Only'), PressMode.LAUNCHES_ONLY],
+            [_('Clicks and Launches'), PressMode.CLICKS_AND_LAUNCHES],
         ], value => editCustomSetting(settings, 'custom-press-mode', value), state);
     controls.pressEffect = createComboRow(
         press.group, _('Effect'),
@@ -95,7 +95,7 @@ export function buildAnimationPages(pages, controls, settings, state) {
             [_('Pulse'), LaunchEffect.PULSE],
             [_('Bounce'), LaunchEffect.BOUNCE],
             [_('Stretch'), LaunchEffect.STRETCH],
-            [_('Stock zoom'), LaunchEffect.STOCK],
+            [_('Stock Zoom'), LaunchEffect.STOCK],
         ], value => editCustomSetting(settings, 'custom-launch-effect', value), state);
     controls.launchIntensity = createScaleRow(
         launch.group, _('Intensity'), 0, 1, 0.05,
@@ -104,29 +104,29 @@ export function buildAnimationPages(pages, controls, settings, state) {
         launch.group, _('Speed'), 0.30, 1.00, 0.05,
         value => editCustomSetting(settings, 'custom-launch-speed', value), state);
     controls.launchRepeat = createSwitchRow(
-        launch.group, _('Repeat while starting'),
+        launch.group, _('Repeat While Starting'),
         _('Stop when the application is running'),
         enabled => editCustomSetting(settings, 'custom-launch-repeat', enabled), state);
     controls.launchSoftenRepeats = createSwitchRow(
-        launch.group, _('Soften repeated cycles'),
+        launch.group, _('Soften Repeated Cycles'),
         _('Reduce the intensity of each repeat'),
         enabled => editCustomSetting(settings, 'custom-launch-soften-repeats', enabled), state);
     controls.launchRepeatPause = createSpinRow(
-        launch.group, _('Repeat pause'), 0, 1000, 50,
+        launch.group, _('Repeat Pause'), 0, 1000, 50,
         value => editCustomSetting(settings, 'custom-launch-repeat-pause', Math.round(value)),
         state, _('ms'));
     controls.launchMaxDuration = createSpinRow(
-        launch.group, _('Maximum duration'), 500, 15000, 500,
+        launch.group, _('Maximum Duration'), 500, 15000, 500,
         value => editCustomSetting(settings, 'custom-launch-max-duration', Math.round(value)),
         state, _('ms'));
     controls.bounceDecay = createScaleRow(
-        launch.group, _('Bounce decay'), 0, 1, 0.05,
+        launch.group, _('Bounce Decay'), 0, 1, 0.05,
         value => editCustomSetting(settings, 'custom-bounce-decay', value), state);
     controls.pulseCount = createSpinRow(
-        launch.group, _('Pulse count'), 1, 4, 1,
+        launch.group, _('Pulse Count'), 1, 4, 1,
         value => editCustomSetting(settings, 'custom-pulse-count', Math.round(value)), state);
     controls.stretchElasticity = createScaleRow(
-        launch.group, _('Stretch elasticity'), 0, 1, 0.05,
+        launch.group, _('Stretch Elasticity'), 0, 1, 0.05,
         value => editCustomSetting(settings, 'custom-stretch-elasticity', value), state);
 
     if (controls.dockPresent) {
@@ -154,13 +154,13 @@ export function buildAnimationPages(pages, controls, settings, state) {
             value => editCustomSetting(settings, 'custom-attention-cycles', Math.round(value)),
             state, _('Cycles played at each reminder'));
         controls.attentionCyclePause = createSpinRow(
-            attention.group, _('Cycle pause'),
+            attention.group, _('Cycle Pause'),
             AttentionCyclePause.MIN, AttentionCyclePause.MAX, 10,
             value => editCustomSetting(
                 settings, 'custom-attention-cycle-pause', Math.round(value)),
             state, _('ms'));
         controls.attentionInterval = createSpinRow(
-            attention.group, _('Reminder interval'),
+            attention.group, _('Reminder Interval'),
             AttentionInterval.MIN, AttentionInterval.MAX, 1,
             value => editCustomSetting(settings, 'custom-attention-interval', Math.round(value)),
             state, _('Seconds between two reminders'));
@@ -170,7 +170,7 @@ export function buildAnimationPages(pages, controls, settings, state) {
             value => editCustomSetting(settings, 'custom-attention-reminders', Math.round(value)),
             state, _('Stop after this many reminders'));
         controls.attentionPeek = createSwitchRow(
-            attention.group, _('Show when the dock is hidden'),
+            attention.group, _('Show When the Dock Is Hidden'),
             _('Slide the icon out from the dock edge'),
             enabled => editCustomSetting(settings, 'custom-attention-peek', enabled), state,
             _('Useful with IntelliHide or auto-hide: the icon slides out of the ' +

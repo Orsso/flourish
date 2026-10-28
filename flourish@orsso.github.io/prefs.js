@@ -20,7 +20,7 @@ import {N_, createBadge, createSwitchRow} from './lib/prefs/rows.js';
 
 // Switched off, each part is left to the Shell, the dock or the theme.
 const APPEARANCE_SWITCHES = [
-    ['spacing-enabled', N_('Icon spacing'), N_('Set the gap between icons')],
+    ['spacing-enabled', N_('Icon Spacing'), N_('Set the gap between icons')],
     ['groups-enabled', N_('Groups'), N_('Gaps between groups of favorites')],
     ['outline-enabled', N_('Outline'), N_('An edge around the dock background')],
     ['backgrounds-enabled', N_('Backgrounds'), N_('Hide or add the hover and focused app tiles')],
@@ -110,14 +110,14 @@ export default class FlourishPreferences extends ExtensionPreferences {
         const featureGroup = new Adw.PreferencesGroup({title: _('Motion')});
         const editor = key => value => editCustomSetting(batch, key, value);
         controls.hoverEnabled = createSwitchRow(
-            featureGroup, _('Hover motion'),
+            featureGroup, _('Hover Motion'),
             _('Magnification and elevation around the pointer'),
             editor('custom-hover-enabled'), state);
         controls.pressEnabled = createSwitchRow(
-            featureGroup, _('Press feedback'), _('Squash or dim the pressed icon'),
+            featureGroup, _('Press Feedback'), _('Squash or dim the pressed icon'),
             editor('custom-press-enabled'), state);
         controls.launchEnabled = createSwitchRow(
-            featureGroup, _('Launch animation'),
+            featureGroup, _('Launch Animation'),
             _('Animate cold starts and new windows'),
             editor('custom-launch-enabled'), state);
         if (controls.dockPresent) {
@@ -139,13 +139,13 @@ export default class FlourishPreferences extends ExtensionPreferences {
 
         const resetGroup = new Adw.PreferencesGroup();
         const resetRow = new Adw.ActionRow({
-            title: _('Reset all settings'),
+            title: _('Reset All Settings'),
             subtitle: _('Flourish goes back to changing nothing'),
         });
         const resetButton = new Gtk.Button({label: _('Reset'), valign: Gtk.Align.CENTER});
         resetButton.add_css_class('destructive-action');
         resetButton.connect('clicked', () => confirm(window, {
-            heading: _('Reset all settings?'),
+            heading: _('Reset All Settings?'),
             body: _('Every Flourish setting goes back to its default. Your group gaps are kept for when you turn Groups back on. Flourish will change nothing until you pick a preset or turn on a feature.'),
             label: _('Reset'),
             onConfirm: () => resetAll(batch),

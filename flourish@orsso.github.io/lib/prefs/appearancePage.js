@@ -38,7 +38,7 @@ export function buildAppearancePage(page, controls, settings, state) {
     const apps = installedFavorites(favorites);
     appearance.apps = apps;
 
-    const dock = new Adw.PreferencesGroup({title: _('Your dock')});
+    const dock = new Adw.PreferencesGroup({title: _('Your Dock')});
     dock.set_header_suffix(createBadge(_('Beta')));
     appearance.dock = dock;
     appearance.preview = new DockSample({
@@ -78,10 +78,10 @@ export function buildAppearancePage(page, controls, settings, state) {
         page.add(group);
         return {group, rows};
     };
-    const layout = section(_('Icon spacing'), 'spacingEnabled', 'spacing-enabled');
-    const spacing = addSegments(appearance, layout.group, _('Gap between icons'), SPACINGS, 'spacing', state,
+    const layout = section(_('Icon Spacing'), 'spacingEnabled', 'spacing-enabled');
+    const spacing = addSegments(appearance, layout.group, _('Gap Between Icons'), SPACINGS, 'spacing', state,
         value => settings.set_string('icon-spacing', value));
-    const position = addSegments(appearance, layout.group, _('Dock position'), POSITIONS, 'flush', state,
+    const position = addSegments(appearance, layout.group, _('Dock Position'), POSITIONS, 'flush', state,
         value => settings.set_boolean('dock-flush', value));
     position.subtitle = _('Dash to Dock and Ubuntu Dock');
     layout.rows.push(spacing, position);
@@ -89,7 +89,7 @@ export function buildAppearancePage(page, controls, settings, state) {
     const outline = section(_('Outline'), 'outlineEnabled', 'outline-enabled');
     const style = addSegments(appearance, outline.group, _('Color'), OUTLINES, 'style', state,
         value => settings.set_string('dock-outline', value));
-    appearance.light = createScaleRow(outline.group, _('Light position'), OutlineLight.MIN, OutlineLight.MAX,
+    appearance.light = createScaleRow(outline.group, _('Light Position'), OutlineLight.MIN, OutlineLight.MAX,
         OutlineLight.STEP, value => settings.set_int('outline-light', Math.round(value)), state);
     appearance.light.scale.add_mark(0, Gtk.PositionType.BOTTOM, null);
     appearance.intensity = createScaleRow(outline.group, _('Intensity'), 0, 100, 5,
@@ -101,8 +101,8 @@ export function buildAppearancePage(page, controls, settings, state) {
     appearance.backgroundsOff = new Adw.ActionRow({title: _(BACKGROUNDS_OFF_HINT)});
     backgrounds.add(appearance.backgroundsOff);
     for (const [key, setting, title, subtitle] of [
-        ['hoverTile', 'show-hover-background', _('Hover background'), _('The tile under the pointed icon')],
-        ['focusTile', 'show-focused-app-background', _('Focused app background'), _('Marks the app that owns the focused window')],
+        ['hoverTile', 'show-hover-background', _('Hover Background'), _('The tile under the pointed icon')],
+        ['focusTile', 'show-focused-app-background', _('Focused App Background'), _('Marks the app that owns the focused window')],
     ]) {
         const row = createSwitchRow(backgrounds, title, subtitle,
             enabled => settings.set_boolean(setting, enabled), state);
@@ -185,7 +185,7 @@ function refreshPreview(appearance) {
         spacing: current.spacingEnabled ? current.spacing : null,
         gaps: current.groupsEnabled ? gapPositions(appearance.apps, current.gaps) : {},
         style: current.outlineEnabled ? current.style : OutlineStyle.NONE,
-        // Nothing is hovered at rest; hovering the Hover background row shows the tile.
+        // Nothing is hovered at rest; hovering the Hover Background row shows the tile.
         hoverTile: false,
         focusTile: current.backgroundsEnabled && current.focusTile,
         ...appearance.hovered,
