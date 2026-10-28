@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.3.0
+
+Flourish now starts with everything off. If you never picked a preset in
+1.2, pick Subtle in the preferences to get your animations back.
+
+### New
+
+- A Style tab, in beta, changes how the dash and the dock look. You can set
+  the space between icons and group your favorites with a small gap.
+  Presets leave it alone.
+- Dash to Dock and Ubuntu Dock can stick to the screen edge.
+- The outline has a new Glass style and now works on the overview dash too.
+
+### Changed
+
+- Each animation has its own tab in the preferences.
+- The hover and focused app tile settings moved to the Style tab.
+
+### Fixed
+
+- Hovering with a pen now magnifies icons like the mouse (#10). Thanks to
+  @roccocaliandro for the report.
+- On GNOME 46, opening a mounted drive or the Trash from Dash to Dock no
+  longer leaves a floating icon behind (#12). Thanks to @TulunLK for the
+  report.
+- Widgets that other extensions put in the dock, like Dynamic Music Pill,
+  no longer make the icons grow on hover.
+
 ## 1.2.1
 
 - Blur My Shell's dynamic dock blur no longer stays misaligned with the dock
