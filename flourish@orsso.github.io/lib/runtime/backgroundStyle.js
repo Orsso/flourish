@@ -25,7 +25,8 @@ export class BackgroundStyle {
     }
 
     #isLoaded(theme) {
-        return theme.get_custom_stylesheets().some(file => file.equal(this.#file));
+        // St lists a null file for a sheet another extension loaded twice and unloaded once (#14).
+        return theme.get_custom_stylesheets().some(file => file?.equal(this.#file));
     }
 
     #theme() {
