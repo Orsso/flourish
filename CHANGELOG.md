@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.2
+
+- Hovering with a pen now magnifies icons like the mouse (#10). Thanks to
+  @roccocaliandro for the report.
+- On GNOME 46 to 48, opening a mounted drive or the Trash from Dash to
+  Dock no longer leaves a floating icon behind (#12). Thanks to @TulunLK
+  for the report.
+- Hover magnification now works right after login when Ubuntu Dock is
+  installed but disabled next to Dash to Dock, or the other way around
+  (#13). Thanks to @rucde for the report.
+- Flourish no longer stops with an error after unlocking the screen when
+  some other extensions are enabled (#14). Thanks to @Codertech67 for the
+  report.
+
 ## 1.2.1
 
 - Blur My Shell's dynamic dock blur no longer stays misaligned with the dock
