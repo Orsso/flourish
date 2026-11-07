@@ -4,8 +4,8 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {DASH_TO_DOCK_BUILDS, DockState, ScreenEdge} from '../motion/catalog.js';
-import {shouldReattachDock} from '../motion/transforms.js';
+import {DASH_TO_DOCK_BUILDS, DockState, ScreenEdge, spacingOverridden} from '../motion/catalog.js';
+import {getOrientation, shouldReattachDock} from '../motion/transforms.js';
 import {DockVisibility} from './dockVisibility.js';
 import {DockOverflow} from './dockOverflow.js';
 import {pointerOnSurface} from './geometry.js';
@@ -21,20 +21,26 @@ export class DockIntegration {
     #manager = null;
     #managerSignals = [];
     #managerUuid = null;
+    #onSpacingOverridden;
     #onUrgentChanged;
     #outline;
     #overflows = new Set();
     #recipe;
     #scheduler;
+    #spacingCheckId = 0;
+    #spacingGap = null;
+    #styledDocks = new Set();
     #surface = null;
     #visibilities = [];
 
     constructor({
         scheduler,
         onUrgentChanged = () => {},
+        onSpacingOverridden = () => {},
     }) {
         this.#scheduler = scheduler;
         this.#onUrgentChanged = onUrgentChanged;
+        this.#onSpacingOverridden = onSpacingOverridden;
         this.#outline = new SurfaceOutline();
     }
 
@@ -66,6 +72,7 @@ export class DockIntegration {
         Main.extensionManager.disconnectObject(this);
         Main.layoutManager.disconnectObject(this);
         this.#cancelScheduledAttach();
+        this.#cancelSpacingCheck();
         // The icons stop reporting to Flourish before the urgent replay reaches Dash to Dock.
         this.#surface.dispose();
         this.#handBackWiggles();
@@ -109,6 +116,12 @@ export class DockIntegration {
 
     setOutline(style, intensity, light) {
         this.#outline.setStyle(style, intensity, light);
+    }
+
+    // Null when Icon Spacing is off.
+    setSpacing(gap) {
+        this.#spacingGap = gap;
+        this.#scheduleSpacingCheck();
     }
 
     getController(appIcon) {
@@ -183,6 +196,9 @@ export class DockIntegration {
     }
 
     #disposeDocks() {
+        for (const dock of this.#styledDocks)
+            dock.disconnectObject(this);
+        this.#styledDocks.clear();
         this.#outline.dispose();
         for (const background of this.#blurBackgrounds.keys())
             this.#untrackBlur(background);
@@ -241,6 +257,10 @@ export class DockIntegration {
                 this.#trackBlur(dock.dash);
             if (dock.dash._background)
                 this.#outline.track(dock.dash._background, () => this.#outlineRadius(dock.dash));
+            // Another extension can restyle the dock at any time.
+            dock.connectObject('style-changed', () => this.#scheduleSpacingCheck(),
+                'destroy', () => this.#styledDocks.delete(dock), this);
+            this.#styledDocks.add(dock);
             this.#visibilities.push(visibility);
             visibility.subscribe(state => {
                 if (state !== DockState.SHOWN)
@@ -252,6 +272,43 @@ export class DockIntegration {
             this.#stopWiggles(dock);
         }
         this.refreshStyles();
+        this.#scheduleSpacingCheck();
+    }
+
+    // A parent's style-changed comes before its children restyle, so read them before the next frame.
+    #scheduleSpacingCheck() {
+        if (this.#spacingCheckId)
+            return;
+        this.#spacingCheckId = this.#scheduler.schedule(() => {
+            this.#spacingCheckId = 0;
+            this.#checkSpacing();
+        });
+    }
+
+    #cancelSpacingCheck() {
+        if (!this.#spacingCheckId)
+            return;
+        this.#scheduler.cancel(this.#spacingCheckId);
+        this.#spacingCheckId = 0;
+    }
+
+    // Another extension's !important rules can keep the dock's own spacing.
+    #checkSpacing() {
+        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
+        const overridden = this.#spacingGap !== null && [...this.#styledDocks].some(dock => {
+            // Drag placeholders have no child, other extensions' widgets no icon.
+            const icon = dock.dash._box.get_children().map(item => item.child).find(child => child?.icon);
+            if (!icon)
+                return false;
+            const along = getOrientation(edgeFromSide(dock.position)).horizontal ? St.Side.LEFT : St.Side.TOP;
+            const halo = icon.icon.get_theme_node();
+            return spacingOverridden(this.#spacingGap, {
+                margin: icon.get_theme_node().get_margin(along) / scale,
+                top: halo.get_padding(St.Side.TOP) / scale,
+                bottom: halo.get_padding(St.Side.BOTTOM) / scale,
+            });
+        });
+        this.#onSpacingOverridden(overridden);
     }
 
     // Blur My Shell rounds its dynamic blur itself; the outline follows that corner.

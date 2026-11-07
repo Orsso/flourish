@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-28 22:12+0100\n"
+"POT-Creation-Date: 2026-10-29 01:33+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,11 +17,11 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: flourish@orsso.github.io/extension.js:174
+#: flourish@orsso.github.io/extension.js:182
 msgid "Merge with Previous Group"
 msgstr ""
 
-#: flourish@orsso.github.io/extension.js:174
+#: flourish@orsso.github.io/extension.js:182
 msgid "Start New Group Here"
 msgstr ""
 
@@ -44,7 +44,7 @@ msgid "Gaps between groups of favorites"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:25
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:89
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:96
 msgid "Outline"
 msgstr ""
 
@@ -53,7 +53,7 @@ msgid "A thin line around the dash or dock"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:26
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:99
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:106
 msgid "Backgrounds"
 msgstr ""
 
@@ -298,7 +298,7 @@ msgstr ""
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:83
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:101
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:146
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:95
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:102
 msgid "Intensity"
 msgstr ""
 
@@ -482,26 +482,34 @@ msgid "Dash to Dock and Ubuntu Dock"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:90
+msgid "Another extension sets the dock spacing"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:91
+msgid "Turn that setting off to use this one"
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:97
 msgid "Color"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:92
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:99
 msgid "Light Position"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:104
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:111
 msgid "Hover Background"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:104
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:111
 msgid "The tile under the pointed icon"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:105
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:112
 msgid "Focused App Background"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:105
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:112
 msgid "Marks the app that owns the focused window"
 msgstr ""
 

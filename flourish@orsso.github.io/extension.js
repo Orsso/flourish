@@ -7,7 +7,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {GroupGap, OutlineStyle} from './lib/motion/catalog.js';
+import {GroupGap, ICON_SPACING_GAPS, OutlineStyle} from './lib/motion/catalog.js';
 import {
     groupGaps, migrateAppearance, passGaps, readActiveRecipe, readGroupGaps, setGroupGap, writeGroupGaps,
 } from './lib/motion/settings.js';
@@ -46,6 +46,11 @@ export default class FlourishExtension extends Extension {
             // Ubuntu Dock rebuilds its icons while disable() unloads the stylesheets.
             onUrgentChanged: (controller, urgent) =>
                 this._attentionEngine?.onUrgentChanged(controller, urgent),
+            // The preferences say when another extension keeps the dock spacing.
+            onSpacingOverridden: overridden => {
+                if (this._settings.get_boolean('spacing-overridden') !== overridden)
+                    this._settings.set_boolean('spacing-overridden', overridden);
+            },
         });
         this._dashIntegration = new DashIntegration({
             scheduler: this._frameScheduler,
@@ -83,7 +88,10 @@ export default class FlourishExtension extends Extension {
 
         this._syncIdleId = 0;
         this._settings.connectObject(
-            'changed', () => {
+            'changed', (_settings, key) => {
+                // Written by the spacing check, read by the preferences only.
+                if (key === 'spacing-overridden')
+                    return;
                 // A preset switch writes many keys at once.
                 if (this._syncIdleId)
                     return;
@@ -231,6 +239,7 @@ export default class FlourishExtension extends Extension {
         // After the sheets: the icon size pass needs the spacing rules loaded.
         const flush = this._settings.get_boolean('dock-flush') ? ['flourish-flush'] : [];
         this._syncSpacing(customSpacing ? [`flourish-spacing-${spacing}`, ...flush] : []);
+        this._dockIntegration.setSpacing(customSpacing ? ICON_SPACING_GAPS[spacing] : null);
         return changed;
     }
 

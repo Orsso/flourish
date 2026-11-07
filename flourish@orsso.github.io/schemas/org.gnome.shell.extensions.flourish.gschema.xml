@@ -247,6 +247,12 @@
       <description>With icon spacing on, the dock background meets the screen edge and maximized windows instead of floating.</description>
     </key>
 
+    <key name="spacing-overridden" type="b">
+      <default>false</default>
+      <summary>Spacing overridden</summary>
+      <description>Written by the extension when another extension's stylesheet keeps the dock's own icon spacing.</description>
+    </key>
+
     <key name="groups-enabled" type="b">
       <default>false</default>
       <summary>Icon groups</summary>

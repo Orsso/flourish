@@ -1,4 +1,4 @@
-/* #uiGroup outranks the icon spacing rules on the same containers. */
+/* !important with #uiGroup: a gap survives docks that zero icon margins with !important. */
 #overviewGroup #dash .dash-item-container.flourish-gap-small,
 #uiGroup #dashtodockContainer.bottom #dash .dash-item-container.flourish-gap-small,
 #uiGroup #dashtodockContainer.top #dash .dash-item-container.flourish-gap-small {

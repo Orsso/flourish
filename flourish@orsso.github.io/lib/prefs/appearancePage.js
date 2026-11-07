@@ -85,6 +85,13 @@ export function buildAppearancePage(page, controls, settings, state) {
         value => settings.set_boolean('dock-flush', value));
     position.subtitle = _('Dash to Dock and Ubuntu Dock');
     layout.rows.push(spacing, position);
+    // The extension reports it; hidden otherwise, so the rows above never move.
+    appearance.spacingOverridden = new Adw.ActionRow({
+        title: _('Another extension sets the dock spacing'),
+        subtitle: _('Turn that setting off to use this one'),
+    });
+    appearance.spacingOverridden.add_prefix(new Gtk.Image({icon_name: 'dialog-warning-symbolic'}));
+    layout.group.add(appearance.spacingOverridden);
 
     const outline = section(_('Outline'), 'outlineEnabled', 'outline-enabled');
     const style = addSegments(appearance, outline.group, _('Color'), OUTLINES, 'style', state,
@@ -223,6 +230,7 @@ export function syncAppearancePage(controls, settings) {
             row.sensitive = current[key];
     }
     appearance.backgroundsOff.visible = !current.backgroundsEnabled;
+    appearance.spacingOverridden.visible = current.spacingEnabled && settings.get_boolean('spacing-overridden');
     appearance.preview.can_target = current.groupsEnabled;
     appearance.intensity.adjustment.value = current.intensity;
     appearance.light.adjustment.value = current.light;
