@@ -14,6 +14,7 @@ export class DashIntegration {
     #box = null;
     #highlight = null;
     #injections = null;
+    #markFocused = false;
     #outline;
     #savedClip = false;
     #scheduler;
@@ -45,7 +46,8 @@ export class DashIntegration {
             box,
             tracker: Shell.WindowTracker.get_default(),
         });
-        this.#highlight.enable();
+        if (this.#markFocused)
+            this.#highlight.enable();
         // The dash clips its row; hover motion overflows it.
         this.#savedClip = box.clip_to_allocation;
         box.clip_to_allocation = false;
@@ -124,6 +126,17 @@ export class DashIntegration {
     refreshIconSize() {
         if (this.#box)
             Main.overview.dash._adjustIconSize();
+    }
+
+    // The class draws other extensions' styles (#15), so only while the mark is wanted.
+    setFocusMark(marked) {
+        if (this.#markFocused === marked)
+            return;
+        this.#markFocused = marked;
+        if (marked)
+            this.#highlight?.enable();
+        else
+            this.#highlight?.disable();
     }
 
     setOutline(style, intensity, light) {

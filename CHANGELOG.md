@@ -22,6 +22,8 @@ Flourish now starts with everything off. If you never picked a preset in
 
 - Widgets that other extensions put in the dock, like Dynamic Music Pill,
   no longer make the icons grow on hover.
+- The hover and focused app backgrounds stay hidden when Blur my Shell
+  styles the dock (#15). Thanks to @levagev16-ux for the report.
 
 ## 1.2.2
 

@@ -1,6 +1,7 @@
-#dashtodockContainer .dash-item-container .overview-tile.focused .overview-icon,
-#dashtodockContainer .dash-item-container .overview-tile:focus .overview-icon,
-#dashtodockContainer .dash-item-container .overview-tile:active .overview-icon {
+/* #uiGroup, #dash and !important outrank Blur My Shell's tile rules (#15). */
+#uiGroup #dashtodockContainer #dash .dash-item-container .overview-tile.focused .overview-icon,
+#uiGroup #dashtodockContainer #dash .dash-item-container .overview-tile:focus .overview-icon,
+#uiGroup #dashtodockContainer #dash .dash-item-container .overview-tile:active .overview-icon {
   background-color: transparent !important;
   box-shadow: none !important;
 }

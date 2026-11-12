@@ -1,5 +1,6 @@
-#dashtodockContainer .dash-item-container .overview-tile:hover .overview-icon,
-#dashtodockContainer .dash-item-container .show-apps:hover .overview-icon {
+/* #uiGroup, #dash and !important outrank Blur My Shell's tile rules (#15). */
+#uiGroup #dashtodockContainer #dash .dash-item-container .overview-tile:hover .overview-icon,
+#uiGroup #dashtodockContainer #dash .dash-item-container .show-apps:hover .overview-icon {
   background-color: transparent !important;
   box-shadow: none !important;
 }

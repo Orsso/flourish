@@ -223,6 +223,7 @@ export default class FlourishExtension extends Extension {
         ];
         this._dockIntegration.setOutline(...outline);
         this._dashIntegration.setOutline(...outline);
+        this._dashIntegration.setFocusMark(backgrounds && focused);
         const spacing = this._settings.get_string('icon-spacing');
         const customSpacing = this._settings.get_boolean('spacing-enabled');
         const sheets = {
