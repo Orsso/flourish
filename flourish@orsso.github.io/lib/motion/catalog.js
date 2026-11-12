@@ -141,6 +141,8 @@ export const ICON_SPACING_GAPS = {
 };
 // Theme halo padding on each side of an icon; the dash, Dash to Dock and Ubuntu Dock all use 6.
 export const ICON_HALO = 6;
+// Shares of the icon size; the gschema ranges of the spacing-gap, spacing-across and spacing-ends keys mirror them.
+export const SpacingFraction = {MIN: 0, MAX: 0.5};
 
 // The tile margin along the row, and below twice the halo the halo padding above and below the icon.
 export function iconSpacingTile(gap) {
@@ -157,6 +159,7 @@ export function spacingOverridden(gap, {margin, top, bottom}) {
 }
 
 export const GroupGap = {SMALL: 'small', NORMAL: 'normal'};
+export const GROUP_GAP_PIXELS = {[GroupGap.SMALL]: 16, [GroupGap.NORMAL]: 32};
 
 
 // Ubuntu Dock is Ubuntu's build of Dash to Dock.

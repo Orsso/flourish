@@ -31,6 +31,7 @@ const modules = [
     './surfaceOutline.test.js',
     './iconSpacing.test.js',
     './iconGroup.test.js',
+    './dockLayout.test.js',
     './dockSample.test.js',
     './dockOverflow.test.js',
     './iconMotionController.test.js',
