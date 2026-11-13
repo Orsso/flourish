@@ -435,3 +435,46 @@ export function makeScheduler() {
         },
     };
 }
+
+// A St widget for inline style: theme lengths keyed by St.Side.
+export class FakeStyled extends FakeEmitter {
+    constructor({classes = [], padding = {}, margin = {}} = {}) {
+        super();
+        this.classes = new Set(classes);
+        this.padding = padding;
+        this.margin = margin;
+        this.children = [];
+        this.style = null;
+        this.writes = 0;
+    }
+
+    get_style() {
+        return this.style;
+    }
+
+    set_style(style) {
+        this.style = style;
+        this.writes++;
+    }
+
+    has_style_class_name(name) {
+        return this.classes.has(name);
+    }
+
+    get_children() {
+        return [...this.children];
+    }
+
+    get_first_child() {
+        return this.children[0] ?? null;
+    }
+
+    ensure_style() {}
+
+    get_theme_node() {
+        return {
+            get_padding: side => this.padding[side] ?? 0,
+            get_margin: side => this.margin[side] ?? 0,
+        };
+    }
+}

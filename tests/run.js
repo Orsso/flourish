@@ -40,6 +40,7 @@ const modules = [
     './motionHelpers.test.js',
     './motionSurface.test.js',
     './schemaBounds.test.js',
+    './rowLayout.test.js',
     './settings.test.js',
     './surfaceWave.test.js',
     './waveContinuity.test.js',
