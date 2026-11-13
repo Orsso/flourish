@@ -6,13 +6,13 @@ import GObject from 'gi://GObject';
 import Graphene from 'gi://Graphene';
 import Gtk from 'gi://Gtk';
 
-import {GroupGap, ICON_HALO, ICON_SPACING_GAPS} from '../motion/catalog.js';
+import {GROUP_GAP_PIXELS, GroupGap, ICON_HALO, SpacingFraction} from '../motion/catalog.js';
+import {visibleSpacing} from '../motion/dockLayout.js';
 import {outlinePaint, paintOutline, roundedRect} from '../motion/outline.js';
 
 // Real dock lengths, scaled to the samples.
 export const REAL_ICON = 48;
 export const THEME_GAP = 16;
-const GROUP_GAPS = {[GroupGap.SMALL]: 16, [GroupGap.NORMAL]: 32};
 const PADDING = 10;
 // Past this many pixels, a press on a gap drags it instead of clicking.
 const DRAG_THRESHOLD = 4;
@@ -37,24 +37,25 @@ export function accentColor() {
     return manager.get_accent_color_rgba ? manager.get_accent_color_rgba() : DEFAULT_ACCENT;
 }
 
-// Icon and gap slots along the sample, in widget pixels; no spacing keeps the theme gap.
+// Icon and gap slots along the sample, in widget pixels; no spacing keeps the theme geometry.
 export function sampleLayout({count, iconSize, spacing = null, gaps = {}}) {
     const scale = iconSize / REAL_ICON;
-    const gap = (ICON_SPACING_GAPS[spacing] ?? THEME_GAP) * scale;
-    const padding = PADDING * scale;
+    const real = spacing ? visibleSpacing({size: REAL_ICON, spacing}) : {gap: THEME_GAP, across: PADDING, ends: PADDING};
+    const gap = real.gap * scale;
+    const ends = real.ends * scale;
     const icons = [];
     const slots = [];
-    let x = padding;
+    let x = ends;
     for (let position = 0; position < count; position++) {
         if (position > 0) {
-            const width = gap + (GROUP_GAPS[gaps[position]] ?? 0) * scale;
+            const width = gap + (GROUP_GAP_PIXELS[gaps[position]] ?? 0) * scale;
             slots.push({position, x1: x, x2: x + width});
             x += width;
         }
         icons.push(x);
         x += iconSize;
     }
-    return {icons, slots, width: x + padding, height: iconSize + 2 * padding, scale};
+    return {icons, slots, width: x + ends, height: iconSize + 2 * real.across * scale, scale};
 }
 
 export const DockSample = GObject.registerClass(class DockSample extends Gtk.Widget {
@@ -129,7 +130,9 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
     vfunc_measure(orientation) {
         if (orientation === Gtk.Orientation.HORIZONTAL)
             return [0, this._width, -1, -1];
-        const height = sampleLayout({count: 0, iconSize: this._iconSize}).height + PILL_ROOM;
+        // The widest margin across, so the widget never grows.
+        const widest = {gap: 0, across: SpacingFraction.MAX, ends: 0};
+        const height = sampleLayout({count: 0, iconSize: this._iconSize, spacing: widest}).height + PILL_ROOM;
         return [height, height, -1, -1];
     }
 

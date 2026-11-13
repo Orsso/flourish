@@ -235,6 +235,27 @@
       <description>When false, the theme or the dock decides the gap between icons.</description>
     </key>
 
+    <key name="spacing-gap" type="d">
+      <default>0.33</default>
+      <range min="0" max="0.5"/>
+      <summary>Gap between icons</summary>
+      <description>Share of the icon size between two icons, with spacing-enabled.</description>
+    </key>
+
+    <key name="spacing-across" type="d">
+      <default>0.31</default>
+      <range min="0" max="0.5"/>
+      <summary>Margin across the dock</summary>
+      <description>Share of the icon size between the icons and the long sides of the background, with spacing-enabled.</description>
+    </key>
+
+    <key name="spacing-ends" type="d">
+      <default>0.31</default>
+      <range min="0" max="0.5"/>
+      <summary>Margin at the ends</summary>
+      <description>Share of the icon size between the first or last icon and the end of the background, with spacing-enabled.</description>
+    </key>
+
     <key name="icon-spacing" enum="org.gnome.shell.extensions.flourish.icon-spacing">
       <default>'comfortable'</default>
       <summary>Icon spacing</summary>

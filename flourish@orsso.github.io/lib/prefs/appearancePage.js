@@ -3,16 +3,16 @@ import Gio from 'gi://Gio';
 import Gtk from 'gi://Gtk';
 import {gettext as _} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {GroupGap, IconSpacing, OutlineLight, OutlineStyle} from '../motion/catalog.js';
+import {GroupGap, OutlineLight, OutlineStyle, SpacingFraction} from '../motion/catalog.js';
+import {visibleSpacing} from '../motion/dockLayout.js';
 import {moveGroupGap, readGroupGaps, setGroupGap} from '../motion/settings.js';
-import {DockSample} from './dockSample.js';
+import {DockSample, REAL_ICON} from './dockSample.js';
 import {N_, createScaleRow, createSwitchRow} from './rows.js';
 
-const SPACINGS = [
-    [N_('Tight'), IconSpacing.TIGHT],
-    [N_('Compact'), IconSpacing.COMPACT],
-    [N_('Comfortable'), IconSpacing.COMFORTABLE],
-    [N_('Airy'), IconSpacing.AIRY],
+const SPACING_ROWS = [
+    ['gap', 'spacing-gap', N_('Gap Between Icons')],
+    ['across', 'spacing-across', N_('Margin Across')],
+    ['ends', 'spacing-ends', N_('Margin at the Ends')],
 ];
 const POSITIONS = [
     [N_('Floating'), false],
@@ -79,19 +79,18 @@ export function buildAppearancePage(page, controls, settings, state) {
     groups.add(frame);
 
     const layout = section(_('Icon Spacing'), 'spacingEnabled', 'spacing-enabled');
-    const spacing = addSegments(appearance, layout.group, _('Gap Between Icons'), SPACINGS, 'spacing', state,
-        value => settings.set_string('icon-spacing', value));
+    // In percent of the icon size; the subtitle gives the pixels.
+    appearance.spacingRows = SPACING_ROWS.map(([key, setting, title]) => {
+        const control = createScaleRow(layout.group, _(title), SpacingFraction.MIN * 100, SpacingFraction.MAX * 100, 1,
+            value => settings.set_double(setting, value / 100), state);
+        control.scale.draw_value = true;
+        control.scale.set_format_value_func((_scale, value) => `${Math.round(value)}%`);
+        return {key, control};
+    });
     const position = addSegments(appearance, layout.group, _('Dock Position'), POSITIONS, 'flush', state,
         value => settings.set_boolean('dock-flush', value));
     position.subtitle = _('Dash to Dock and Ubuntu Dock');
-    layout.rows.push(spacing, position);
-    // The extension reports it; hidden otherwise, so the rows above never move.
-    appearance.spacingOverridden = new Adw.ActionRow({
-        title: _('Another extension sets the dock spacing'),
-        subtitle: _('Turn that setting off to use this one'),
-    });
-    appearance.spacingOverridden.add_prefix(new Gtk.Image({icon_name: 'dialog-warning-symbolic'}));
-    layout.group.add(appearance.spacingOverridden);
+    layout.rows.push(...appearance.spacingRows.map(({control}) => control.row), position);
 
     const outline = section(_('Outline'), 'outlineEnabled', 'outline-enabled');
     const style = addSegments(appearance, outline.group, _('Color'), OUTLINES, 'style', state,
@@ -207,7 +206,11 @@ export function syncAppearancePage(controls, settings) {
         groupsEnabled: settings.get_boolean('groups-enabled'),
         outlineEnabled: settings.get_boolean('outline-enabled'),
         backgroundsEnabled: settings.get_boolean('backgrounds-enabled'),
-        spacing: settings.get_string('icon-spacing'),
+        spacing: {
+            gap: settings.get_double('spacing-gap'),
+            across: settings.get_double('spacing-across'),
+            ends: settings.get_double('spacing-ends'),
+        },
         flush: settings.get_boolean('dock-flush'),
         gaps: readGroupGaps(settings),
         style: settings.get_string('dock-outline'),
@@ -230,7 +233,11 @@ export function syncAppearancePage(controls, settings) {
             row.sensitive = current[key];
     }
     appearance.backgroundsOff.visible = !current.backgroundsEnabled;
-    appearance.spacingOverridden.visible = current.spacingEnabled && settings.get_boolean('spacing-overridden');
+    const pixels = visibleSpacing({size: REAL_ICON, spacing: current.spacing});
+    for (const {key, control} of appearance.spacingRows) {
+        control.adjustment.value = current.spacing[key] * 100;
+        control.row.subtitle = _('%d px with 48 px icons').replace('%d', pixels[key]);
+    }
     appearance.preview.can_target = current.groupsEnabled;
     appearance.intensity.adjustment.value = current.intensity;
     appearance.light.adjustment.value = current.light;

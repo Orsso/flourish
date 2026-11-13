@@ -9,6 +9,7 @@ import {
     OutlineLight,
     Reach,
     Preset,
+    SpacingFraction,
     getBuiltInRecipe,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
 
@@ -59,6 +60,11 @@ test('icon spacing offers the catalog sizes', () => {
 
 test('the outline light spans the catalog positions', () => {
     assertDeepEqual(rangeOf('outline-light'), {min: OutlineLight.MIN, max: OutlineLight.MAX});
+});
+
+test('the spacing shares span the catalog bounds', () => {
+    for (const key of ['spacing-gap', 'spacing-across', 'spacing-ends'])
+        assertDeepEqual(rangeOf(key), {min: SpacingFraction.MIN, max: SpacingFraction.MAX});
 });
 
 test('custom magnification spans 100 to 200 percent', () => {

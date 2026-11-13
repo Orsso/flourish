@@ -4,8 +4,10 @@ test('the sample scales the dock gaps with its icons', () => {
     const theme = sampleLayout({count: 3, iconSize: 24});
     assertDeepEqual(theme.icons, [5, 37, 69]);
     assertEqual(theme.width, 98);
-    const airy = sampleLayout({count: 3, iconSize: 24, spacing: 'airy'});
-    assertDeepEqual(airy.icons, [5, 41, 77]);
+    const wide = sampleLayout({count: 3, iconSize: 24, spacing: {gap: 0.5, across: 0.31, ends: 0.31}});
+    assertDeepEqual(wide.icons, [7.5, 43.5, 79.5]);
+    assertEqual(wide.width, 111);
+    assertEqual(wide.height, 39);
 });
 
 test('group gaps widen their slot, and every slot names the position after it', () => {
