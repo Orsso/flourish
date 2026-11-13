@@ -73,11 +73,9 @@ export function visibleSpacing({size, spacing, halo = smallHalo(size, spacing.ga
 export function dockLayout({
     size, spacing, edge, surface, halo,
     backgroundMargins = {inner: 0, outer: 0},
-    showApps = {first: false, offset: 0},
 }) {
     const {extents, tile, across, ends, visible} = measure({size, spacing, edge, halo});
     const inset = (side, margin = 0) => Math.max(0, Math.round(across - extents[side] + margin));
-    const towardRow = showApps.first ? 'after' : 'before';
     const endsAlong = {
         before: Math.max(0, Math.round(ends - tile.before - extents.before)),
         after: Math.max(0, Math.round(ends - tile.after - extents.after)),
@@ -100,10 +98,6 @@ export function dockLayout({
     return {
         visible,
         tile: {margin: margin(tile), padding},
-        showApps: {
-            margin: margin({...tile, [towardRow]: Math.max(0, tile[towardRow] - showApps.offset)}),
-            padding,
-        },
         container: {margin: place(edge, {before: 0, after: 0})},
         separator: {margin: place(edge, {before: SEPARATOR_MARGIN, after: SEPARATOR_MARGIN})},
         ends: {padding: place(edge, {...endsAlong, ...endsAcross})},

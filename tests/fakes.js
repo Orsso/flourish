@@ -465,10 +465,6 @@ export class FakeStyled extends FakeEmitter {
         return [...this.children];
     }
 
-    get_first_child() {
-        return this.children[0] ?? null;
-    }
-
     ensure_style() {}
 
     get_theme_node() {

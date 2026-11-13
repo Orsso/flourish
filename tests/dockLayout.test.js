@@ -76,13 +76,6 @@ test('a flush dock has no background margin to make up for', () => {
     assertEqual(layout.tile.padding.bottom, 9);
 });
 
-test('Show Apps makes up for the room the theme leaves before it', () => {
-    const at = first => dockLayout({size: 48, spacing: DEFAULT, edge: ScreenEdge.BOTTOM, surface: Surface.DOCK,
-        halo: THEME, backgroundMargins: FLOATING, showApps: {first, offset: 2}}).showApps.margin;
-    assertDeepEqual(at(false), {top: 0, right: 2, bottom: 0, left: 0});
-    assertDeepEqual(at(true), {top: 0, right: 0, bottom: 0, left: 2});
-});
-
 test('the dash pads its background', () => {
     const layout = dockLayout({size: DASH_ICON_SIZE, spacing: DEFAULT, edge: ScreenEdge.BOTTOM, surface: Surface.DASH,
         halo: THEME});

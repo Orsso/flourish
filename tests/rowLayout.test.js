@@ -6,7 +6,6 @@ import {RowLayout} from '../flourish@orsso.github.io/lib/runtime/rowLayout.js';
 import {FakeStyled} from './fakes.js';
 
 const OURS = {gap: 0.093, across: 0.186, ends: 0.186};
-const DEFAULT = {gap: 0.33, across: 0.31, ends: 0.31};
 
 class FakeScheduler {
     constructor() {
@@ -40,7 +39,7 @@ function appContainer(id) {
     return container;
 }
 
-function setup({showAppsFirst = false} = {}) {
+function setup() {
     const [a, b, c] = ['a', 'b', 'c'].map(appContainer);
     const separator = new FakeStyled({classes: ['dash-separator']});
     // Another extension's widget, and a drag placeholder.
@@ -52,9 +51,8 @@ function setup({showAppsFirst = false} = {}) {
     const showApps = new FakeStyled({classes: ['dash-item-container']});
     showApps.toggleButton = new FakeStyled();
     showApps.icon = new FakeStyled({padding: {[St.Side.TOP]: 0, [St.Side.BOTTOM]: 4}});
-    const scrollView = new FakeStyled({margin: {[St.Side.LEFT]: 2, [St.Side.RIGHT]: 2}});
+    const scrollView = new FakeStyled({margin: {[St.Side.RIGHT]: 2}});
     const dashContainer = new FakeStyled();
-    dashContainer.children = showAppsFirst ? [showApps, scrollView] : [scrollView, showApps];
     const background = new FakeStyled({margin: {[St.Side.BOTTOM]: 4}});
     const dash = {_box: box, _showAppsIcon: showApps, _background: background, _dashContainer: dashContainer, _scrollView: scrollView};
     const scheduler = new FakeScheduler();
@@ -66,15 +64,15 @@ function setup({showAppsFirst = false} = {}) {
         onDestroyed: () => state.destroyed++,
     });
     const actors = [a, a.child, b, b.child, c, c.child, separator, foreign, foreign.child, placeholder,
-        showApps, showApps.toggleButton, dashContainer, background];
+        showApps, showApps.toggleButton, scrollView, dashContainer, background];
     const writes = () => actors.reduce((sum, actor) => sum + actor.writes, 0);
-    return {a, b, c, separator, foreign, placeholder, box, showApps, dashContainer, background, scheduler, layout, state,
-        actors, writes};
+    return {a, b, c, separator, foreign, placeholder, box, showApps, scrollView, dashContainer, background, scheduler,
+        layout, state, actors, writes};
 }
 
-const expected = (spacing, first = false) => dockLayout({
+const expected = spacing => dockLayout({
     size: 48, spacing, edge: ScreenEdge.BOTTOM, surface: Surface.DOCK,
-    halo: {top: 0, bottom: 4}, backgroundMargins: {inner: 0, outer: 4}, showApps: {first, offset: 2},
+    halo: {top: 0, bottom: 4}, backgroundMargins: {inner: 0, outer: 4},
 });
 
 test('the row layout styles app tiles, Show Apps, the separator and the ends', () => {
@@ -88,7 +86,8 @@ test('the row layout styles app tiles, Show Apps, the separator and the ends', (
     }
     assertEqual(row.separator.style, css(layout.separator));
     assertEqual(row.showApps.style, css(layout.container));
-    assertEqual(row.showApps.toggleButton.style, css(layout.showApps));
+    assertEqual(row.showApps.toggleButton.style, css(layout.tile));
+    assertEqual(row.scrollView.style, css(layout.container));
     assertEqual(row.dashContainer.style, css(layout.ends));
     for (const untouched of [row.foreign, row.foreign.child, row.placeholder, row.background])
         assertEqual(untouched.writes, 0);
@@ -118,13 +117,13 @@ test('Icon Spacing off leaves only the group gaps', () => {
         assertEqual(actor.style, null);
 });
 
-test('Show Apps first takes the theme room off its other side', () => {
-    const row = setup({showAppsFirst: true});
-    row.layout.update(DEFAULT, 48);
+// Dash to Dock's theme spaces its scroll view from Show Apps; a small gap has no tile margin to take it from.
+test('Show Apps keeps the gap of the row', () => {
+    const row = setup();
+    row.layout.update(OURS, 48);
     row.scheduler.flush();
-    const layout = expected(DEFAULT, true);
-    assertEqual(row.showApps.toggleButton.style, css(layout.showApps));
-    assertEqual(layout.showApps.margin.right, layout.tile.margin.right - 2);
+    assertEqual(row.showApps.toggleButton.style, css(expected(OURS).tile));
+    assertEqual(row.scrollView.style, 'margin-right: 0px; margin-left: 0px;');
 });
 
 test('a new icon is styled before the next frame', () => {

@@ -4,7 +4,7 @@ import {Surface, containerStyle, css, dockLayout, edgeSides} from '../motion/doc
 
 const ST_SIDES = {top: St.Side.TOP, right: St.Side.RIGHT, bottom: St.Side.BOTTOM, left: St.Side.LEFT};
 
-// Inline style of one dash or dock row: its app tiles and their containers, Show Apps, the separator and the row ends.
+// Inline style of one dash or dock row: its tiles and their containers, the separator and the row ends.
 export class RowLayout {
     #box;
     #dash;
@@ -97,7 +97,10 @@ export class RowLayout {
         for (const child of this.#box.get_children())
             changed = this.#writeChild(child) || changed;
         changed = this.#write(showApps, this.#layout?.container) || changed;
-        changed = this.#write(showApps.toggleButton, this.#layout?.showApps) || changed;
+        changed = this.#write(showApps.toggleButton, this.#layout?.tile) || changed;
+        // Dash to Dock's theme spaces its scroll view from Show Apps; the tiles carry the whole gap.
+        if (this.#surface === Surface.DOCK)
+            changed = this.#write(this.#dash._scrollView, this.#layout?.container) || changed;
         changed = this.#write(ends, this.#layout?.ends) || changed;
         if (changed)
             this.#onChanged();
@@ -119,13 +122,10 @@ export class RowLayout {
         };
         if (this.#surface === Surface.DOCK) {
             const background = this.#dash._background;
-            const first = this.#dash._dashContainer.get_first_child() === this.#dash._showAppsIcon;
             input.backgroundMargins = {
                 inner: length(background, 'get_margin', sides.inner),
                 outer: length(background, 'get_margin', sides.outer),
             };
-            // Dash to Dock's theme spaces its scroll view from Show Apps.
-            input.showApps = {first, offset: length(this.#dash._scrollView, 'get_margin', first ? sides.before : sides.after)};
         }
         return dockLayout(input);
     }
