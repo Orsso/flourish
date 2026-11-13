@@ -45,7 +45,6 @@ required=(
     dock-focused-app-background-hidden.css
     dash-hover-background-hidden.css
     dash-focused-app-background.css
-    icon-spacing.css
     stylesheet.css
 )
 

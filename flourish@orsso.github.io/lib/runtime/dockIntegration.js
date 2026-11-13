@@ -4,43 +4,43 @@ import {InjectionManager} from 'resource:///org/gnome/shell/extensions/extension
 import {ExtensionState} from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
-import {DASH_TO_DOCK_BUILDS, DockState, ScreenEdge, spacingOverridden} from '../motion/catalog.js';
-import {getOrientation, shouldReattachDock} from '../motion/transforms.js';
+import {DASH_TO_DOCK_BUILDS, DockState, ScreenEdge} from '../motion/catalog.js';
+import {Surface, smallHalo} from '../motion/dockLayout.js';
+import {shouldReattachDock} from '../motion/transforms.js';
 import {DockVisibility} from './dockVisibility.js';
 import {DockOverflow} from './dockOverflow.js';
 import {pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
+import {RowLayout} from './rowLayout.js';
 import {SurfaceOutline} from './surfaceOutline.js';
 
+const SMALL_HALO_CLASS = 'flourish-small-halo-dock';
 
 export class DockIntegration {
     #attachIdleId = 0;
     #blurBackgrounds = new Map();
     #generation = 0;
+    #groups = {gaps: new Map()};
     #injections = null;
+    #layouts = new Set();
     #manager = null;
     #managerSignals = [];
     #managerUuid = null;
-    #onSpacingOverridden;
     #onUrgentChanged;
     #outline;
     #overflows = new Set();
     #recipe;
     #scheduler;
-    #spacingCheckId = 0;
-    #spacingGap = null;
-    #styledDocks = new Set();
+    #spacing = null;
     #surface = null;
     #visibilities = [];
 
     constructor({
         scheduler,
         onUrgentChanged = () => {},
-        onSpacingOverridden = () => {},
     }) {
         this.#scheduler = scheduler;
         this.#onUrgentChanged = onUrgentChanged;
-        this.#onSpacingOverridden = onSpacingOverridden;
         this.#outline = new SurfaceOutline();
     }
 
@@ -72,7 +72,7 @@ export class DockIntegration {
         Main.extensionManager.disconnectObject(this);
         Main.layoutManager.disconnectObject(this);
         this.#cancelScheduledAttach();
-        this.#cancelSpacingCheck();
+        Main.layoutManager.uiGroup.remove_style_class_name(SMALL_HALO_CLASS);
         // The icons stop reporting to Flourish before the urgent replay reaches Dash to Dock.
         this.#surface.dispose();
         this.#handBackWiggles();
@@ -111,7 +111,10 @@ export class DockIntegration {
     }
 
     setGroups(groups) {
+        this.#groups = groups;
         this.#surface.setGroups(groups);
+        for (const layout of this.#layouts)
+            layout.setGroups(groups);
     }
 
     setOutline(style, intensity, light) {
@@ -119,9 +122,9 @@ export class DockIntegration {
     }
 
     // Null when Icon Spacing is off.
-    setSpacing(gap) {
-        this.#spacingGap = gap;
-        this.#scheduleSpacingCheck();
+    setSpacing(spacing) {
+        this.#spacing = spacing;
+        this.#syncLayouts();
     }
 
     getController(appIcon) {
@@ -179,6 +182,7 @@ export class DockIntegration {
             this.#manager.connect('docks-ready', () => this.#scanDocks()),
             this.#manager.connect('destroy', () => this.#detachManager()),
         ];
+        this.#manager.settings.connectObject('changed::dash-max-icon-size', () => this.#syncLayouts(), this);
         this.#scanDocks();
     }
 
@@ -191,14 +195,15 @@ export class DockIntegration {
         for (const id of this.#managerSignals)
             this.#manager.disconnect(id);
         this.#managerSignals = [];
+        this.#manager.settings.disconnectObject(this);
         this.#manager = null;
         this.#managerUuid = null;
     }
 
     #disposeDocks() {
-        for (const dock of this.#styledDocks)
-            dock.disconnectObject(this);
-        this.#styledDocks.clear();
+        for (const layout of this.#layouts)
+            layout.dispose();
+        this.#layouts.clear();
         this.#outline.dispose();
         for (const background of this.#blurBackgrounds.keys())
             this.#untrackBlur(background);
@@ -257,10 +262,15 @@ export class DockIntegration {
                 this.#trackBlur(dock.dash);
             if (dock.dash._background)
                 this.#outline.track(dock.dash._background, () => this.#outlineRadius(dock.dash));
-            // Another extension can restyle the dock at any time.
-            dock.connectObject('style-changed', () => this.#scheduleSpacingCheck(),
-                'destroy', () => this.#styledDocks.delete(dock), this);
-            this.#styledDocks.add(dock);
+            const layout = new RowLayout({
+                dash: dock.dash,
+                edge,
+                surface: Surface.DOCK,
+                scheduler: this.#scheduler,
+                onDestroyed: destroyed => this.#layouts.delete(destroyed),
+            });
+            layout.setGroups(this.#groups);
+            this.#layouts.add(layout);
             this.#visibilities.push(visibility);
             visibility.subscribe(state => {
                 if (state !== DockState.SHOWN)
@@ -272,43 +282,19 @@ export class DockIntegration {
             this.#stopWiggles(dock);
         }
         this.refreshStyles();
-        this.#scheduleSpacingCheck();
+        this.#syncLayouts();
     }
 
-    // A parent's style-changed comes before its children restyle, so read them before the next frame.
-    #scheduleSpacingCheck() {
-        if (this.#spacingCheckId)
-            return;
-        this.#spacingCheckId = this.#scheduler.schedule(() => {
-            this.#spacingCheckId = 0;
-            this.#checkSpacing();
-        });
-    }
-
-    #cancelSpacingCheck() {
-        if (!this.#spacingCheckId)
-            return;
-        this.#scheduler.cancel(this.#spacingCheckId);
-        this.#spacingCheckId = 0;
-    }
-
-    // Another extension's !important rules can keep the dock's own spacing.
-    #checkSpacing() {
-        const scale = St.ThemeContext.get_for_stage(global.stage).scale_factor;
-        const overridden = this.#spacingGap !== null && [...this.#styledDocks].some(dock => {
-            // Drag placeholders have no child, other extensions' widgets no icon.
-            const icon = dock.dash._box.get_children().map(item => item.child).find(child => child?.icon);
-            if (!icon)
-                return false;
-            const along = getOrientation(edgeFromSide(dock.position)).horizontal ? St.Side.LEFT : St.Side.TOP;
-            const halo = icon.icon.get_theme_node();
-            return spacingOverridden(this.#spacingGap, {
-                margin: icon.get_theme_node().get_margin(along) / scale,
-                top: halo.get_padding(St.Side.TOP) / scale,
-                bottom: halo.get_padding(St.Side.BOTTOM) / scale,
-            });
-        });
-        this.#onSpacingOverridden(overridden);
+    // Dash to Dock's size setting, not the size a full row shrinks to.
+    #syncLayouts() {
+        // No dock is a normal setup.
+        const size = this.#manager ? this.#manager.settings.get_int('dash-max-icon-size') : 0;
+        if (this.#manager && this.#spacing !== null && smallHalo(size, this.#spacing.gap))
+            Main.layoutManager.uiGroup.add_style_class_name(SMALL_HALO_CLASS);
+        else
+            Main.layoutManager.uiGroup.remove_style_class_name(SMALL_HALO_CLASS);
+        for (const layout of this.#layouts)
+            layout.update(this.#spacing, size);
     }
 
     // Blur My Shell rounds its dynamic blur itself; the outline follows that corner.

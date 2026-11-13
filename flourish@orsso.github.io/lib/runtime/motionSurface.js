@@ -189,7 +189,7 @@ export class MotionSurface {
         this.#registry.addController(icon, controller);
         // Show Apps has no app and never starts a group.
         if (icon.app)
-            this.#iconGroups.set(controller, new IconGroup({container, icon, groups: this.#groups}));
+            this.#iconGroups.set(controller, new IconGroup({icon, groups: this.#groups}));
         // An icon can be urgent before Flourish finds it.
         if (controller.urgent)
             this.#onUrgentChanged(controller, true);

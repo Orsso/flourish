@@ -7,7 +7,7 @@ import * as AppFavorites from 'resource:///org/gnome/shell/ui/appFavorites.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 
-import {GroupGap, ICON_SPACING_GAPS, OutlineStyle} from './lib/motion/catalog.js';
+import {GroupGap, OutlineStyle} from './lib/motion/catalog.js';
 import {
     groupGaps, migrateAppearance, passGaps, readActiveRecipe, readGroupGaps, setGroupGap, writeGroupGaps,
 } from './lib/motion/settings.js';
@@ -23,7 +23,6 @@ const STYLESHEETS = [
     'dash-hover-background-hidden.css',
     'dock-focused-app-background-hidden.css',
     'dash-focused-app-background.css',
-    'icon-spacing.css',
 ];
 
 export default class FlourishExtension extends Extension {
@@ -46,11 +45,6 @@ export default class FlourishExtension extends Extension {
             // Ubuntu Dock rebuilds its icons while disable() unloads the stylesheets.
             onUrgentChanged: (controller, urgent) =>
                 this._attentionEngine?.onUrgentChanged(controller, urgent),
-            // The preferences say when another extension keeps the dock spacing.
-            onSpacingOverridden: overridden => {
-                if (this._settings.get_boolean('spacing-overridden') !== overridden)
-                    this._settings.set_boolean('spacing-overridden', overridden);
-            },
         });
         this._dashIntegration = new DashIntegration({
             scheduler: this._frameScheduler,
@@ -88,10 +82,7 @@ export default class FlourishExtension extends Extension {
 
         this._syncIdleId = 0;
         this._settings.connectObject(
-            'changed', (_settings, key) => {
-                // Written by the spacing check, read by the preferences only.
-                if (key === 'spacing-overridden')
-                    return;
+            'changed', () => {
                 // A preset switch writes many keys at once.
                 if (this._syncIdleId)
                     return;
@@ -224,27 +215,29 @@ export default class FlourishExtension extends Extension {
         this._dockIntegration.setOutline(...outline);
         this._dashIntegration.setOutline(...outline);
         this._dashIntegration.setFocusMark(backgrounds && focused);
-        const spacing = this._settings.get_string('icon-spacing');
-        const customSpacing = this._settings.get_boolean('spacing-enabled');
         const sheets = {
             'dock-hover-background-hidden.css': hideHover,
             'dash-hover-background-hidden.css': hideHover,
             'dock-focused-app-background-hidden.css': backgrounds && !focused,
             'dash-focused-app-background.css': backgrounds && focused,
-            'icon-spacing.css': customSpacing,
         };
         // No short-circuit: every sheet must sync.
         const changed = Object.entries(sheets)
             .map(([name, enabled]) => this._styles[name].setEnabled(enabled))
             .includes(true);
-        // After the sheets: the icon size pass needs the spacing rules loaded.
-        const flush = this._settings.get_boolean('dock-flush') ? ['flourish-flush'] : [];
-        this._syncSpacing(customSpacing ? [`flourish-spacing-${spacing}`, ...flush] : []);
-        this._dockIntegration.setSpacing(customSpacing ? ICON_SPACING_GAPS[spacing] : null);
+        const spacing = this._settings.get_boolean('spacing-enabled') ? {
+            gap: this._settings.get_double('spacing-gap'),
+            across: this._settings.get_double('spacing-across'),
+            ends: this._settings.get_double('spacing-ends'),
+        } : null;
+        // Before the rows: their next pass reads the background margins the flush rule sets.
+        this._syncSpacing(spacing && this._settings.get_boolean('dock-flush') ? ['flourish-flush'] : []);
+        this._dockIntegration.setSpacing(spacing);
+        this._dashIntegration.setSpacing(spacing);
         return changed;
     }
 
-    // Classes on uiGroup select the spacing rules of the dash and every dock.
+    // Classes on uiGroup select the fixed rules of stylesheet.css.
     _syncSpacing(names) {
         if (names.join() === this._spacingClasses.join())
             return;
@@ -254,7 +247,6 @@ export default class FlourishExtension extends Extension {
         for (const name of names)
             group.add_style_class_name(name);
         this._spacingClasses = names;
-        this._dashIntegration.refreshIconSize();
     }
 
     _refreshStyles() {

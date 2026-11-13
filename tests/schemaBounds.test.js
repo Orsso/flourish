@@ -5,7 +5,6 @@ import {
     AttentionCycles,
     AttentionInterval,
     AttentionReminders,
-    IconSpacing,
     OutlineLight,
     Reach,
     Preset,
@@ -50,13 +49,6 @@ const BOUNDED_KEYS = [
     ['custom-attention-interval', AttentionInterval],
     ['custom-attention-reminders', AttentionReminders],
 ];
-
-test('icon spacing offers the catalog sizes', () => {
-    const [, contents] = GLib.file_get_contents(SCHEMA_PATH);
-    const values = new TextDecoder().decode(contents)
-        .match(/<enum id="org\.gnome\.shell\.extensions\.flourish\.icon-spacing">([^]*?)<\/enum>/)[1];
-    assertDeepEqual([...values.matchAll(/nick="([a-z]+)"/g)].map(match => match[1]), Object.values(IconSpacing));
-});
 
 test('the outline light spans the catalog positions', () => {
     assertDeepEqual(rangeOf('outline-light'), {min: OutlineLight.MIN, max: OutlineLight.MAX});

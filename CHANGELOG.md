@@ -8,8 +8,8 @@ Flourish now starts with everything off. If you never picked a preset in
 ### New
 
 - A Style tab, in beta, changes how the dash and the dock look. You can set
-  the space between icons and group your favorites with a small gap.
-  Presets leave it alone.
+  the gap between icons and the margins around them, as a share of the icon
+  size, and group your favorites with a small gap. Presets leave it alone.
 - Dash to Dock and Ubuntu Dock can stick to the screen edge.
 - The outline has a new Glass style and now works on the overview dash too.
 

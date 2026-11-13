@@ -1,6 +1,6 @@
 import {groupGaps, passGaps} from '../flourish@orsso.github.io/lib/motion/settings.js';
 import {IconGroup} from '../flourish@orsso.github.io/lib/runtime/iconGroup.js';
-import {FakeContainer, FakeEmitter, FakeIcon} from './fakes.js';
+import {FakeEmitter, FakeIcon} from './fakes.js';
 
 class FakeMenu extends FakeEmitter {
     constructor() {
@@ -24,7 +24,6 @@ function setup(id, stored = {}) {
     const icon = new FakeIcon();
     icon.app = {get_id: () => id};
     icon._menu = new FakeMenu();
-    const container = new FakeContainer(icon);
     const created = [];
     const groups = gaps => ({
         gaps: groupGaps(['first', 'second', 'third'], gaps),
@@ -38,27 +37,18 @@ function setup(id, stored = {}) {
             return item;
         },
     });
-    const group = new IconGroup({container, icon, groups: groups(stored)});
+    const group = new IconGroup({icon, groups: groups(stored)});
     const open = () => {
         icon.emit('menu-state-changed', true);
         icon._menu.emit('open-state-changed', true);
     };
-    return {icon, container, group, groups, created, open};
+    return {icon, group, groups, created, open};
 }
 
 test('a gap belongs to the app after it, never to the first', () => {
     const stored = {a: 'normal', c: 'small', gone: 'small'};
     assertDeepEqual([...groupGaps(['a', 'b', 'c'], stored)], [['b', null], ['c', 'small']]);
     assertDeepEqual([...groupGaps(['c', 'a', 'b'], stored)], [['a', 'normal'], ['b', null]]);
-});
-
-test('the container class follows the stored gap', () => {
-    const {container, group, groups} = setup('second', {second: 'small'});
-    assertDeepEqual([...container.classes], ['flourish-gap-small']);
-    group.setGroups(groups({second: 'normal'}));
-    assertDeepEqual([...container.classes], ['flourish-gap-normal']);
-    group.setGroups(groups({}));
-    assertEqual(container.classes.size, 0);
 });
 
 test('the menu offers the group item to favorites after the first only', () => {
@@ -84,11 +74,10 @@ test('each popup gets one fresh item, even after a rebuilt menu', () => {
     assertEqual(created.length, 3);
 });
 
-test('dispose clears the class, the switch and the signals', () => {
-    const {icon, container, group, open} = setup('second', {second: 'small'});
+test('dispose clears the switch and the signals', () => {
+    const {icon, group, open} = setup('second', {second: 'small'});
     open();
     group.dispose();
-    assertEqual(container.classes.size, 0);
     assertEqual(icon._menu.items.length, 0);
     assertEqual(icon._menu.handlers.size, 0);
     assertEqual([...icon.handlers.values()].some(handler => handler.owner === group), false);

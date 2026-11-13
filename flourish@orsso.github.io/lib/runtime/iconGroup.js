@@ -1,17 +1,11 @@
-import {GroupGap} from '../motion/catalog.js';
-
-const GAP_CLASSES = Object.values(GroupGap).map(gap => `flourish-gap-${gap}`);
-
-// A favorite's gap and its group item in the icon menu.
+// A favorite's group item in the icon menu; RowLayout draws the gap.
 export class IconGroup {
-    #container;
     #groups;
     #icon;
     #item = null;
     #menu = null;
 
-    constructor({container, icon, groups}) {
-        this.#container = container;
+    constructor({icon, groups}) {
         this.#icon = icon;
         this.#groups = groups;
         // No public accessor for the menu; it exists once the first popup starts.
@@ -19,12 +13,10 @@ export class IconGroup {
             if (open)
                 this.#watchMenu(icon._menu);
         }, 'destroy', () => this.#menu?.disconnectObject(this), this);
-        this.#mark();
     }
 
     setGroups(groups) {
         this.#groups = groups;
-        this.#mark();
     }
 
     dispose() {
@@ -32,19 +24,6 @@ export class IconGroup {
         this.#menu?.disconnectObject(this);
         this.#menu = null;
         this.#item?.destroy();
-        for (const name of GAP_CLASSES)
-            this.#container.remove_style_class_name(name);
-    }
-
-    #mark() {
-        const gap = this.#groups.gaps.get(this.#icon.app.get_id());
-        const wanted = gap ? `flourish-gap-${gap}` : null;
-        for (const name of GAP_CLASSES) {
-            if (name === wanted)
-                this.#container.add_style_class_name(name);
-            else
-                this.#container.remove_style_class_name(name);
-        }
     }
 
     #watchMenu(menu) {

@@ -131,32 +131,10 @@ export const AttentionCyclePause = {MIN: 0, MAX: 1000};
 export const AttentionInterval = {MIN: 2, MAX: 60};
 export const AttentionReminders = {MIN: 1, MAX: 30};
 
-export const IconSpacing = {TIGHT: 'tight', COMPACT: 'compact', COMFORTABLE: 'comfortable', AIRY: 'airy'};
-// Gap between icon images, in pixels.
-export const ICON_SPACING_GAPS = {
-    [IconSpacing.TIGHT]: 4,
-    [IconSpacing.COMPACT]: 8,
-    [IconSpacing.COMFORTABLE]: 16,
-    [IconSpacing.AIRY]: 24,
-};
 // Theme halo padding on each side of an icon; the dash, Dash to Dock and Ubuntu Dock all use 6.
 export const ICON_HALO = 6;
 // Shares of the icon size; the gschema ranges of the spacing-gap, spacing-across and spacing-ends keys mirror them.
 export const SpacingFraction = {MIN: 0, MAX: 0.5};
-
-// The tile margin along the row, and below twice the halo the halo padding above and below the icon.
-export function iconSpacingTile(gap) {
-    const halo = gap < 2 * ICON_HALO;
-    const bottom = halo ? Math.min(ICON_HALO, gap) : gap / 2;
-    return {margin: Math.max(0, (gap - 2 * ICON_HALO) / 2), top: gap - bottom, bottom, halo};
-}
-
-// Another stylesheet's !important rules won: the tile does not have what the spacing rules give.
-export function spacingOverridden(gap, {margin, top, bottom}) {
-    const tile = iconSpacingTile(gap);
-    const off = (value, expected) => Math.abs(value - expected) > 0.5;
-    return off(margin, tile.margin) || (tile.halo && (off(top, tile.top) || off(bottom, tile.bottom)));
-}
 
 export const GroupGap = {SMALL: 'small', NORMAL: 'normal'};
 export const GROUP_GAP_PIXELS = {[GroupGap.SMALL]: 16, [GroupGap.NORMAL]: 32};

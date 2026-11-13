@@ -6,7 +6,6 @@ import {
     Preset,
     easingProgress,
     getBuiltInRecipe,
-    spacingOverridden,
 } from '../flourish@orsso.github.io/lib/motion/catalog.js';
 
 test('built-in recipes match the presets', () => {
@@ -81,14 +80,4 @@ test('easingProgress samples the recipe curves', () => {
     }
     // Back overshoots past 1 before settling, like Clutter's curve.
     assertEqual(easingProgress(Easing.EASE_OUT_BACK, 0.6) > 1, true);
-});
-
-test('the spacing check flags a tile another stylesheet kept', () => {
-    // Comfortable spaces the tiles; the theme keeps its halo.
-    assertEqual(spacingOverridden(16, {margin: 2, top: 6, bottom: 6}), false);
-    assertEqual(spacingOverridden(16, {margin: 2.4, top: 0, bottom: 7}), false);
-    assertEqual(spacingOverridden(16, {margin: 0, top: 6, bottom: 6}), true);
-    // Compact moves the gap into the halo, where Kiwi's dock styling puts its own padding.
-    assertEqual(spacingOverridden(8, {margin: 0, top: 2, bottom: 6}), false);
-    assertEqual(spacingOverridden(8, {margin: 0, top: 0, bottom: 7}), true);
 });

@@ -1,22 +1,9 @@
-/* !important with #uiGroup: a gap survives docks that zero icon margins with !important. */
-#overviewGroup #dash .dash-item-container.flourish-gap-small,
-#uiGroup #dashtodockContainer.bottom #dash .dash-item-container.flourish-gap-small,
-#uiGroup #dashtodockContainer.top #dash .dash-item-container.flourish-gap-small {
-    margin-left: 16px !important;
+/* Below twice the halo the gap keeps only room for the running dot. */
+#uiGroup.flourish-small-halo-dash #overviewGroup #dash .dash-item-container .overview-icon,
+#uiGroup.flourish-small-halo-dock #dashtodockContainer #dash .dash-item-container .overview-icon {
+    padding: 0 0 4px 0;
 }
 
-#uiGroup #dashtodockContainer.left #dash .dash-item-container.flourish-gap-small,
-#uiGroup #dashtodockContainer.right #dash .dash-item-container.flourish-gap-small {
-    margin-top: 16px !important;
-}
-
-#overviewGroup #dash .dash-item-container.flourish-gap-normal,
-#uiGroup #dashtodockContainer.bottom #dash .dash-item-container.flourish-gap-normal,
-#uiGroup #dashtodockContainer.top #dash .dash-item-container.flourish-gap-normal {
-    margin-left: 32px !important;
-}
-
-#uiGroup #dashtodockContainer.left #dash .dash-item-container.flourish-gap-normal,
-#uiGroup #dashtodockContainer.right #dash .dash-item-container.flourish-gap-normal {
-    margin-top: 32px !important;
+#uiGroup.flourish-flush #dashtodockContainer #dash .dash-background {
+    margin: 0;
 }

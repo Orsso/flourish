@@ -3,7 +3,7 @@ SCHEMA_DIR := $(UUID)/schemas
 DIST_DIR := dist
 INSTALL_DIR := $(HOME)/.local/share/gnome-shell/extensions/$(UUID)
 
-.PHONY: check lint test schema build pack pot install clean icon-spacing-css
+.PHONY: check lint test schema build pack pot install clean
 
 check: lint test schema
 
@@ -37,16 +37,12 @@ build:
 		--extra-source=dock-focused-app-background-hidden.css \
 		--extra-source=dash-hover-background-hidden.css \
 		--extra-source=dash-focused-app-background.css \
-		--extra-source=icon-spacing.css \
 		--extra-source=../README.md \
 		--extra-source=../LICENSE \
 		$(UUID)
 	bash scripts/verify-package.sh $(DIST_DIR)/$(UUID).shell-extension.zip
 
 pack: check build
-
-icon-spacing-css:
-	gjs -m scripts/iconSpacingCss.js > $(UUID)/icon-spacing.css
 
 install: build
 	gnome-extensions install --force $(DIST_DIR)/$(UUID).shell-extension.zip

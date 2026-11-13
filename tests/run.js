@@ -29,7 +29,6 @@ const modules = [
     './demoSequence.test.js',
     './dockVisibility.test.js',
     './surfaceOutline.test.js',
-    './iconSpacing.test.js',
     './iconGroup.test.js',
     './dockLayout.test.js',
     './dockSample.test.js',

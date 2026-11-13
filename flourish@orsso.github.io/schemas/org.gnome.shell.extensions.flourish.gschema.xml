@@ -47,13 +47,6 @@
     <value nick="glass" value="4"/>
   </enum>
 
-  <enum id="org.gnome.shell.extensions.flourish.icon-spacing">
-    <value nick="tight" value="0"/>
-    <value nick="compact" value="1"/>
-    <value nick="comfortable" value="2"/>
-    <value nick="airy" value="3"/>
-  </enum>
-
   <schema id="org.gnome.shell.extensions.flourish"
           path="/org/gnome/shell/extensions/flourish/">
     <key name="motion-profile" enum="org.gnome.shell.extensions.flourish.profile">
@@ -256,22 +249,10 @@
       <description>Share of the icon size between the first or last icon and the end of the background, with spacing-enabled.</description>
     </key>
 
-    <key name="icon-spacing" enum="org.gnome.shell.extensions.flourish.icon-spacing">
-      <default>'comfortable'</default>
-      <summary>Icon spacing</summary>
-      <description>Gap between icons with spacing-enabled: tight 4 px, compact 8, comfortable 16, airy 24.</description>
-    </key>
-
     <key name="dock-flush" type="b">
       <default>false</default>
       <summary>Flush dock</summary>
       <description>With icon spacing on, the dock background meets the screen edge and maximized windows instead of floating.</description>
-    </key>
-
-    <key name="spacing-overridden" type="b">
-      <default>false</default>
-      <summary>Spacing overridden</summary>
-      <description>Written by the extension when another extension's stylesheet keeps the dock's own icon spacing.</description>
     </key>
 
     <key name="groups-enabled" type="b">

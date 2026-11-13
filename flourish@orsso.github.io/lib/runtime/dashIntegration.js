@@ -5,19 +5,26 @@ import {Dash} from 'resource:///org/gnome/shell/ui/dash.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 import {ScreenEdge} from '../motion/catalog.js';
+import {DASH_ICON_SIZE, Surface, smallHalo} from '../motion/dockLayout.js';
 import {FocusHighlight} from './focusHighlight.js';
 import {dashSpacing, marginsAlong, pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
+import {RowLayout} from './rowLayout.js';
 import {SurfaceOutline} from './surfaceOutline.js';
+
+const SMALL_HALO_CLASS = 'flourish-small-halo-dash';
 
 export class DashIntegration {
     #box = null;
     #highlight = null;
     #injections = null;
+    // Null before enable() and once the dash destroys its row.
+    #layout = null;
     #markFocused = false;
     #outline;
     #savedClip = false;
     #scheduler;
+    #spacing = null;
     #surface = null;
 
     constructor({scheduler}) {
@@ -74,7 +81,18 @@ export class DashIntegration {
             original.call(this);
             this._maxWidth = maxWidth;
         });
-        this.refreshIconSize();
+        this.#layout = new RowLayout({
+            dash,
+            edge: ScreenEdge.BOTTOM,
+            surface: Surface.DASH,
+            scheduler: this.#scheduler,
+            // The dash sizes its icons on redisplay only.
+            onChanged: () => dash._adjustIconSize(),
+            onDestroyed: () => {
+                this.#layout = null;
+            },
+        });
+        this.#layout.update(this.#spacing, DASH_ICON_SIZE);
     }
 
     onPointerMotion(x, y, pen) {
@@ -90,9 +108,12 @@ export class DashIntegration {
     }
 
     disable() {
+        Main.layoutManager.uiGroup.remove_style_class_name(SMALL_HALO_CLASS);
         this.#outline.destroy();
         if (!this.#surface)
             return;
+        this.#layout?.dispose();
+        this.#layout = null;
         Main.layoutManager.disconnectObject(this);
         Main.overview.disconnectObject(this);
         this.#surface.dispose();
@@ -115,17 +136,21 @@ export class DashIntegration {
 
     setGroups(groups) {
         this.#surface?.setGroups(groups);
-        this.refreshIconSize();
+        this.#layout?.setGroups(groups);
     }
 
     refreshStyles() {
         this.#surface?.refreshStyles();
     }
 
-    // The dash sizes its icons on redisplay only; a spacing change needs a new pass.
-    refreshIconSize() {
-        if (this.#box)
-            Main.overview.dash._adjustIconSize();
+    // Null when Icon Spacing is off.
+    setSpacing(spacing) {
+        this.#spacing = spacing;
+        if (spacing !== null && smallHalo(DASH_ICON_SIZE, spacing.gap))
+            Main.layoutManager.uiGroup.add_style_class_name(SMALL_HALO_CLASS);
+        else
+            Main.layoutManager.uiGroup.remove_style_class_name(SMALL_HALO_CLASS);
+        this.#layout?.update(spacing, DASH_ICON_SIZE);
     }
 
     // The class draws other extensions' styles (#15), so only while the mark is wanted.
