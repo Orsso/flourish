@@ -269,6 +269,8 @@ export class DockIntegration {
                 edge,
                 surface: Surface.DOCK,
                 scheduler: this.#scheduler,
+                // Dash to Dock sizes its icons on redisplay only.
+                onChanged: () => dock.dash._adjustIconSize(),
                 onDestroyed: destroyed => this.#layouts.delete(destroyed),
             });
             layout.setGroups(this.#groups);
