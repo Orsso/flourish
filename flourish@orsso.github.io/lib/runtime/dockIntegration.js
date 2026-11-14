@@ -9,7 +9,7 @@ import {Surface, smallHalo} from '../motion/dockLayout.js';
 import {shouldReattachDock} from '../motion/transforms.js';
 import {DockVisibility} from './dockVisibility.js';
 import {DockOverflow} from './dockOverflow.js';
-import {pointerOnSurface} from './geometry.js';
+import {marginsAlong, pointerOnSurface} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
 import {RowLayout} from './rowLayout.js';
 import {SurfaceOutline} from './surfaceOutline.js';
@@ -33,7 +33,7 @@ export class DockIntegration {
     #scheduler;
     #spacing = null;
     #surface = null;
-    #transparencies = new InjectionManager();
+    #dockInjections = new InjectionManager();
     #visibilities = [];
 
     constructor({
@@ -205,7 +205,7 @@ export class DockIntegration {
         for (const layout of this.#layouts)
             layout.dispose();
         this.#layouts.clear();
-        this.#transparencies.clear();
+        this.#dockInjections.clear();
         this.#outline.dispose();
         for (const background of this.#blurBackgrounds.keys())
             this.#untrackBlur(background);
@@ -276,11 +276,20 @@ export class DockIntegration {
             layout.setGroups(this.#groups);
             this.#layouts.add(layout);
             // Dash to Dock's dynamic transparency copies the dash container's inline style, the row ends, to its background.
-            this.#transparencies.overrideMethod(dock._themeManager._transparency, '_updateStyles',
+            this.#dockInjections.overrideMethod(dock._themeManager._transparency, '_updateStyles',
                 original => function () {
                     this._base_actor_style = '';
                     original.call(this);
                 });
+            // Dash to Dock fits its icons without the container margins that group gaps add.
+            this.#dockInjections.overrideMethod(dock.dash, '_adjustIconSize', original => function () {
+                const key = this._isHorizontal ? '_maxWidth' : '_maxHeight';
+                const max = this[key];
+                if (max !== -1)
+                    this[key] -= marginsAlong(this._box, this._isHorizontal);
+                original.call(this);
+                this[key] = max;
+            });
             this.#visibilities.push(visibility);
             visibility.subscribe(state => {
                 if (state !== DockState.SHOWN)

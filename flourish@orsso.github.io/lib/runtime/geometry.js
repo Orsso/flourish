@@ -115,10 +115,10 @@ export function dashSpacing(box, monitor) {
     };
 }
 
-export function marginsAlong(box) {
+export function marginsAlong(box, horizontal = true) {
     return box.get_children().reduce((sum, child) => {
         child.ensure_style();
-        return sum + child.margin_left + child.margin_right;
+        return sum + (horizontal ? child.margin_left + child.margin_right : child.margin_top + child.margin_bottom);
     }, 0);
 }
 

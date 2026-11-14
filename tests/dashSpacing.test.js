@@ -1,4 +1,4 @@
-import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, ownsPick, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, marginsAlong, ownsPick, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
 
 test('background allocation grows symmetrically without scaling the other axis', () => {
     for (const horizontal of [true, false]) {
@@ -111,4 +111,12 @@ test('a gap pick counts when it is an ancestor of the surface inside the gap roo
     assertEqual(ownsPick(dash, box, box, overviewGroup), true);
     assertEqual(ownsPick(dash, box, pillLabel, overviewGroup), false);
     assertEqual(ownsPick(dash, box, pill, null), false);
+});
+
+test('row margins add up along the row on either orientation', () => {
+    const child = (left, right, top, bottom) => ({
+        ensure_style() {}, margin_left: left, margin_right: right, margin_top: top, margin_bottom: bottom});
+    const box = {get_children: () => [child(32, 0, 1, 2), child(0, 0, 0, 0), child(8, 8, 16, 0)]};
+    assertEqual(marginsAlong(box), 48);
+    assertEqual(marginsAlong(box, false), 19);
 });
