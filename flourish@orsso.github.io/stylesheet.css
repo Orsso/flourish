@@ -4,6 +4,11 @@
     padding: 0 0 4px 0;
 }
 
+/* Dash to Dock's theme spaces its scroll view from Show Apps; the tiles carry the whole gap. */
+#uiGroup.flourish-spacing #dashtodockContainer #dash #dashtodockDashContainer > #dashtodockDashScrollview {
+    margin: 0;
+}
+
 #uiGroup.flourish-flush #dashtodockContainer #dash .dash-background {
     margin: 0;
 }

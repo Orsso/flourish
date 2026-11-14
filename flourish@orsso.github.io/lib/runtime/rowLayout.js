@@ -98,9 +98,6 @@ export class RowLayout {
             changed = this.#writeChild(child) || changed;
         changed = this.#write(showApps, this.#layout?.container) || changed;
         changed = this.#write(showApps.toggleButton, this.#layout?.tile) || changed;
-        // Dash to Dock's theme spaces its scroll view from Show Apps; the tiles carry the whole gap.
-        if (this.#surface === Surface.DOCK)
-            changed = this.#write(this.#dash._scrollView, this.#layout?.container) || changed;
         changed = this.#write(ends, this.#layout?.ends) || changed;
         if (changed)
             this.#onChanged();

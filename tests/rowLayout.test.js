@@ -87,7 +87,6 @@ test('the row layout styles app tiles, Show Apps, the separator and the ends', (
     assertEqual(row.separator.style, css(layout.separator));
     assertEqual(row.showApps.style, css(layout.container));
     assertEqual(row.showApps.toggleButton.style, css(layout.tile));
-    assertEqual(row.scrollView.style, css(layout.container));
     assertEqual(row.dashContainer.style, css(layout.ends));
     for (const untouched of [row.foreign, row.foreign.child, row.placeholder, row.background])
         assertEqual(untouched.writes, 0);
@@ -117,13 +116,13 @@ test('Icon Spacing off leaves only the group gaps', () => {
         assertEqual(actor.style, null);
 });
 
-// Dash to Dock's theme spaces its scroll view from Show Apps; a small gap has no tile margin to take it from.
-test('Show Apps keeps the gap of the row', () => {
+// DockOverflow owns the scroll view's inline style; stylesheet.css takes the theme margin before Show Apps.
+test('the scroll view is left to the overflow', () => {
     const row = setup();
     row.layout.update(OURS, 48);
     row.scheduler.flush();
-    assertEqual(row.showApps.toggleButton.style, css(expected(OURS).tile));
-    assertEqual(row.scrollView.style, 'margin-right: 0px; margin-left: 0px;');
+    row.layout.dispose();
+    assertEqual(row.scrollView.writes, 0);
 });
 
 test('a new icon is styled before the next frame', () => {

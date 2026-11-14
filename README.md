@@ -34,10 +34,9 @@ It relies on a few private or undocumented members:
   and `_adjustIconSize`, each icon's `_iconBin`, `_createIconTexture` and
   `_menu`, and the window manager's `_getNthFavoriteApp`.
 - Dash to Dock: `_allDocks`, each dock's `monitorIndex` and `position`, each
-  dash's `_box`, `_background`, `_dashContainer`, `_scrollView` and
-  `_showAppsIcon`, the slider's `slide-x`, the manager's settings, the icons'
-  `urgent` and `focused` flags and `_menu`, and `iconAnimator`, to replace the
-  urgent wiggle.
+  dash's `_box`, `_background`, `_dashContainer` and `_showAppsIcon`, the
+  slider's `slide-x`, the manager's settings, the icons' `urgent` and `focused`
+  flags and `_menu`, and `iconAnimator`, to replace the urgent wiggle.
 - Blur My Shell: `is_static`, and `dash`, `background` and
   `background_group` in `global.blur_my_shell._dash_to_dock_blur.dashes`,
   plus the corner radius of that background's blur effect

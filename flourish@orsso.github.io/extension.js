@@ -231,7 +231,8 @@ export default class FlourishExtension extends Extension {
             ends: this._settings.get_double('spacing-ends'),
         } : null;
         // Before the rows: their next pass reads the background margins the flush rule sets.
-        this._syncSpacing(spacing && this._settings.get_boolean('dock-flush') ? ['flourish-flush'] : []);
+        const flush = this._settings.get_boolean('dock-flush') ? ['flourish-flush'] : [];
+        this._syncSpacing(spacing ? ['flourish-spacing', ...flush] : []);
         this._dockIntegration.setSpacing(spacing);
         this._dashIntegration.setSpacing(spacing);
         return changed;
