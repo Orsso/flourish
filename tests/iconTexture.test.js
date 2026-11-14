@@ -9,8 +9,17 @@ test('sharpening renders the texture at twice the icon size', () => {
     assertEqual(baseIcon.icon.size, 96);
     assertEqual(baseIcon.iconSize, 48);
     assertEqual(baseIcon._iconBin.child, baseIcon.icon);
-    assertDeepEqual([baseIcon.icon.width, baseIcon.icon.height], [48, 48]);
+    assertEqual(baseIcon.icon.style, 'width: 48px; height: 48px;');
     assertEqual(baseIcon.created[0].destroyed, true);
+});
+
+// St scales a style length by the monitor scale; a fixed actor size stays in stage pixels.
+test('the icon keeps its logical size at any scale', () => {
+    const baseIcon = new FakeBaseIcon();
+
+    sharpenIconTexture(baseIcon);
+
+    assertDeepEqual([baseIcon.icon.width, baseIcon.icon.height], [-1, -1]);
 });
 
 test('size changes through the base icon stay sharp', () => {
@@ -21,7 +30,7 @@ test('size changes through the base icon stay sharp', () => {
 
     assertEqual(baseIcon.icon.size, 128);
     assertEqual(baseIcon.iconSize, 64);
-    assertDeepEqual([baseIcon.icon.width, baseIcon.icon.height], [64, 64]);
+    assertEqual(baseIcon.icon.style, 'width: 64px; height: 64px;');
 });
 
 test('restoring returns the stock texture and layout', () => {
@@ -34,7 +43,7 @@ test('restoring returns the stock texture and layout', () => {
     assertEqual(sharp.destroyed, true);
     assertEqual(baseIcon.icon.size, 48);
     assertEqual(Object.hasOwn(baseIcon, '_createIconTexture'), false);
-    assertDeepEqual([baseIcon.icon.width, baseIcon.icon.height], [-1, -1]);
+    assertEqual(baseIcon.icon.style, null);
 });
 
 test('texture refresh does not revisit an icon removed from its bin', () => {

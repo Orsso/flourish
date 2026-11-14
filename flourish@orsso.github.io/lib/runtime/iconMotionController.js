@@ -22,8 +22,8 @@ export function sharpenIconTexture(baseIcon) {
         this._iconBin.child?.destroy();
         this.iconSize = size;
         this.icon = this.createIcon(size * TEXTURE_FACTOR);
-        // The dash sizes itself from the icon's preferred size; keep it stock.
-        this.icon.set_size(size, size);
+        // The dash sizes itself from the icon's preferred size; a style length keeps it stock at any scale.
+        this.icon.set_style(`width: ${size}px; height: ${size}px;`);
         this._iconBin.child = this.icon;
     };
     baseIcon._createIconTexture(baseIcon.iconSize);

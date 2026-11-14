@@ -85,10 +85,13 @@ export class FakeBaseIcon {
     }
 
     createIcon(size) {
-        const icon = {size, width: -1, height: -1, destroyed: false,
+        const icon = {size, width: -1, height: -1, style: null, destroyed: false,
             set_size(width, height) {
                 this.width = width;
                 this.height = height;
+            },
+            set_style(style) {
+                this.style = style;
             },
             destroy() {
                 this.destroyed = true;
