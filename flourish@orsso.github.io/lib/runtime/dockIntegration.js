@@ -33,6 +33,7 @@ export class DockIntegration {
     #scheduler;
     #spacing = null;
     #surface = null;
+    #transparencies = new InjectionManager();
     #visibilities = [];
 
     constructor({
@@ -204,6 +205,7 @@ export class DockIntegration {
         for (const layout of this.#layouts)
             layout.dispose();
         this.#layouts.clear();
+        this.#transparencies.clear();
         this.#outline.dispose();
         for (const background of this.#blurBackgrounds.keys())
             this.#untrackBlur(background);
@@ -271,6 +273,12 @@ export class DockIntegration {
             });
             layout.setGroups(this.#groups);
             this.#layouts.add(layout);
+            // Dash to Dock's dynamic transparency copies the dash container's inline style, the row ends, to its background.
+            this.#transparencies.overrideMethod(dock._themeManager._transparency, '_updateStyles',
+                original => function () {
+                    this._base_actor_style = '';
+                    original.call(this);
+                });
             this.#visibilities.push(visibility);
             visibility.subscribe(state => {
                 if (state !== DockState.SHOWN)
