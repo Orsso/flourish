@@ -68,9 +68,15 @@ export function paintOutline(cr, width, height, radius, paint) {
     stroke(() => cr.setSource(rim));
     const reach = Math.max(width, height);
     for (const [gx, gy, alpha, extent] of [[x, y, paint.glint, 0.18], [farX, farY, paint.counter, 0.12]]) {
-        const glint = new Cairo.RadialGradient(gx, gy, 0, gx, gy, reach * extent);
+        const size = reach * extent;
+        const glint = new Cairo.RadialGradient(gx, gy, 0, gx, gy, size);
         glint.addColorStopRGBA(0, shade, shade, shade, alpha);
         glint.addColorStopRGBA(1, shade, shade, shade, 0);
+        // Past its radius a glint is transparent; the clip spares Cairo the rest of the surface.
+        cr.save();
+        cr.rectangle(Math.floor(gx - size), Math.floor(gy - size), Math.ceil(2 * size) + 1, Math.ceil(2 * size) + 1);
+        cr.clip();
         stroke(() => cr.setSource(glint));
+        cr.restore();
     }
 }
