@@ -2,6 +2,8 @@ import St from 'gi://St';
 
 export class Stylesheet {
     #file;
+    // Kept here, not read back from St: listing its sheets logs a critical for each null entry (#14).
+    #loadedFile = null;
 
     constructor(file) {
         this.#file = file;
@@ -9,26 +11,20 @@ export class Stylesheet {
 
     // True when a stylesheet was loaded or unloaded.
     setEnabled(enabled) {
-        const theme = this.#theme();
-        if (this.#isLoaded(theme) === enabled)
+        if (enabled === (this.#loadedFile !== null))
             return false;
-        if (enabled)
+        const theme = St.ThemeContext.get_for_stage(global.stage).get_theme();
+        if (enabled) {
             theme.load_stylesheet(this.#file);
-        else
-            theme.unload_stylesheet(this.#file);
+            this.#loadedFile = this.#file;
+        } else {
+            theme.unload_stylesheet(this.#loadedFile);
+            this.#loadedFile = null;
+        }
         return true;
     }
 
     disable() {
         this.setEnabled(false);
-    }
-
-    #isLoaded(theme) {
-        // St lists a null file for a sheet another extension loaded twice and unloaded once (#14).
-        return theme.get_custom_stylesheets().some(file => file?.equal(this.#file));
-    }
-
-    #theme() {
-        return St.ThemeContext.get_for_stage(global.stage).get_theme();
     }
 }

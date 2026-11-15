@@ -33,6 +33,7 @@ const modules = [
     './dockLayout.test.js',
     './dockSample.test.js',
     './dockOverflow.test.js',
+    './stylesheet.test.js',
     './iconMotionController.test.js',
     './iconTexture.test.js',
     './liveRegistry.test.js',
