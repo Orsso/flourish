@@ -29,6 +29,7 @@ export class DockIntegration {
     #onUrgentChanged;
     #outline;
     #overflows = new Set();
+    #pendingDocks = new Set();
     #recipe;
     #scheduler;
     #spacing = null;
@@ -206,6 +207,9 @@ export class DockIntegration {
             layout.dispose();
         this.#layouts.clear();
         this.#dockInjections.clear();
+        for (const dock of this.#pendingDocks)
+            dock.disconnectObject(this);
+        this.#pendingDocks.clear();
         this.#outline.dispose();
         for (const background of this.#blurBackgrounds.keys())
             this.#untrackBlur(background);
@@ -225,78 +229,101 @@ export class DockIntegration {
             this.#overrideWiggle(docks[0]?.dash.iconAnimator);
 
         for (const dock of docks) {
-            const box = dock.dash._box;
-            // The dash's parent is the actor the slider moves.
-            const slid = dock.dash.get_parent();
-            const edge = edgeFromSide(dock.position);
-            const getMonitor = () =>
-                Main.layoutManager.monitors[dock.monitorIndex] ?? null;
-            const visibility = new DockVisibility({
-                actor: slid,
-                root: dock,
-                edge,
-                getMonitor,
-                scheduler: this.#scheduler,
-            });
-            const context = {
-                background: this.#manager.settings.extendHeight ? null : dock.dash._background,
-                visibility,
-                pointerActor: slid,
-                isAvailable: () => visibility.state === DockState.SHOWN,
-                containsPointer: (x, y) => pointerOnSurface(slid, box, x, y),
-                getMonitor,
-                dockSettings: this.#manager.settings,
-                labelOffset: '-x-offset',
-            };
-            const overflow = new DockOverflow({
-                actor: slid,
-                row: box,
-                edge,
-                getMonitor,
-                injections: new InjectionManager(),
-                onChanged: () => this.#surface.invalidateGeometry(),
-                onDisposed: disposed => this.#overflows.delete(disposed),
-            });
-            context.getSpacing = () => overflow;
-            if (!this.#surface.addBox(box, edge, context)) {
-                visibility.dispose();
-                continue;
-            }
-            if (context.background)
-                this.#trackBlur(dock.dash);
-            if (dock.dash._background)
-                this.#outline.track(dock.dash._background, () => this.#outlineRadius(dock.dash));
-            const layout = new RowLayout({
-                dash: dock.dash,
-                edge,
-                surface: Surface.DOCK,
-                scheduler: this.#scheduler,
-                // Dash to Dock sizes its icons on redisplay only.
-                onChanged: () => dock.dash._adjustIconSize(),
-                onDestroyed: destroyed => this.#layouts.delete(destroyed),
-            });
-            layout.setGroups(this.#groups);
-            this.#layouts.add(layout);
-            // Dash to Dock's dynamic transparency copies the dash container's inline style, the row ends, to its background.
-            this.#dockInjections.overrideMethod(dock._themeManager._transparency, '_updateStyles',
-                original => function () {
-                    this._base_actor_style = '';
-                    original.call(this);
-                });
-            this.#dockInjections.overrideMethod(dock.dash, '_adjustIconSize',
-                original => withoutRowMargins(original, dock.dash._isHorizontal));
-            this.#visibilities.push(visibility);
-            visibility.subscribe(state => {
-                if (state !== DockState.SHOWN)
-                    this.#surface.clearPointer(box);
-            });
-            this.#overflows.add(overflow);
-            overflow.enable();
-            this.#syncOverflow();
-            this.#stopWiggles(dock);
+            // At login Dash to Dock announces its docks before it adds them to the stage.
+            if (dock.get_stage())
+                this.#attachDock(dock);
+            else
+                this.#waitForStage(dock);
         }
         this.refreshStyles();
         this.#syncLayouts();
+    }
+
+    #waitForStage(dock) {
+        this.#pendingDocks.add(dock);
+        dock.connectObject(
+            'parent-set', () => {
+                if (!dock.get_stage())
+                    return;
+                this.#pendingDocks.delete(dock);
+                dock.disconnectObject(this);
+                this.#attachDock(dock);
+                this.refreshStyles();
+                this.#syncLayouts();
+            },
+            'destroy', () => this.#pendingDocks.delete(dock), this);
+    }
+
+    #attachDock(dock) {
+        const box = dock.dash._box;
+        // The dash's parent is the actor the slider moves.
+        const slid = dock.dash.get_parent();
+        const edge = edgeFromSide(dock.position);
+        const getMonitor = () =>
+            Main.layoutManager.monitors[dock.monitorIndex] ?? null;
+        const visibility = new DockVisibility({
+            actor: slid,
+            root: dock,
+            edge,
+            getMonitor,
+            scheduler: this.#scheduler,
+        });
+        const context = {
+            background: this.#manager.settings.extendHeight ? null : dock.dash._background,
+            visibility,
+            pointerActor: slid,
+            isAvailable: () => visibility.state === DockState.SHOWN,
+            containsPointer: (x, y) => pointerOnSurface(slid, box, x, y),
+            getMonitor,
+            dockSettings: this.#manager.settings,
+            labelOffset: '-x-offset',
+        };
+        const overflow = new DockOverflow({
+            actor: slid,
+            row: box,
+            edge,
+            getMonitor,
+            injections: new InjectionManager(),
+            onChanged: () => this.#surface.invalidateGeometry(),
+            onDisposed: disposed => this.#overflows.delete(disposed),
+        });
+        context.getSpacing = () => overflow;
+        if (!this.#surface.addBox(box, edge, context)) {
+            visibility.dispose();
+            return;
+        }
+        if (context.background)
+            this.#trackBlur(dock.dash);
+        if (dock.dash._background)
+            this.#outline.track(dock.dash._background, () => this.#outlineRadius(dock.dash));
+        const layout = new RowLayout({
+            dash: dock.dash,
+            edge,
+            surface: Surface.DOCK,
+            scheduler: this.#scheduler,
+            // Dash to Dock sizes its icons on redisplay only.
+            onChanged: () => dock.dash._adjustIconSize(),
+            onDestroyed: destroyed => this.#layouts.delete(destroyed),
+        });
+        layout.setGroups(this.#groups);
+        this.#layouts.add(layout);
+        // Dash to Dock's dynamic transparency copies the dash container's inline style, the row ends, to its background.
+        this.#dockInjections.overrideMethod(dock._themeManager._transparency, '_updateStyles',
+            original => function () {
+                this._base_actor_style = '';
+                original.call(this);
+            });
+        this.#dockInjections.overrideMethod(dock.dash, '_adjustIconSize',
+            original => withoutRowMargins(original, dock.dash._isHorizontal));
+        this.#visibilities.push(visibility);
+        visibility.subscribe(state => {
+            if (state !== DockState.SHOWN)
+                this.#surface.clearPointer(box);
+        });
+        this.#overflows.add(overflow);
+        overflow.enable();
+        this.#syncOverflow();
+        this.#stopWiggles(dock);
     }
 
     // Dash to Dock's size setting, not the size a full row shrinks to.
