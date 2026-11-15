@@ -9,7 +9,7 @@ import {Surface, smallHalo} from '../motion/dockLayout.js';
 import {shouldReattachDock} from '../motion/transforms.js';
 import {DockVisibility} from './dockVisibility.js';
 import {DockOverflow} from './dockOverflow.js';
-import {marginsAlong, pointerOnSurface} from './geometry.js';
+import {pointerOnSurface, withoutRowMargins} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
 import {RowLayout} from './rowLayout.js';
 import {SurfaceOutline} from './surfaceOutline.js';
@@ -281,15 +281,8 @@ export class DockIntegration {
                     this._base_actor_style = '';
                     original.call(this);
                 });
-            // Dash to Dock fits its icons without the container margins that group gaps add.
-            this.#dockInjections.overrideMethod(dock.dash, '_adjustIconSize', original => function () {
-                const key = this._isHorizontal ? '_maxWidth' : '_maxHeight';
-                const max = this[key];
-                if (max !== -1)
-                    this[key] -= marginsAlong(this._box, this._isHorizontal);
-                original.call(this);
-                this[key] = max;
-            });
+            this.#dockInjections.overrideMethod(dock.dash, '_adjustIconSize',
+                original => withoutRowMargins(original, dock.dash._isHorizontal));
             this.#visibilities.push(visibility);
             visibility.subscribe(state => {
                 if (state !== DockState.SHOWN)

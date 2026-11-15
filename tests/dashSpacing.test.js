@@ -1,4 +1,5 @@
-import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, marginsAlong, ownsPick, tooltipPosition} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, marginsAlong, ownsPick, tooltipPosition,
+    withoutRowMargins} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
 
 test('background allocation grows symmetrically without scaling the other axis', () => {
     for (const horizontal of [true, false]) {
@@ -117,6 +118,21 @@ test('row margins add up along the row on either orientation', () => {
     const child = (left, right, top, bottom) => ({
         ensure_style() {}, margin_left: left, margin_right: right, margin_top: top, margin_bottom: bottom});
     const box = {get_children: () => [child(32, 0, 1, 2), child(0, 0, 0, 0), child(8, 8, 16, 0)]};
-    assertEqual(marginsAlong(box), 48);
+    assertEqual(marginsAlong(box, true), 48);
     assertEqual(marginsAlong(box, false), 19);
+});
+
+test('the dash fits its icons in its max size less the row margins', () => {
+    const child = margin => ({ensure_style() {}, margin_left: margin, margin_right: 0, margin_top: margin, margin_bottom: 0});
+    const dash = {_maxWidth: 1000, _maxHeight: 600, _box: {get_children: () => [child(32), child(8)]}};
+    const seen = [];
+    const adjust = function () {
+        seen.push([this._maxWidth, this._maxHeight]);
+    };
+    withoutRowMargins(adjust, true).call(dash);
+    withoutRowMargins(adjust, false).call(dash);
+    dash._maxWidth = -1;
+    withoutRowMargins(adjust, true).call(dash);
+    assertDeepEqual(seen, [[960, 600], [1000, 560], [-1, 600]]);
+    assertDeepEqual([dash._maxWidth, dash._maxHeight], [-1, 600]);
 });

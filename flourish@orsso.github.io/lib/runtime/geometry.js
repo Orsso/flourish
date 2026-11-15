@@ -115,11 +115,23 @@ export function dashSpacing(box, monitor) {
     };
 }
 
-export function marginsAlong(box, horizontal = true) {
+export function marginsAlong(box, horizontal) {
     return box.get_children().reduce((sum, child) => {
         child.ensure_style();
         return sum + (horizontal ? child.margin_left + child.margin_right : child.margin_top + child.margin_bottom);
     }, 0);
+}
+
+// The dash fits its icons in its max size; it does not count the container margins that group gaps add.
+export function withoutRowMargins(adjustIconSize, horizontal) {
+    return function () {
+        const key = horizontal ? '_maxWidth' : '_maxHeight';
+        const max = this[key];
+        if (max !== -1)
+            this[key] -= marginsAlong(this._box, horizontal);
+        adjustIconSize.call(this);
+        this[key] = max;
+    };
 }
 
 export function expandDockClip([x, y, width, height], edge, reserve) {

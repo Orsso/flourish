@@ -7,7 +7,7 @@ import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import {ScreenEdge} from '../motion/catalog.js';
 import {DASH_ICON_SIZE, Surface, smallHalo} from '../motion/dockLayout.js';
 import {FocusHighlight} from './focusHighlight.js';
-import {dashSpacing, marginsAlong, pointerOnSurface} from './geometry.js';
+import {dashSpacing, pointerOnSurface, withoutRowMargins} from './geometry.js';
 import {MotionSurface} from './motionSurface.js';
 import {RowLayout} from './rowLayout.js';
 import {SurfaceOutline} from './surfaceOutline.js';
@@ -72,15 +72,8 @@ export class DashIntegration {
         Main.overview.connectObject('hiding', () => this.#surface.clearPointer(), this);
         Main.layoutManager.connectObject('monitors-changed', () => this.#surface.invalidateGeometry(), this);
         this.#surface.refreshStyles();
-        // The dash fits its icons without the container margins that group gaps add.
         this.#injections = new InjectionManager();
-        this.#injections.overrideMethod(dash, '_adjustIconSize', original => function () {
-            const maxWidth = this._maxWidth;
-            if (maxWidth !== -1)
-                this._maxWidth -= marginsAlong(this._box);
-            original.call(this);
-            this._maxWidth = maxWidth;
-        });
+        this.#injections.overrideMethod(dash, '_adjustIconSize', original => withoutRowMargins(original, true));
         this.#layout = new RowLayout({
             dash,
             edge: ScreenEdge.BOTTOM,
