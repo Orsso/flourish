@@ -217,6 +217,8 @@ export class DockIntegration {
     }
 
     #scanDocks() {
+        // Dash to Dock announces docks-ready after it replaced every dock.
+        this.#dockInjections.clear();
         // Nothing public lists the docks.
         const docks = this.#manager._allDocks;
         if (this.#recipe.attention.enabled)
