@@ -15,7 +15,8 @@ An extension that adds motion to the GNOME dash. Icons magnify as the
 pointer moves along it, react to clicks, and animate when an app launches
 or asks for attention. It also works with
 [Dash to Dock](https://extensions.gnome.org/extension/307/dash-to-dock/) and
-Ubuntu Dock.
+Ubuntu Dock. A Style tab, in beta, can also change the spacing between icons,
+group favorites, and draw an outline around the dash or dock.
 
 GNOME Shell and the dock keep doing their usual jobs. Flourish takes care of
 the moving bits.
@@ -33,10 +34,12 @@ It relies on a few private or undocumented members:
 - GNOME Shell: the dash's `_box`, `_background`, `_showAppsIcon`, `_maxWidth`
   and `_adjustIconSize`, each icon's `_iconBin`, `_createIconTexture` and
   `_menu`, and the window manager's `_getNthFavoriteApp`.
-- Dash to Dock: `_allDocks`, each dock's `monitorIndex` and `position`, each
-  dash's `_box`, `_background`, `_dashContainer` and `_showAppsIcon`, the
-  slider's `slide-x`, the manager's settings, the icons' `urgent` and `focused`
-  flags and `_menu`, and `iconAnimator`, to replace the urgent wiggle.
+- Dash to Dock: `_allDocks`, each dock's `monitorIndex`, `position` and
+  `_themeManager._transparency` (`_updateStyles` and `_base_actor_style`), each
+  dash's `_box`, `_background`, `_dashContainer`, `_showAppsIcon`, `_maxWidth`,
+  `_maxHeight`, `_isHorizontal` and `_adjustIconSize`, the slider's `slide-x`,
+  the manager's settings, the icons' `urgent` and `focused` flags and `_menu`,
+  and `iconAnimator`, to replace the urgent wiggle.
 - Blur My Shell: `is_static`, and `dash`, `background` and
   `background_group` in `global.blur_my_shell._dash_to_dock_blur.dashes`,
   plus the corner radius of that background's blur effect
@@ -49,9 +52,17 @@ fits. The background follows the wave through a layout constraint.
 The outline is drawn inside the dash or dock background. With Icon Spacing
 on, Flourish sets the margins and paddings of the dash and dock icons as
 inline style, computed from the icon size. Inline style wins over other
-extensions' stylesheets, including Kiwi's Dock Styling. Group gaps are icon
-container margins, which the dash's `_adjustIconSize` takes into account. App
-menus get one extra item for groups.
+extensions' stylesheets, including Kiwi's Dock Styling. Dash to Dock's dynamic
+transparency would copy that style to the dock background, so Flourish leaves
+it out of the copy. Group gaps are icon container margins. Flourish takes them
+off the space the dash or dock fits its icons in, and fits the icons again when
+the spacing changes. App menus get one extra item for groups.
+
+## Known limitations
+
+- With Icon Spacing on, Dash to Dock's Shrink the dash option has no effect.
+- With Blur My Shell 76, the static dock blur lags a few pixels behind
+  magnified icons. Version 78 does not.
 
 ## Compatibility
 
@@ -59,14 +70,14 @@ Flourish declares support for GNOME Shell 46 to 51.
 
 This release was tested with:
 
-- GNOME Shell 46, 50, and 51
-- Dash to Dock 109
+- GNOME Shell 46, 47, 48, 49, 50, and 51
+- Dash to Dock 110
 - Ubuntu Dock on Ubuntu 24.04 and 26.04
 
 Other setups may work, but I have not tested them for this release.
 
 With Blur My Shell, the dock blur follows magnification
-(tested with version 76).
+(tested with versions 76 and 78).
 
 ## Install
 
