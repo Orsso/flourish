@@ -284,6 +284,9 @@ export class DockIntegration {
             edge,
             getMonitor,
             injections: new InjectionManager(),
+            raisedBins: () => this.#surface.controllers
+                .filter(controller => this.#surface.getContext(controller.icon) === context)
+                .map(controller => controller.icon.icon._iconBin),
             onChanged: () => this.#surface.invalidateGeometry(),
             onDisposed: disposed => this.#overflows.delete(disposed),
         });

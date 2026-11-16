@@ -48,6 +48,7 @@ export class DockOverflow {
     #onChanged;
     #onDisposed;
     #ownClip;
+    #raisedBins;
     #appliedReserve = 0;
     #row;
     #scroll;
@@ -55,12 +56,13 @@ export class DockOverflow {
     #slider;
     #viewport;
 
-    constructor({actor, row, edge, getMonitor, injections, onChanged, onDisposed}) {
+    constructor({actor, row, edge, getMonitor, injections, raisedBins, onChanged, onDisposed}) {
         this.#actor = actor;
         this.#row = row;
         this.#edge = edge;
         this.#getMonitor = getMonitor;
         this.#injections = injections;
+        this.#raisedBins = raisedBins;
         this.#onChanged = onChanged;
         this.#onDisposed = onDisposed;
         this.#slider = actor.get_parent();
@@ -155,9 +157,9 @@ export class DockOverflow {
     // Bounds of the magnified icons, in the coordinates of the given actor.
     #raisedBox(actor) {
         let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
-        for (const item of this.actors) {
-            const bin = item.icon?._iconBin ?? item.child?.icon?._iconBin;
-            if (!bin?.reactive || bin.scale_x === 1 && bin.scale_y === 1)
+        // Not Dash to Dock's row: picking can run while it destroys its icons.
+        for (const bin of this.#raisedBins()) {
+            if (!bin.reactive || bin.scale_x === 1 && bin.scale_y === 1)
                 continue;
             const extents = bin.get_transformed_extents();
             for (const [stageX, stageY] of [

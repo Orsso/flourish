@@ -16,7 +16,7 @@ test('a moving or scrolling dock keeps its exact clip with zero overflow room', 
     assertDeepEqual(expandDockClip([-10, 7, 310, 63], 'bottom', 0), [-10, 7, 310, 63]);
 });
 
-function makeOverflow() {
+function makeOverflow(raisedBins = () => []) {
     const actors = Array.from({length: 6}, () => Object.assign(new FakeEmitter(), {
         width: 200, height: 80, has_clip: false, clip: [0, 0, 200, 80],
         get_transformed_position() { return [400, 700]; },
@@ -45,7 +45,7 @@ function makeOverflow() {
         getMonitor: () => ({x: 0, y: 0, width: 1000, height: 800}),
         injections: {overrideMethod(actor, name, factory) { actor[name] = factory(actor[name]); },
             clear() { slid.set_clip = original; }},
-        onChanged() {}, onDisposed() { disposed++; }});
+        raisedBins, onChanged() {}, onDisposed() { disposed++; }});
     overflow.enable();
     overflow.setHover({...getBuiltInRecipe('expressive').hover, scale: 2, lift: 16});
     return {overflow, row, viewport, scroll, dash, slid, dashContainer, disposed: () => disposed};
@@ -135,4 +135,19 @@ test('a dying dash releases ownership without restoring dying scroll resources',
     assertEqual(scroll.effects.length, 0);
     assertEqual(overflow.sideRoom, 0);
     assertEqual(disposed(), 1);
+});
+
+test('the raised box reads the icons Flourish follows, never one Dash to Dock is destroying', () => {
+    const extents = {get_x: () => 410, get_y: () => 660, get_width: () => 72, get_height: () => 72};
+    const live = {reactive: true, scale_x: 1.5, scale_y: 1.5, get_transformed_extents: () => extents};
+    const {overflow, row, scroll, slid} = makeOverflow(() => [live]);
+    // Any access to a destroyed icon logs a critical.
+    const destroyed = new Proxy({}, {get() {
+        throw new Error('read a destroyed icon');
+    }});
+    row.get_children = () => [{child: destroyed}];
+    slid.transform_stage_point = (x, y) => [true, x - 400, y - 700];
+    const box = scroll.effects[0]._raisedBox(slid);
+    assertDeepEqual([box.x1, box.y1, box.x2, box.y2], [10, -40, 82, 32]);
+    overflow.dispose();
 });
