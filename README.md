@@ -49,9 +49,9 @@ On a dock, magnified icons overflow through a wider clip, a paint and pick
 effect on the scroll view, and detached scroll adjustments while the row
 fits. The background follows the wave through a layout constraint.
 
-The outline is drawn inside the dash or dock background. With Icon Spacing
-on, Flourish sets the margins and paddings of the dash and dock icons as
-inline style, computed from the icon size. Inline style wins over other
+The outline is drawn inside the dash or dock background. With Layout on,
+Flourish sets the margins and paddings of the dash and dock icons as inline
+style, computed from the icon size. Inline style wins over other
 extensions' stylesheets, including Kiwi's Dock Styling. Dash to Dock's dynamic
 transparency would copy that style to the dock background, so Flourish leaves
 it out of the copy. Group gaps are icon container margins. Flourish takes them
@@ -60,7 +60,7 @@ the spacing changes. App menus get one extra item for groups.
 
 ## Known limitations
 
-- With Icon Spacing on, Dash to Dock's Shrink the dash option has no effect.
+- With Layout on, Dash to Dock's Shrink the dash option has no effect.
 - With Blur My Shell 76, the static dock blur lags a few pixels behind
   magnified icons. Version 78 does not.
 

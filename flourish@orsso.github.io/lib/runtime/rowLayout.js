@@ -11,7 +11,7 @@ export class RowLayout {
     #edge;
     #getScale;
     #groups = {gaps: new Map()};
-    // Null with Icon Spacing off.
+    // Null with Layout off.
     #layout = null;
     #onChanged;
     #onDestroyed;

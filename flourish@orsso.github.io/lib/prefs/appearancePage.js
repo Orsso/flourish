@@ -55,9 +55,7 @@ export function buildAppearancePage(page, controls, settings, state) {
         return {group, rows};
     };
 
-    const groups = section(_('Groups'), 'groupsEnabled', 'groups-enabled').group;
-    // One text on and off, so the switch never moves under the pointer.
-    groups.description = _('Click between two apps to add a gap, click again to change it. Drag a gap to move it. You can also right-click an app to start or merge a group.');
+    // The preview shows every section below; group gaps are edited in it.
     appearance.preview = new DockSample({
         apps,
         iconSize: previewIconSize(apps.length),
@@ -76,9 +74,11 @@ export function buildAppearancePage(page, controls, settings, state) {
     });
     const frame = new Gtk.Frame({child: appearance.preview});
     frame.add_css_class('view');
-    groups.add(frame);
+    const previewGroup = new Adw.PreferencesGroup();
+    previewGroup.add(frame);
+    page.add(previewGroup);
 
-    const layout = section(_('Icon Spacing'), 'spacingEnabled', 'spacing-enabled');
+    const layout = section(_('Layout'), 'spacingEnabled', 'spacing-enabled');
     // In percent of the icon size; the subtitle gives the pixels.
     appearance.spacingRows = SPACING_ROWS.map(([key, setting, title]) => {
         const control = createScaleRow(layout.group, _(title), SpacingFraction.MIN * 100, SpacingFraction.MAX * 100, 1,
@@ -91,6 +91,10 @@ export function buildAppearancePage(page, controls, settings, state) {
         value => settings.set_boolean('dock-flush', value));
     position.subtitle = _('Dash to Dock and Ubuntu Dock');
     layout.rows.push(...appearance.spacingRows.map(({control}) => control.row), position);
+
+    const groups = section(_('Groups'), 'groupsEnabled', 'groups-enabled').group;
+    // One text on and off, so the switch never moves under the pointer.
+    groups.description = _('Click between two apps in the preview at the top to add a gap, click again to change it. Drag a gap to move it. You can also right-click an app in the dash or dock to start or merge a group.');
 
     const outline = section(_('Outline'), 'outlineEnabled', 'outline-enabled');
     const style = addSegments(appearance, outline.group, _('Color'), OUTLINES, 'style', state,

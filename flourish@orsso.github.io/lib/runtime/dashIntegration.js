@@ -136,7 +136,7 @@ export class DashIntegration {
         this.#surface?.refreshStyles();
     }
 
-    // Null when Icon Spacing is off.
+    // Null when Layout is off.
     setSpacing(spacing) {
         this.#spacing = spacing;
         if (spacing !== null && smallHalo(DASH_ICON_SIZE, spacing.gap))

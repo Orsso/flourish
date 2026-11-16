@@ -104,7 +104,7 @@ export function dockLayout({
     };
 }
 
-// Icon Spacing off leaves the theme's margins but the group gap.
+// Layout off leaves the theme's margins but the group gap.
 export function containerStyle(edge, groupGap, spacingOn) {
     const gap = GROUP_GAP_PIXELS[groupGap] ?? 0;
     if (spacingOn)

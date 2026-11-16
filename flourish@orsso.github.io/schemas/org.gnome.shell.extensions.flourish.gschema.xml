@@ -224,7 +224,7 @@
 
     <key name="spacing-enabled" type="b">
       <default>false</default>
-      <summary>Adjust icon spacing</summary>
+      <summary>Adjust the layout</summary>
       <description>When false, the theme or the dock decides the gap between icons.</description>
     </key>
 
@@ -252,7 +252,7 @@
     <key name="dock-flush" type="b">
       <default>false</default>
       <summary>Flush dock</summary>
-      <description>With icon spacing on, the dock background meets the screen edge and maximized windows instead of floating.</description>
+      <description>With Layout on, the dock background meets the screen edge and maximized windows instead of floating.</description>
     </key>
 
     <key name="groups-enabled" type="b">

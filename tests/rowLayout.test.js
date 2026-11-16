@@ -104,7 +104,7 @@ test('a second pass writes nothing', () => {
     assertEqual(row.state.changes, 1);
 });
 
-test('Icon Spacing off leaves only the group gaps', () => {
+test('Layout off leaves only the group gaps', () => {
     const row = setup();
     row.layout.update(OURS, 48);
     row.scheduler.flush();

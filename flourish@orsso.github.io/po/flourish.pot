@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 22:41+0100\n"
+"POT-Creation-Date: 2026-11-18 23:28+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -27,15 +27,15 @@ msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:23
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:81
-msgid "Icon Spacing"
+msgid "Layout"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:23
-msgid "Set the gap between icons"
+msgid "Set the gaps, margins, and dock position"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:24
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:58
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:95
 msgid "Groups"
 msgstr ""
 
@@ -44,7 +44,7 @@ msgid "Gaps between groups of favorites"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:25
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:95
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:99
 msgid "Outline"
 msgstr ""
 
@@ -53,7 +53,7 @@ msgid "A thin line around the dash or dock"
 msgstr ""
 
 #: flourish@orsso.github.io/prefs.js:26
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:105
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:109
 msgid "Backgrounds"
 msgstr ""
 
@@ -298,7 +298,7 @@ msgstr ""
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:83
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:101
 #: flourish@orsso.github.io/lib/prefs/animationPages.js:146
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:101
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:105
 msgid "Intensity"
 msgstr ""
 
@@ -459,12 +459,6 @@ msgstr ""
 msgid "The dash and the dock keep their own tiles"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:60
-msgid ""
-"Click between two apps to add a gap, click again to change it. Drag a gap to "
-"move it. You can also right-click an app to start or merge a group."
-msgstr ""
-
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:90
 msgid "Dock Position"
 msgstr ""
@@ -473,31 +467,38 @@ msgstr ""
 msgid "Dash to Dock and Ubuntu Dock"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:96
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:97
+msgid ""
+"Click between two apps in the preview at the top to add a gap, click again "
+"to change it. Drag a gap to move it. You can also right-click an app in the "
+"dash or dock to start or merge a group."
+msgstr ""
+
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:100
 msgid "Color"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:98
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:102
 msgid "Light Position"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:110
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:114
 msgid "Hover Background"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:110
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:114
 msgid "The tile behind the icon under the pointer"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:111
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:115
 msgid "Focused App Background"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:111
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:115
 msgid "Marks the app that owns the focused window"
 msgstr ""
 
-#: flourish@orsso.github.io/lib/prefs/appearancePage.js:239
+#: flourish@orsso.github.io/lib/prefs/appearancePage.js:243
 #, javascript-format
 msgid "%d px with 48 px icons"
 msgstr ""

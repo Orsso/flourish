@@ -123,7 +123,7 @@ export class DockIntegration {
         this.#outline.setStyle(style, intensity, light);
     }
 
-    // Null when Icon Spacing is off.
+    // Null when Layout is off.
     setSpacing(spacing) {
         this.#spacing = spacing;
         this.#syncLayouts();

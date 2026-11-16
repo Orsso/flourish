@@ -20,7 +20,7 @@ import {N_, createBadge, createSwitchRow} from './lib/prefs/rows.js';
 
 // Switched off, each part is left to the Shell, the dock or the theme.
 const APPEARANCE_SWITCHES = [
-    ['spacing-enabled', N_('Icon Spacing'), N_('Set the gap between icons')],
+    ['spacing-enabled', N_('Layout'), N_('Set the gaps, margins, and dock position')],
     ['groups-enabled', N_('Groups'), N_('Gaps between groups of favorites')],
     ['outline-enabled', N_('Outline'), N_('A thin line around the dash or dock')],
     ['backgrounds-enabled', N_('Backgrounds'), N_('Hide or add the hover and focused app tiles')],
