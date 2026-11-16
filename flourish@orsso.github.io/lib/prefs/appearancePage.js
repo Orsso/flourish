@@ -107,7 +107,7 @@ export function buildAppearancePage(page, controls, settings, state) {
     appearance.backgroundsOff = new Adw.ActionRow({title: _(BACKGROUNDS_OFF_HINT)});
     backgrounds.add(appearance.backgroundsOff);
     for (const [key, setting, title, subtitle] of [
-        ['hoverTile', 'show-hover-background', _('Hover Background'), _('The tile under the pointed icon')],
+        ['hoverTile', 'show-hover-background', _('Hover Background'), _('The tile behind the icon under the pointer')],
         ['focusTile', 'show-focused-app-background', _('Focused App Background'), _('Marks the app that owns the focused window')],
     ]) {
         const row = createSwitchRow(backgrounds, title, subtitle,

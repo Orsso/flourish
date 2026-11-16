@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Flourish\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-16 21:16+0100\n"
+"POT-Creation-Date: 2026-11-18 22:41+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -486,7 +486,7 @@ msgid "Hover Background"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:110
-msgid "The tile under the pointed icon"
+msgid "The tile behind the icon under the pointer"
 msgstr ""
 
 #: flourish@orsso.github.io/lib/prefs/appearancePage.js:111
