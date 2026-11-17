@@ -87,10 +87,13 @@ export function buildAppearancePage(page, controls, settings, state) {
         control.scale.set_format_value_func((_scale, value) => `${Math.round(value)}%`);
         return {key, control};
     });
-    const position = addSegments(appearance, layout.group, _('Dock Position'), POSITIONS, 'flush', state,
-        value => settings.set_boolean('dock-flush', value));
-    position.subtitle = _('Dash to Dock and Ubuntu Dock');
-    layout.rows.push(...appearance.spacingRows.map(({control}) => control.row), position);
+    layout.rows.push(...appearance.spacingRows.map(({control}) => control.row));
+    if (controls.dockPresent) {
+        const position = addSegments(appearance, layout.group, _('Dock Position'), POSITIONS, 'flush', state,
+            value => settings.set_boolean('dock-flush', value));
+        position.subtitle = _('Dash to Dock and Ubuntu Dock');
+        layout.rows.push(position);
+    }
 
     const groups = section(_('Groups'), 'groupsEnabled', 'groups-enabled').group;
     // One text on and off, so the switch never moves under the pointer.
