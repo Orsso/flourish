@@ -106,7 +106,8 @@ export function dashSpacing(box, monitor) {
     const margin = Math.min(x - monitor.x, monitor.x + monitor.width - x - width);
     const [, naturalWidth] = box.get_preferred_width(-1);
     return {
-        sideRoom: width > 0 && naturalWidth <= box.width
+        // The allocation can round the natural width down.
+        sideRoom: width > 0 && naturalWidth < box.width + 1
             ? Math.max(0, margin) * container.width / width : 0,
         actors: [
             ...box.get_children(),

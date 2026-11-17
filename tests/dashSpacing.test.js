@@ -77,6 +77,12 @@ test('a clipped native row has no spacing room despite free monitor margins', ()
     assertEqual(dashSpacing(box, {x: 0, width: 1000}).sideRoom, 0);
 });
 
+test('a row allocated a fraction of a pixel short of its natural width is not clipped', () => {
+    const {box} = fixture();
+    box.get_preferred_width = () => [0, 720.458];
+    assertEqual(dashSpacing(box, {x: 0, width: 1000}).sideRoom, 100);
+});
+
 test('a gap pick counts when it is an ancestor of the surface inside the gap root', () => {
     const node = (name, parent = null) => ({
         name, parent,
