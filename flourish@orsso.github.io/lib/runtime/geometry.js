@@ -62,7 +62,13 @@ export function fitBackgroundGrowth(growth, start, end, origin, scale, monitorSt
     return Math.min(growth, 2 * Math.max(0, Math.min(leading, trailing)));
 }
 
-export function pointerOnSurface(actor, row, x, y, gapRoot = null) {
+export function pointerOnSurface(actor, row, x, y, gapRoot = null, area = null) {
+    // Beside the dash background, Shells pick the overview or, since 51, the full-width dash.
+    if (area !== null) {
+        const {x: left, width} = actorGeometry(area);
+        if (x < left || x > left + width)
+            return false;
+    }
     return ownsPick(actor, row, global.stage.get_actor_at_pos(Clutter.PickMode.REACTIVE, x, y), gapRoot);
 }
 

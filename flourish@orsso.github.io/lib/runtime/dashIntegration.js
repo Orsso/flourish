@@ -61,7 +61,8 @@ export class DashIntegration {
         this.#surface.addBox(box, ScreenEdge.BOTTOM, {
             pointerActor: dash,
             isAvailable: () => Main.overview.visibleTarget,
-            containsPointer: (x, y) => pointerOnSurface(dash, box, x, y, Main.layoutManager.overviewGroup),
+            containsPointer: (x, y) =>
+                pointerOnSurface(dash, box, x, y, Main.layoutManager.overviewGroup, dash._background),
             getSpacing: () => dashSpacing(box, Main.layoutManager.primaryMonitor),
             background: dash._background,
             getMonitor: () => Main.layoutManager.primaryMonitor,

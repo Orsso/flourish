@@ -1,5 +1,5 @@
-import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, marginsAlong, ownsPick, tooltipPosition,
-    withoutRowMargins} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
+import {BackgroundExpansion, dashSpacing, fitBackgroundGrowth, marginsAlong, ownsPick, pointerOnSurface,
+    tooltipPosition, withoutRowMargins} from '../flourish@orsso.github.io/lib/runtime/geometry.js';
 
 test('background allocation grows symmetrically without scaling the other axis', () => {
     for (const horizontal of [true, false]) {
@@ -83,20 +83,21 @@ test('a row allocated a fraction of a pixel short of its natural width is not cl
     assertEqual(dashSpacing(box, {x: 0, width: 1000}).sideRoom, 100);
 });
 
+const node = (name, parent = null) => ({
+    name, parent,
+    get_parent() {
+        return this.parent;
+    },
+    contains(other) {
+        for (let n = other; n; n = n.parent) {
+            if (n === this)
+                return true;
+        }
+        return false;
+    },
+});
+
 test('a gap pick counts when it is an ancestor of the surface inside the gap root', () => {
-    const node = (name, parent = null) => ({
-        name, parent,
-        get_parent() {
-            return this.parent;
-        },
-        contains(other) {
-            for (let n = other; n; n = n.parent) {
-                if (n === this)
-                    return true;
-            }
-            return false;
-        },
-    });
     const stage = node('stage');
     const overviewGroup = node('overviewGroup', stage);
     const controls = node('controls', overviewGroup); // reactive since Shell 51
@@ -118,6 +119,29 @@ test('a gap pick counts when it is an ancestor of the surface inside the gap roo
     assertEqual(ownsPick(dash, box, box, overviewGroup), true);
     assertEqual(ownsPick(dash, box, pillLabel, overviewGroup), false);
     assertEqual(ownsPick(dash, box, pill, null), false);
+});
+
+test('beside the dash background the pointer is off the dash', () => {
+    const overviewGroup = node('overviewGroup');
+    const dash = node('dash', overviewGroup);
+    const box = node('box', dash);
+    const background = {get_transformed_position: () => [800, 1300], get_transformed_size: () => [900, 100]};
+    const hadGlobal = 'global' in globalThis;
+    const saved = globalThis.global;
+    // Shell 51 picks the full-width dash beside its background; older Shells pick the overview.
+    for (const picked of [overviewGroup, dash]) {
+        globalThis.global = {stage: {get_actor_at_pos: () => picked}};
+        try {
+            assertEqual(pointerOnSurface(dash, box, 1000, 1340, overviewGroup, background), true);
+            assertEqual(pointerOnSurface(dash, box, 760, 1340, overviewGroup, background), false);
+            assertEqual(pointerOnSurface(dash, box, 1740, 1340, overviewGroup, background), false);
+        } finally {
+            if (hadGlobal)
+                globalThis.global = saved;
+            else
+                delete globalThis.global;
+        }
+    }
 });
 
 test('row margins add up along the row on either orientation', () => {
