@@ -377,7 +377,9 @@ class WaveRow {
         if (this.#peak !== null)
             return this.#peak;
         const {hover} = this.#recipe;
-        const fit = this.#entries[0].controller.measure(this.#context.getMonitor());
+        // All items share the row's room; skip one GNOME is scaling in or out.
+        const entry = this.#entries.find(({container}) => container.scale_y === 1) ?? this.#entries[0];
+        const fit = entry.controller.measure(this.#context.getMonitor());
         const overshoot = hover.easing === Easing.EASE_OUT_BACK ? OVERSHOOT_RESERVE : 0;
         this.#peak = fit
             ? fitHoverLevel(hover, fit.iconSize, fit.outwardRoom, overshoot)

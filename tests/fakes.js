@@ -334,6 +334,8 @@ export class FakeRowContainer extends FakeEmitter {
         super();
         this.translation_x = 0;
         this.translation_y = 0;
+        this.scale_x = 1;
+        this.scale_y = 1;
         this.child = new FakeIcon(bin);
         this.index = index;
         this.horizontal = horizontal;

@@ -430,6 +430,16 @@ test('an open menu or a drag lowers the wave, then the pointer raises it again',
     }
 });
 
+test('the wave measures its room on an item that GNOME is not scaling in or out', () => {
+    const {surface, box, bins, frame, settle} = makeSurface();
+    box.children[0].scale_x = box.children[0].scale_y = 0;
+    bins[0]._parent.get_transformed_size = () => [0, 0];
+    surface.onPointerMotion(125, 25);
+    frame(0);
+    settle();
+    assertClose(bins[2].scale_x, 1.22);
+});
+
 test('an icon added during the exit decay does not cut the decay short', () => {
     const {surface, box, bins, frame, settle} = makeSurface();
     surface.onPointerMotion(125, 25);
