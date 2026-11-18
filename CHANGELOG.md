@@ -3,27 +3,31 @@
 ## 1.3.0
 
 Flourish now starts with everything off. If you never picked a preset in
-1.2, pick Subtle in the preferences to get your animations back.
+1.2, pick Subtle in the preferences to get your animations back. Flourish
+also no longer hides the hover and focused app backgrounds by default. To
+hide them again, turn on Backgrounds in the Style tab and turn both off.
 
 ### New
 
-- A Style tab, in beta, changes how the dash and the dock look. You can set
-  the gap between icons and the margins around them, as a share of the icon
-  size, and group your favorites with a small gap. Presets leave it alone.
+- A Style tab, in beta, sets the gap between icons and the margins around
+  them, groups your favorites, and draws an outline. Presets leave it alone.
 - Dash to Dock and Ubuntu Dock can stick to the screen edge.
-- The outline has a new Glass style and now works on the overview dash too.
+- The outline has a Glass style and works on the overview dash too.
 
 ### Changed
 
 - Each animation has its own tab in the preferences.
 - The hover and focused app tile settings moved to the Style tab.
+- The overview dash magnification stays steady while you rearrange icons,
+  and it starts only once the pointer is over the dash.
+- Icons keep their size on screens scaled to 200%.
+- The magnification ignores widgets that other extensions put in the dock,
+  such as Dynamic Music Pill.
 
 ### Fixed
 
-- Widgets that other extensions put in the dock, like Dynamic Music Pill,
-  no longer make the icons grow on hover.
-- The hover and focused app backgrounds stay hidden when Blur my Shell
-  styles the dock (#15). Thanks to @levagev16-ux for the report.
+- Hiding the hover and focused app backgrounds now works with Blur my
+  Shell (#15). Thanks to @levagev16-ux for the report.
 
 ## 1.2.2
 
