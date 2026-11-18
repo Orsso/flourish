@@ -60,6 +60,7 @@ export function buildAppearancePage(page, controls, settings, state) {
         apps,
         iconSize: previewIconSize(apps.length),
         width: PREVIEW_WIDTH,
+        dock: controls.dockPresent,
         margin_top: 18,
         margin_bottom: 18,
         margin_start: 12,

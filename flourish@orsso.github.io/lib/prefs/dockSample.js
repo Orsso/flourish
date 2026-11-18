@@ -13,7 +13,9 @@ import {outlinePaint, paintOutline, roundedRect} from '../motion/outline.js';
 // Real dock lengths, scaled to the samples.
 export const REAL_ICON = 48;
 export const THEME_GAP = 16;
-const PADDING = 10;
+// The default theme in pixels, at each surface's default icon size.
+const DOCK_THEME = {icon: 48, gap: THEME_GAP, ends: 16, across: 14};
+const DASH_THEME = {icon: 64, gap: THEME_GAP, ends: 18, across: 18};
 // Past this many pixels, a press on a gap drags it instead of clicking.
 const DRAG_THRESHOLD = 4;
 // Room above the dock for the pill that names the action, in widget pixels.
@@ -38,9 +40,10 @@ export function accentColor() {
 }
 
 // Icon and gap slots along the sample, in widget pixels; no spacing keeps the theme geometry.
-export function sampleLayout({count, iconSize, spacing = null, gaps = {}}) {
-    const scale = iconSize / REAL_ICON;
-    const real = spacing ? visibleSpacing({size: REAL_ICON, spacing}) : {gap: THEME_GAP, across: PADDING, ends: PADDING};
+export function sampleLayout({count, iconSize, spacing = null, gaps = {}, dock = true}) {
+    const theme = dock ? DOCK_THEME : DASH_THEME;
+    const scale = iconSize / theme.icon;
+    const real = spacing ? visibleSpacing({size: theme.icon, spacing}) : theme;
     const gap = real.gap * scale;
     const ends = real.ends * scale;
     const icons = [];
@@ -60,10 +63,11 @@ export function sampleLayout({count, iconSize, spacing = null, gaps = {}}) {
 
 export const DockSample = GObject.registerClass(class DockSample extends Gtk.Widget {
     // A fixed widget size: the dock grows and shrinks inside it without moving the page.
-    _init({apps, iconSize, width, onSlotClicked, onGapDragged, ...params}) {
+    _init({apps, iconSize, width, dock, onSlotClicked, onGapDragged, ...params}) {
         super._init({hexpand: true, ...params});
         this._apps = apps;
         this._iconSize = iconSize;
+        this._dock = dock;
         this._width = width;
         this._state = null;
         this._pointer = null;
@@ -122,6 +126,7 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
             iconSize: this._iconSize,
             spacing: state.spacing,
             gaps: state.gaps,
+            dock: this._dock,
         });
         this._hover();
         this.queue_draw();
@@ -132,7 +137,8 @@ export const DockSample = GObject.registerClass(class DockSample extends Gtk.Wid
             return [0, this._width, -1, -1];
         // The widest margin across, so the widget never grows.
         const widest = {gap: 0, across: SpacingFraction.MAX, ends: 0};
-        const height = sampleLayout({count: 0, iconSize: this._iconSize, spacing: widest}).height + PILL_ROOM;
+        const height = sampleLayout({count: 0, iconSize: this._iconSize, spacing: widest, dock: this._dock}).height +
+            PILL_ROOM;
         return [height, height, -1, -1];
     }
 
